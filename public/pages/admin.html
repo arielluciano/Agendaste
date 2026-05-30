@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarberApp — Panel del dueño</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
+    .stat-num { font-size: 26px; font-weight: 700; color: var(--text); }
+    .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .appt-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 8px; }
+    .appt-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .appt-detail { font-size: 12px; color: var(--text-muted); }
+    .appt-time { font-size: 15px; font-weight: 600; text-align: right; }
+    .appt-price { font-size: 13px; color: var(--green); text-align: right; margin-top: 3px; }
+    .appt-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); transition: all .2s; }
+    .btn-sm:hover { background: var(--bg-secondary); }
+    .btn-sm.confirm { border-color: var(--green); color: var(--green); }
+    .btn-sm.confirm:hover { background: var(--green-light); }
+    .btn-sm.cancel { border-color: var(--red); color: var(--red); }
+    .btn-sm.cancel:hover { background: #FEE2E2; }
+    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .service-row:last-child { border: none; }
+    .price-input { width: 90px; padding: 6px 8px; text-align: right; border-radius: 6px; }
+    .toggle { width: 38px; height: 22px; background: var(--border); border-radius: 11px; cursor: pointer; position: relative; border: none; transition: background .3s; }
+    .toggle.on { background: var(--green); }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: left .3s; }
+    .toggle.on::after { left: 18px; }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+    .login-box { text-align: center; padding: 3rem 1rem; }
+    .login-box h2 { margin-bottom:.75rem; }
+    .login-box p { color: var(--text-muted); font-size:14px; margin-bottom:1.5rem; }
+    .tabs { display: flex; gap: 4px; background: var(--bg-secondary); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
+    .tab { flex: 1; padding: 8px; border: none; background: transparent; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: var(--text-muted); }
+    .tab.active { background: var(--bg); color: var(--text); font-weight: 600; border: 1px solid var(--border); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .user-pill { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
+    .user-pill img { width:28px; height:28px; border-radius:50%; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">✂️ Barber<span>App</span></a>
+  <div id="user-area"></div>
+</nav>
+
+<div class="container">
+
+  <!-- Estado: no logueado -->
+  <div id="login-view" class="login-box" style="display:none">
+    <div style="font-size:40px;margin-bottom:1rem">✂️</div>
+    <h2>Panel del dueño</h2>
+    <p>Conectate con Google para ver tus turnos<br>y sincronizar con Google Calendar</p>
+    <a href="/auth/google" class="btn btn-google">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Continuar con Google
+    </a>
+  </div>
+
+  <!-- Estado: logueado -->
+  <div id="admin-view" style="display:none">
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-lbl">Turnos hoy</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-lbl">Pendientes</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos hoy</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('turnos')">Turnos</button>
+      <button class="tab" onclick="showTab('servicios')">Servicios</button>
+      <button class="tab" onclick="showTab('calendario')">Calendario</button>
+    </div>
+
+    <!-- Tab: Turnos -->
+    <div class="tab-panel active" id="tab-turnos">
+      <div class="flex-between" style="margin-bottom:1rem">
+        <p class="section-title" style="margin:0">Turnos de hoy</p>
+        <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="loadAppointments()">↻ Actualizar</button>
+      </div>
+      <div id="appointments-list">
+        <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
+      </div>
+    </div>
+
+    <!-- Tab: Servicios -->
+    <div class="tab-panel" id="tab-servicios">
+      <p class="section-title">Servicios y precios</p>
+      <div id="services-list"></div>
+    </div>
+
+    <!-- Tab: Calendario Google -->
+    <div class="tab-panel" id="tab-calendario">
+      <p class="section-title">Google Calendar</p>
+      <p class="text-muted" style="margin-bottom:1rem;font-size:13px">
+        Cada turno que confirmes se agrega automáticamente a tu Google Calendar.
+      </p>
+      <button class="btn btn-google" onclick="loadCalendarEvents()">
+        📅 Ver próximos eventos en Calendar
+      </button>
+      <div id="calendar-events" style="margin-top:1rem"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/admin.js"></script>
+</body>
+</html>

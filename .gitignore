@@ -1,0 +1,5 @@
+# Nunca subir al repo
+.env
+node_modules/
+*.log
+.DS_Store

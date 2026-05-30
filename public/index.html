@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarberApp — Reservá tu turno</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .service-card { cursor: pointer; text-align: left; }
+    .service-card:hover { border-color: var(--green); }
+    .service-card.selected { border: 2px solid var(--green); background: var(--green-light); }
+    .service-price { font-size: 20px; font-weight: 600; color: var(--green); margin: 4px 0; }
+    .service-dur { font-size: 12px; color: var(--text-muted); }
+    .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1rem; }
+    .day-label { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0; }
+    .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .day-cell:hover:not(.disabled):not(.empty) { background: var(--bg-secondary); }
+    .day-cell.disabled { color: var(--text-muted); opacity: .4; cursor: default; }
+    .day-cell.selected { background: var(--green); color: white; font-weight: 600; }
+    .day-cell.today { border: 1px solid var(--border); font-weight: 600; }
+    .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+    .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .slot:hover:not(.taken) { background: var(--bg-secondary); }
+    .slot.selected { background: var(--green); color: white; border-color: var(--green); }
+    .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
+    .summary-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+    .summary-row span:first-child { color: var(--text-muted); }
+    .step { display: none; }
+    .step.active { display: block; }
+    .step-dots { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+    .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: all .3s; }
+    .dot.active { background: var(--green); width: 20px; }
+    .dot.done { background: var(--green); }
+    .success-icon { width: 56px; height: 56px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">✂️ Barber<span>App</span></a>
+  <a href="/admin" class="btn btn-outline" style="font-size:13px;padding:7px 14px">Panel dueño →</a>
+</nav>
+
+<div class="container">
+  <div class="step-dots">
+    <div class="dot active" id="dot0"></div>
+    <div class="dot" id="dot1"></div>
+    <div class="dot" id="dot2"></div>
+    <div class="dot" id="dot3"></div>
+  </div>
+
+  <!-- PASO 0: Elegir servicio -->
+  <div class="step active" id="step0">
+    <p class="section-title">¿Qué servicio querés?</p>
+    <div class="services-grid" id="services-grid"></div>
+  </div>
+
+  <!-- PASO 1: Elegir día y hora -->
+  <div class="step" id="step1">
+    <p class="section-title">Elegí un día</p>
+    <div class="calendar-nav">
+      <button class="btn btn-outline" onclick="prevMonth()" style="padding:7px 14px">←</button>
+      <strong id="cal-title"></strong>
+      <button class="btn btn-outline" onclick="nextMonth()" style="padding:7px 14px">→</button>
+    </div>
+    <div class="days-grid" id="cal-grid"></div>
+    <p class="section-title" style="font-size:14px">Horario disponible</p>
+    <div class="slots-grid" id="slots-grid"></div>
+    <button class="btn btn-primary" id="btn-to-step2" disabled onclick="goStep(2)">Continuar →</button>
+  </div>
+
+  <!-- PASO 2: Datos del cliente -->
+  <div class="step" id="step2">
+    <p class="section-title">Tus datos</p>
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input type="text" id="inp-name" placeholder="Ej: Martín García" oninput="checkStep2()">
+    </div>
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep2()">
+    </div>
+    <div class="divider"></div>
+    <p class="section-title" style="font-size:14px;margin-bottom:.75rem">Resumen</p>
+    <div class="summary-box">
+      <div class="summary-row"><span>Servicio</span><span id="sum-svc">—</span></div>
+      <div class="summary-row"><span>Día</span><span id="sum-day">—</span></div>
+      <div class="summary-row"><span>Hora</span><span id="sum-time">—</span></div>
+      <div class="summary-row"><span style="font-weight:600;color:var(--text)">Total</span><span id="sum-price" style="font-weight:600;color:var(--green)">—</span></div>
+    </div>
+    <button class="btn btn-primary" id="btn-confirm" disabled onclick="confirmBooking()">Confirmar turno</button>
+  </div>
+
+  <!-- PASO 3: Confirmación -->
+  <div class="step" id="step3" style="text-align:center;padding:1rem 0">
+    <div class="success-icon">✓</div>
+    <h2 style="margin-bottom:.5rem">¡Turno confirmado!</h2>
+    <p class="text-muted" style="margin-bottom:1.5rem">Te esperamos el <strong id="conf-day"></strong> a las <strong id="conf-time"></strong></p>
+    <div class="summary-box" style="text-align:left">
+      <div class="summary-row"><span>Servicio</span><span id="conf-svc"></span></div>
+      <div class="summary-row"><span>Nombre</span><span id="conf-name"></span></div>
+      <div class="summary-row"><span>Total</span><span id="conf-price" class="text-green"></span></div>
+    </div>
+    <button class="btn btn-outline mt-2" style="width:100%;justify-content:center" onclick="addToGCal()">
+      📅 Agregar a Google Calendar
+    </button>
+    <button class="btn btn-primary mt-1" onclick="resetBooking()">Hacer otro turno</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/js/client.js"></script>
+</body>
+</html>
