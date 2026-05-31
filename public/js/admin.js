@@ -44,7 +44,7 @@ async function loadAppointments() {
   const list  = document.getElementById('appointments-list');
 
   try {
-    const res   = await fetch(`/api/appointments?date=${today}`);
+    const res = await fetch('/api/appointments');
     const appts = await res.json();
 
     // Stats
@@ -101,11 +101,12 @@ async function updateStatus(id, status) {
 // ── Agregar turno al Google Calendar ─────────
 async function addToCalendar(appt) {
   try {
-    const res  = await fetch('/api/calendar/add', {
+    const res = await fetch('/api/calendar/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientName: appt.clientName,
+        clientPhone: appt.clientPhone || 'Sin teléfono',
         service:    appt.service,
         date:       appt.date,
         time:       appt.time,
@@ -115,9 +116,10 @@ async function addToCalendar(appt) {
     });
     const data = await res.json();
     if (data.success) {
-      showToast('📅 Agregado a Google Calendar');
+      showToast('📅 Turno agregado a tu Google Calendar');
+      window.open(data.eventLink, '_blank');
     } else {
-      showToast('Error: ' + data.error);
+      showToast('❌ ' + data.error);
     }
   } catch {
     showToast('❌ Error conectando con Calendar');

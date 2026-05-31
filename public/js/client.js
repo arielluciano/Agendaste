@@ -91,6 +91,7 @@ function selectDay(key) {
   selDate = key;
   selSlot = null;
   renderCalendar();
+  loadSlots(); // fuerza consulta al servidor
   checkStep1();
 }
 
@@ -106,7 +107,25 @@ async function loadSlots() {
     const res = await fetch(`/api/appointments/slots/${selDate}`);
     const slots = await res.json();
 
-    grid.innerHTML = slots.map(s => `
+    // Filtrar horarios pasados si es el día de hoy
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const isToday = selDate === todayKey;
+
+    const filteredSlots = slots.filter(s => {
+      if (!isToday) return true;
+      const [h, m] = s.time.split(':').map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(h, m, 0, 0);
+      return slotTime > now;
+    });
+
+    if (filteredSlots.length === 0) {
+      grid.innerHTML = `<p class="text-muted" style="grid-column:1/-1;font-size:13px">No hay horarios disponibles para hoy</p>`;
+      return;
+    }
+
+    grid.innerHTML = filteredSlots.map(s => `
       <div class="slot ${s.time === selSlot ? 'selected' : ''} ${!s.available ? 'taken' : ''}"
            onclick="${s.available ? `selectSlot('${s.time}')` : ''}">
         ${s.time}${!s.available ? '<br><small>Ocupado</small>' : ''}
@@ -192,10 +211,20 @@ function addToGCal() {
   const start = new Date(y, m - 1, d, h, min);
   const end   = new Date(start.getTime() + 30 * 60000);
   const fmt   = dt => dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
-  const url   = `https://calendar.google.com/calendar/render?action=TEMPLATE`
-    + `&text=${encodeURIComponent('✂️ Turno — ' + selService.name)}`
+
+  const title   = encodeURIComponent(`✂️ Turno — ${selService.name}`);
+  const details = encodeURIComponent(
+    `Servicio: ${selService.name}\n` +
+    `Precio: $${selService.price.toLocaleString('es-AR')}\n` +
+    `Dirección: [nombre de tu barbería]\n\n` +
+    `Reservado via BarberApp`
+  );
+
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE`
+    + `&text=${title}`
     + `&dates=${fmt(start)}/${fmt(end)}`
-    + `&details=${encodeURIComponent('Reservado via BarberApp')}`;
+    + `&details=${details}`;
+
   window.open(url, '_blank');
 }
 
