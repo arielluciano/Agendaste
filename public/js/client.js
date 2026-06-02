@@ -5,14 +5,7 @@
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
 
-// Servicios disponibles (en Fase 2 esto viene de la API)
-const services = [
-  { id: 1, name: 'Corte de pelo',  price: 4500, dur: '30 min' },
-  { id: 2, name: 'Barba',          price: 3000, dur: '20 min' },
-  { id: 3, name: 'Corte + barba',  price: 6500, dur: '50 min' },
-  { id: 4, name: 'Degradé',        price: 5000, dur: '40 min' },
-  { id: 5, name: 'Coloración',     price: 8000, dur: '60 min' },
-];
+let services = [];
 
 let selService = null;
 let selDate    = null;
@@ -21,7 +14,21 @@ let curYear    = new Date().getFullYear();
 let curMonth   = new Date().getMonth();
 let step       = 0;
 
-// ── Renderizar servicios ─────────────────────
+// ── Cargar y renderizar servicios ───────────
+async function loadServices() {
+  const grid = document.getElementById('services-grid');
+  grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Cargando servicios...</p>';
+
+  try {
+    const res  = await fetch('/api/services');
+    const data = await res.json();
+    services   = data.map(s => ({ ...s, dur: `${s.duration} min` }));
+    renderServices();
+  } catch {
+    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Error cargando servicios</p>';
+  }
+}
+
 function renderServices() {
   const grid = document.getElementById('services-grid');
   grid.innerHTML = services.map(s => `
@@ -247,4 +254,4 @@ function showToast(msg) {
 }
 
 // ── Init ──────────────────────────────────────
-renderServices();
+loadServices();

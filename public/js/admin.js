@@ -4,14 +4,6 @@
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-// Servicios locales (en Fase 2 vienen de la DB)
-let services = [
-  { id: 1, name: 'Corte de pelo', price: 4500, dur: '30 min', active: true },
-  { id: 2, name: 'Barba',         price: 3000, dur: '20 min', active: true },
-  { id: 3, name: 'Corte + barba', price: 6500, dur: '50 min', active: true },
-  { id: 4, name: 'Degradé',       price: 5000, dur: '40 min', active: true },
-  { id: 5, name: 'Coloración',    price: 8000, dur: '60 min', active: true },
-];
 
 // ── Verificar sesión al cargar ───────────────
 async function checkAuth() {
@@ -65,7 +57,6 @@ async function loadAppointments() {
           <div class="appt-name">${a.clientName}</div>
           <div class="appt-detail">${a.service} · ${a.clientPhone || 'Sin teléfono'}</div>
           <div class="appt-actions">
-            ${a.status === 'pending' ? `<button class="btn-sm confirm" onclick="updateStatus(${a.id}, 'confirmed')">✓ Confirmar</button>` : ''}
             <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
             <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Cal</button>
           </div>
@@ -160,31 +151,100 @@ async function loadCalendarEvents() {
 }
 
 // ── Servicios ────────────────────────────────
-function renderServices() {
+async function renderServices() {
   const list = document.getElementById('services-list');
-  list.innerHTML = services.map(s => `
-    <div class="service-row">
-      <div>
-        <div style="font-size:14px;font-weight:600">${s.name}</div>
-        <div class="text-muted">${s.dur}</div>
+  list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Cargando...</p>';
+
+  try {
+    const res      = await fetch('/api/services?all=true');
+    const services = await res.json();
+
+    list.innerHTML = `
+      ${services.map(s => `
+        <div class="service-row">
+          <div>
+            <div style="font-size:14px;font-weight:600">${s.name}</div>
+            <div class="text-muted">${s.duration} min</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="text-muted" style="font-size:13px">$</span>
+            <input class="price-input" type="number" value="${s.price}" onchange="updatePrice(${s.id}, this.value)">
+            <button class="toggle ${s.active ? 'on' : ''}" onclick="toggleService(${s.id}, ${s.active})" title="${s.active ? 'Desactivar' : 'Activar'}"></button>
+            <button class="btn-sm cancel" onclick="deleteService(${s.id})" title="Eliminar">✕</button>
+          </div>
+        </div>
+      `).join('')}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px">Agregar servicio</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="new-svc-name"  placeholder="Nombre"  style="flex:2;min-width:120px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-dur"   placeholder="Min" type="number" style="width:70px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-price" placeholder="Precio"  type="number" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <button class="btn btn-primary" style="padding:6px 14px" onclick="addService()">+ Agregar</button>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="text-muted" style="font-size:13px">$</span>
-        <input class="price-input" type="number" value="${s.price}" onchange="updatePrice(${s.id}, this.value)">
-        <button class="toggle ${s.active ? 'on' : ''}" onclick="toggleService(${s.id})" title="${s.active ? 'Desactivar' : 'Activar'}"></button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  } catch {
+    list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Error cargando servicios</p>';
+  }
 }
 
-function updatePrice(id, val) {
-  const s = services.find(x => x.id === id);
-  if (s) { s.price = parseInt(val) || 0; showToast('💰 Precio actualizado'); }
+async function addService() {
+  const name  = document.getElementById('new-svc-name').value.trim();
+  const dur   = document.getElementById('new-svc-dur').value;
+  const price = document.getElementById('new-svc-price').value;
+
+  if (!name || !dur || !price) { showToast('Completá todos los campos'); return; }
+
+  try {
+    const res = await fetch('/api/services', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, duration: Number(dur), price: Number(price) })
+    });
+    if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
+    showToast('✅ Servicio agregado');
+    renderServices();
+  } catch {
+    showToast('❌ Error al agregar servicio');
+  }
 }
 
-function toggleService(id) {
-  const s = services.find(x => x.id === id);
-  if (s) { s.active = !s.active; renderServices(); showToast(s.active ? '✅ Servicio activado' : '⏸ Servicio desactivado'); }
+async function deleteService(id) {
+  try {
+    await fetch(`/api/services/${id}`, { method: 'DELETE' });
+    showToast('Servicio eliminado');
+    renderServices();
+  } catch {
+    showToast('❌ Error al eliminar servicio');
+  }
+}
+
+async function updatePrice(id, val) {
+  try {
+    await fetch(`/api/services/${id}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ price: Number(val) })
+    });
+    showToast('💰 Precio actualizado');
+  } catch {
+    showToast('❌ Error al actualizar precio');
+  }
+}
+
+async function toggleService(id, currentActive) {
+  try {
+    await fetch(`/api/services/${id}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ active: !currentActive })
+    });
+    renderServices();
+    showToast(currentActive ? '⏸ Servicio desactivado' : '✅ Servicio activado');
+  } catch {
+    showToast('❌ Error al cambiar estado');
+  }
 }
 
 // ── Tabs ──────────────────────────────────────

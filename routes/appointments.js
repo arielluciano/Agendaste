@@ -46,7 +46,7 @@ router.post('/', (req, res) => {
     date,
     time,
     price: Number(price),
-    status: 'pending',
+    status: 'confirmed',
     createdAt: new Date().toISOString()
   };
 

@@ -9,6 +9,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const calendarRoutes = require('./routes/calendar');
 const appointmentRoutes = require('./routes/appointments');
+const serviceRoutes = require('./routes/services');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use(session({
 app.use('/auth', authRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Ruta raíz → página del cliente
 app.get('/', (req, res) => {
