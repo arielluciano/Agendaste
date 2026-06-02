@@ -6,15 +6,17 @@ const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 const DAYS   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
 
 let services = [];
+let barbers  = [];
 
 let selService = null;
+let selBarber  = null;
 let selDate    = null;
 let selSlot    = null;
 let curYear    = new Date().getFullYear();
 let curMonth   = new Date().getMonth();
 let step       = 0;
 
-// ── Cargar y renderizar servicios ───────────
+// ── Servicios ────────────────────────────────
 async function loadServices() {
   const grid = document.getElementById('services-grid');
   grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Cargando servicios...</p>';
@@ -47,18 +49,51 @@ function selectService(id) {
   setTimeout(() => goStep(1), 250);
 }
 
+// ── Barberos ─────────────────────────────────
+async function loadBarbers() {
+  try {
+    const res = await fetch('/api/barbers');
+    barbers   = await res.json();
+  } catch {
+    barbers = [];
+  }
+}
+
+function renderBarbers() {
+  const grid = document.getElementById('barbers-grid');
+  if (barbers.length === 0) {
+    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">No hay barberos disponibles</p>';
+    return;
+  }
+  grid.innerHTML = barbers.map(b => `
+    <div class="card barber-card ${selBarber?.id === b.id ? 'selected' : ''}"
+         onclick="selectBarber(${b.id})">
+      <div class="barber-avatar">✂️</div>
+      <strong>${b.name}</strong>
+      <div class="barber-role">${b.role}</div>
+    </div>
+  `).join('');
+}
+
+function selectBarber(id) {
+  selBarber = barbers.find(b => b.id === id);
+  renderBarbers();
+  setTimeout(() => goStep(2), 250);
+}
+
 // ── Navegación entre pasos ───────────────────
 function goStep(n) {
   document.getElementById('step' + step).classList.remove('active');
   step = n;
   document.getElementById('step' + step).classList.add('active');
   updateDots();
-  if (n === 1) renderCalendar();
-  if (n === 2) fillSummary();
+  if (n === 1) renderBarbers();
+  if (n === 2) renderCalendar();
+  if (n === 3) fillSummary();
 }
 
 function updateDots() {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     const d = document.getElementById('dot' + i);
     d.className = 'dot' + (i === step ? ' active' : i < step ? ' done' : '');
   }
@@ -68,22 +103,22 @@ function updateDots() {
 function renderCalendar() {
   document.getElementById('cal-title').textContent = MONTHS[curMonth] + ' ' + curYear;
   const today = new Date();
-  const firstDay = new Date(curYear, curMonth, 1).getDay();
+  const firstDay    = new Date(curYear, curMonth, 1).getDay();
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
 
   let html = DAYS.map(d => `<div class="day-label">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div class="day-cell empty"></div>`;
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(curYear, curMonth, d);
-    const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const isSun  = date.getDay() === 0;
+    const date    = new Date(curYear, curMonth, d);
+    const isPast  = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const isSun   = date.getDay() === 0;
     const isToday = date.toDateString() === today.toDateString();
-    const key = `${curYear}-${String(curMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isSel = selDate === key;
+    const key     = `${curYear}-${String(curMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isSel   = selDate === key;
 
     const classes = ['day-cell', isPast || isSun ? 'disabled' : '', isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
-    const click = !isPast && !isSun ? `onclick="selectDay('${key}')"` : '';
+    const click   = !isPast && !isSun ? `onclick="selectDay('${key}')"` : '';
     html += `<div class="${classes}" ${click}>${d}</div>`;
   }
 
@@ -98,8 +133,8 @@ function selectDay(key) {
   selDate = key;
   selSlot = null;
   renderCalendar();
-  loadSlots(); // fuerza consulta al servidor
-  checkStep1();
+  loadSlots();
+  checkStep2();
 }
 
 // ── Horarios disponibles (desde la API) ──────
@@ -111,13 +146,12 @@ async function loadSlots() {
   }
 
   try {
-    const res = await fetch(`/api/appointments/slots/${selDate}`);
+    const res   = await fetch(`/api/appointments/slots/${selDate}`);
     const slots = await res.json();
 
-    // Filtrar horarios pasados si es el día de hoy
-    const now = new Date();
+    const now      = new Date();
     const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const isToday = selDate === todayKey;
+    const isToday  = selDate === todayKey;
 
     const filteredSlots = slots.filter(s => {
       if (!isToday) return true;
@@ -143,22 +177,23 @@ async function loadSlots() {
   }
 }
 
-function selectSlot(time) { selSlot = time; loadSlots(); checkStep1(); }
+function selectSlot(time) { selSlot = time; loadSlots(); checkStep2(); }
 
-function checkStep1() {
-  document.getElementById('btn-to-step2').disabled = !(selDate && selSlot);
+function checkStep2() {
+  document.getElementById('btn-to-step3').disabled = !(selDate && selSlot);
 }
 
 // ── Resumen ──────────────────────────────────
 function fillSummary() {
   const [y, m, d] = selDate.split('-');
-  document.getElementById('sum-svc').textContent   = selService.name;
-  document.getElementById('sum-day').textContent   = `${d} de ${MONTHS[parseInt(m) - 1]} ${y}`;
-  document.getElementById('sum-time').textContent  = selSlot;
-  document.getElementById('sum-price').textContent = `$${selService.price.toLocaleString('es-AR')}`;
+  document.getElementById('sum-svc').textContent    = selService.name;
+  document.getElementById('sum-barber').textContent = selBarber.name;
+  document.getElementById('sum-day').textContent    = `${d} de ${MONTHS[parseInt(m) - 1]} ${y}`;
+  document.getElementById('sum-time').textContent   = selSlot;
+  document.getElementById('sum-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
 }
 
-function checkStep2() {
+function checkStep3() {
   const name  = document.getElementById('inp-name').value.trim();
   const phone = document.getElementById('inp-phone').value.trim();
   document.getElementById('btn-confirm').disabled = !(name && phone);
@@ -175,12 +210,14 @@ async function confirmBooking() {
 
   try {
     const res = await fetch('/api/appointments', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientName:  name,
         clientPhone: phone,
         service:     selService.name,
+        barberId:    selBarber.id,
+        barberName:  selBarber.name,
         date:        selDate,
         time:        selSlot,
         price:       selService.price
@@ -195,14 +232,14 @@ async function confirmBooking() {
       return;
     }
 
-    // Mostrar pantalla de éxito
     const [y, m, d] = selDate.split('-');
-    document.getElementById('conf-day').textContent   = `${d} de ${MONTHS[parseInt(m) - 1]}`;
-    document.getElementById('conf-time').textContent  = selSlot;
-    document.getElementById('conf-svc').textContent   = selService.name;
-    document.getElementById('conf-name').textContent  = name;
-    document.getElementById('conf-price').textContent = `$${selService.price.toLocaleString('es-AR')}`;
-    goStep(3);
+    document.getElementById('conf-day').textContent    = `${d} de ${MONTHS[parseInt(m) - 1]}`;
+    document.getElementById('conf-time').textContent   = selSlot;
+    document.getElementById('conf-svc').textContent    = selService.name;
+    document.getElementById('conf-barber').textContent = selBarber.name;
+    document.getElementById('conf-name').textContent   = name;
+    document.getElementById('conf-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
+    goStep(4);
 
   } catch {
     showToast('❌ Error de conexión');
@@ -222,6 +259,7 @@ function addToGCal() {
   const title   = encodeURIComponent(`✂️ Turno — ${selService.name}`);
   const details = encodeURIComponent(
     `Servicio: ${selService.name}\n` +
+    `Barbero: ${selBarber.name}\n` +
     `Precio: $${selService.price.toLocaleString('es-AR')}\n` +
     `Dirección: [nombre de tu barbería]\n\n` +
     `Reservado via BarberApp`
@@ -236,10 +274,10 @@ function addToGCal() {
 }
 
 function resetBooking() {
-  selService = null; selDate = null; selSlot = null; step = 0;
+  selService = null; selBarber = null; selDate = null; selSlot = null; step = 0;
   document.getElementById('inp-name').value  = '';
   document.getElementById('inp-phone').value = '';
-  document.getElementById('step3').classList.remove('active');
+  document.getElementById('step4').classList.remove('active');
   document.getElementById('step0').classList.add('active');
   updateDots();
   renderServices();
@@ -255,3 +293,4 @@ function showToast(msg) {
 
 // ── Init ──────────────────────────────────────
 loadServices();
+loadBarbers();

@@ -12,6 +12,12 @@
     .service-card.selected { border: 2px solid var(--green); background: var(--green-light); }
     .service-price { font-size: 20px; font-weight: 600; color: var(--green); margin: 4px 0; }
     .service-dur { font-size: 12px; color: var(--text-muted); }
+    .barbers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .barber-card { cursor: pointer; text-align: center; padding: 1.25rem 1rem; }
+    .barber-card:hover { border-color: var(--green); }
+    .barber-card.selected { border: 2px solid var(--green); background: var(--green-light); }
+    .barber-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto .75rem; }
+    .barber-role { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
     .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
     .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1rem; }
     .day-label { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0; }
@@ -51,6 +57,7 @@
     <div class="dot" id="dot1"></div>
     <div class="dot" id="dot2"></div>
     <div class="dot" id="dot3"></div>
+    <div class="dot" id="dot4"></div>
   </div>
 
   <!-- PASO 0: Elegir servicio -->
@@ -59,8 +66,14 @@
     <div class="services-grid" id="services-grid"></div>
   </div>
 
-  <!-- PASO 1: Elegir día y hora -->
+  <!-- PASO 1: Elegir barbero -->
   <div class="step" id="step1">
+    <p class="section-title">¿Con quién querés atenderte?</p>
+    <div class="barbers-grid" id="barbers-grid"></div>
+  </div>
+
+  <!-- PASO 2: Elegir día y hora -->
+  <div class="step" id="step2">
     <p class="section-title">Elegí un día</p>
     <div class="calendar-nav">
       <button class="btn btn-outline" onclick="prevMonth()" style="padding:7px 14px">←</button>
@@ -70,24 +83,25 @@
     <div class="days-grid" id="cal-grid"></div>
     <p class="section-title" style="font-size:14px">Horario disponible</p>
     <div class="slots-grid" id="slots-grid"></div>
-    <button class="btn btn-primary" id="btn-to-step2" disabled onclick="goStep(2)">Continuar →</button>
+    <button class="btn btn-primary" id="btn-to-step3" disabled onclick="goStep(3)">Continuar →</button>
   </div>
 
-  <!-- PASO 2: Datos del cliente -->
-  <div class="step" id="step2">
+  <!-- PASO 3: Datos del cliente -->
+  <div class="step" id="step3">
     <p class="section-title">Tus datos</p>
     <div class="form-group">
       <label>Nombre completo</label>
-      <input type="text" id="inp-name" placeholder="Ej: Martín García" oninput="checkStep2()">
+      <input type="text" id="inp-name" placeholder="Ej: Martín García" oninput="checkStep3()">
     </div>
     <div class="form-group">
       <label>Teléfono</label>
-      <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep2()">
+      <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep3()">
     </div>
     <div class="divider"></div>
     <p class="section-title" style="font-size:14px;margin-bottom:.75rem">Resumen</p>
     <div class="summary-box">
       <div class="summary-row"><span>Servicio</span><span id="sum-svc">—</span></div>
+      <div class="summary-row"><span>Barbero</span><span id="sum-barber">—</span></div>
       <div class="summary-row"><span>Día</span><span id="sum-day">—</span></div>
       <div class="summary-row"><span>Hora</span><span id="sum-time">—</span></div>
       <div class="summary-row"><span style="font-weight:600;color:var(--text)">Total</span><span id="sum-price" style="font-weight:600;color:var(--green)">—</span></div>
@@ -95,13 +109,14 @@
     <button class="btn btn-primary" id="btn-confirm" disabled onclick="confirmBooking()">Confirmar turno</button>
   </div>
 
-  <!-- PASO 3: Confirmación -->
-  <div class="step" id="step3" style="text-align:center;padding:1rem 0">
+  <!-- PASO 4: Confirmación -->
+  <div class="step" id="step4" style="text-align:center;padding:1rem 0">
     <div class="success-icon">✓</div>
     <h2 style="margin-bottom:.5rem">¡Turno confirmado!</h2>
     <p class="text-muted" style="margin-bottom:1.5rem">Te esperamos el <strong id="conf-day"></strong> a las <strong id="conf-time"></strong></p>
     <div class="summary-box" style="text-align:left">
       <div class="summary-row"><span>Servicio</span><span id="conf-svc"></span></div>
+      <div class="summary-row"><span>Barbero</span><span id="conf-barber"></span></div>
       <div class="summary-row"><span>Nombre</span><span id="conf-name"></span></div>
       <div class="summary-row"><span>Total</span><span id="conf-price" class="text-green"></span></div>
     </div>

@@ -22,6 +22,7 @@ async function checkAuth() {
       document.getElementById('admin-view').style.display = 'block';
       loadAppointments();
       renderServices();
+      renderBarbers();
     } else {
       document.getElementById('login-view').style.display = 'block';
     }
@@ -242,6 +243,87 @@ async function toggleService(id, currentActive) {
     });
     renderServices();
     showToast(currentActive ? '⏸ Servicio desactivado' : '✅ Servicio activado');
+  } catch {
+    showToast('❌ Error al cambiar estado');
+  }
+}
+
+// ── Barberos ─────────────────────────────────
+async function renderBarbers() {
+  const list = document.getElementById('barbers-list');
+  list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Cargando...</p>';
+
+  try {
+    const res     = await fetch('/api/barbers/all');
+    const barbers = await res.json();
+
+    list.innerHTML = `
+      ${barbers.map(b => `
+        <div class="service-row">
+          <div>
+            <div style="font-size:14px;font-weight:600">${b.name}</div>
+            <div class="text-muted" style="font-size:12px">${b.role}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="text-muted" style="font-size:12px">${b.active ? 'Activo' : 'Inactivo'}</span>
+            <button class="toggle ${b.active ? 'on' : ''}" onclick="toggleBarber(${b.id}, ${b.active})" title="${b.active ? 'Desactivar' : 'Activar'}"></button>
+            <button class="btn-sm cancel" onclick="deleteBarber(${b.id})" title="Eliminar">✕</button>
+          </div>
+        </div>
+      `).join('')}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px">Agregar barbero</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="new-barber-name" placeholder="Nombre" style="flex:2;min-width:120px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-barber-role" placeholder="Rol (ej: Barbero)" style="flex:2;min-width:120px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <button class="btn btn-primary" style="padding:6px 14px" onclick="addBarber()">+ Agregar</button>
+        </div>
+      </div>
+    `;
+  } catch {
+    list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Error cargando barberos</p>';
+  }
+}
+
+async function addBarber() {
+  const name = document.getElementById('new-barber-name').value.trim();
+  const role = document.getElementById('new-barber-role').value.trim();
+
+  if (!name) { showToast('El nombre es obligatorio'); return; }
+
+  try {
+    const res = await fetch('/api/barbers', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, role: role || 'Barbero' })
+    });
+    if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
+    showToast('✅ Barbero agregado');
+    renderBarbers();
+  } catch {
+    showToast('❌ Error al agregar barbero');
+  }
+}
+
+async function deleteBarber(id) {
+  try {
+    await fetch(`/api/barbers/${id}`, { method: 'DELETE' });
+    showToast('Barbero eliminado');
+    renderBarbers();
+  } catch {
+    showToast('❌ Error al eliminar barbero');
+  }
+}
+
+async function toggleBarber(id, currentActive) {
+  try {
+    await fetch(`/api/barbers/${id}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ active: !currentActive })
+    });
+    renderBarbers();
+    showToast(currentActive ? '⏸ Barbero desactivado' : '✅ Barbero activado');
   } catch {
     showToast('❌ Error al cambiar estado');
   }
