@@ -9,7 +9,11 @@ const db = require('../config/database');
 router.get('/', async (req, res) => {
   try {
     const { date, business_id } = req.query;
-    let query = 'SELECT * FROM appointments WHERE 1=1';
+    let query = `
+      SELECT a.*, s.name as service_name 
+      FROM appointments a
+      LEFT JOIN services s ON a.service_id = s.id
+      WHERE 1=1`;
     const params = [];
 
     if (date) {

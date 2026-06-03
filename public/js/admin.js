@@ -56,7 +56,7 @@ list.innerHTML = appts.map(a => `
   <div class="card appt-card" id="appt-${a.id}">
     <div>
       <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
-      <div class="appt-detail">${a.service || a.service_id || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
+      <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
           <div class="appt-actions">
             <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
             <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Cal</button>
