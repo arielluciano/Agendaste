@@ -53,12 +53,50 @@
 
 <div class="container">
   <div class="step-dots">
-    <div class="dot active" id="dot0"></div>
-    <div class="dot" id="dot1"></div>
-    <div class="dot" id="dot2"></div>
-    <div class="dot" id="dot3"></div>
-    <div class="dot" id="dot4"></div>
+  <div class="dot active" id="dot-login"></div>
+  <div class="dot" id="dot0"></div>
+  <div class="dot" id="dot1"></div>
+  <div class="dot" id="dot2"></div>
+  <div class="dot" id="dot3"></div>
+</div>
+
+  <!-- PASO -: Login del cliente -->
+<div class="step active" id="step-login">
+  <div style="text-align:center;padding:1rem 0 1.5rem">
+    <div style="font-size:40px;margin-bottom:.5rem">✂️</div>
+    <h2 style="margin-bottom:.5rem">Reservá tu turno</h2>
+    <p class="text-muted">Ingresá tu email para continuar</p>
   </div>
+
+  <div id="login-email-view">
+    <div class="form-group">
+      <label>Tu email</label>
+      <input type="email" id="login-email" placeholder="ejemplo@gmail.com" oninput="checkLoginEmail()">
+    </div>
+    <button class="btn btn-primary" id="btn-send-otp" disabled onclick="sendOTP()">
+      Enviarme código →
+    </button>
+  </div>
+
+  <div id="login-otp-view" style="display:none">
+    <p class="text-muted" style="margin-bottom:1rem;text-align:center">
+      Enviamos un código a <strong id="otp-email-display"></strong>
+    </p>
+    <div class="form-group">
+      <label>Código de 6 dígitos</label>
+      <input type="text" id="otp-code" placeholder="000000" maxlength="6" 
+             style="font-size:24px;letter-spacing:8px;text-align:center"
+             oninput="checkOTPCode()">
+    </div>
+    <button class="btn btn-primary" id="btn-verify-otp" disabled onclick="verifyOTP()">
+      Verificar código
+    </button>
+    <button class="btn btn-outline mt-1" style="width:100%;justify-content:center" onclick="backToEmail()">
+      ← Cambiar email
+    </button>
+  </div>
+</div>
+
 
   <!-- PASO 0: Elegir servicio -->
   <div class="step active" id="step0">
