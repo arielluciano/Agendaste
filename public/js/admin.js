@@ -56,14 +56,14 @@ list.innerHTML = appts.map(a => `
   <div class="card appt-card" id="appt-${a.id}">
     <div>
       <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
-      <div class="appt-detail">${a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
+      <div class="appt-detail">${a.service || a.service_id || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
           <div class="appt-actions">
             <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
             <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Cal</button>
           </div>
         </div>
         <div>
-          <div class="appt-time">${a.time ? a.time.substring(0,5) : '—'}</div><div class="appt-time">${a.time}</div>
+          <div class="appt-time">${a.time ? a.time.substring(0,5) : '—'}</div>
           <div class="appt-price">$${(a.price || 0).toLocaleString('es-AR')}</div>
           <div style="text-align:right;margin-top:4px"><span class="badge badge-${a.status}">${a.status === 'confirmed' ? 'Confirmado' : a.status === 'pending' ? 'Pendiente' : 'Cancelado'}</span></div>
         </div>
