@@ -36,6 +36,7 @@ app.use('/api/appointments', requireAuth, appointmentRoutes);
 app.use('/api/calendar', requireAuth, calendarRoutes);
 app.use('/api/barbers', requireAuth, require('./routes/barbers'));
 app.use('/api/business', requireAuth, require('./routes/business'));
+app.use('/api/otp', require('./routes/otp'));
 
 // Ruta raíz → página del cliente
 app.get('/', (req, res) => {
