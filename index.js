@@ -2,6 +2,7 @@
 // BarberApp — Servidor principal
 // ==============================
 require('dotenv').config();
+const db = require('./config/database');
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
