@@ -16,16 +16,12 @@ let curYear    = new Date().getFullYear();
 let curMonth   = new Date().getMonth();
 let step       = 0;
 
-// ── OTP Login ─────────────────────────────────
-let clientEmail = null;
-
-async function checkLoginStatus() {
+// ── Login con Google ─────────────────────────
+async function checkClientLogin() {
   try {
-    const res = await fetch('/api/otp/me');
+    const res  = await fetch('/auth/client/me');
     const data = await res.json();
     if (data.loggedIn) {
-      clientEmail = data.email;
-      // Ya logueado — ir directo a elegir servicio
       document.getElementById('step-login').classList.remove('active');
       document.getElementById('step0').classList.add('active');
       document.getElementById('dot-login').classList.add('done');
@@ -33,90 +29,6 @@ async function checkLoginStatus() {
       loadServices();
     }
   } catch {}
-}
-
-function checkLoginEmail() {
-  const email = document.getElementById('login-email').value.trim();
-  document.getElementById('btn-send-otp').disabled = !email.includes('@');
-}
-
-async function sendOTP() {
-  const email = document.getElementById('login-email').value.trim();
-  const btn   = document.getElementById('btn-send-otp');
-
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
-  try {
-    const res = await fetch('/api/otp/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      document.getElementById('otp-email-display').textContent = email;
-      document.getElementById('login-email-view').style.display = 'none';
-      document.getElementById('login-otp-view').style.display  = 'block';
-      showToast('📧 Código enviado a ' + email);
-    } else {
-      showToast('❌ ' + data.error);
-      btn.disabled = false;
-      btn.textContent = 'Enviarme código →';
-    }
-  } catch {
-    showToast('❌ Error de conexión');
-    btn.disabled = false;
-    btn.textContent = 'Enviarme código →';
-  }
-}
-
-function checkOTPCode() {
-  const code = document.getElementById('otp-code').value.trim();
-  document.getElementById('btn-verify-otp').disabled = code.length !== 6;
-}
-
-async function verifyOTP() {
-  const email = document.getElementById('login-email').value.trim();
-  const code  = document.getElementById('otp-code').value.trim();
-  const btn   = document.getElementById('btn-verify-otp');
-
-  btn.disabled = true;
-  btn.textContent = 'Verificando...';
-
-  try {
-    const res = await fetch('/api/otp/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      clientEmail = email;
-      showToast('✅ ¡Bienvenido!');
-      document.getElementById('step-login').classList.remove('active');
-      document.getElementById('step0').classList.add('active');
-      document.getElementById('dot-login').classList.add('done');
-      document.getElementById('dot0').classList.add('active');
-      loadServices();
-    } else {
-      showToast('❌ ' + data.error);
-      btn.disabled = false;
-      btn.textContent = 'Verificar código';
-    }
-  } catch {
-    showToast('❌ Error de conexión');
-    btn.disabled = false;
-    btn.textContent = 'Verificar código';
-  }
-}
-
-function backToEmail() {
-  document.getElementById('login-email-view').style.display = 'block';
-  document.getElementById('login-otp-view').style.display  = 'none';
-  document.getElementById('otp-code').value = '';
 }
 
 // ── Servicios ────────────────────────────────
@@ -196,7 +108,7 @@ function goStep(n) {
 }
 
 function updateDots() {
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 4; i++) {
     const d = document.getElementById('dot' + i);
     d.className = 'dot' + (i === step ? ' active' : i < step ? ' done' : '');
   }
@@ -405,5 +317,5 @@ function showToast(msg) {
 }
 
 // ── Init ──────────────────────────────────────
-checkLoginStatus();
+checkClientLogin();
 loadBarbers();

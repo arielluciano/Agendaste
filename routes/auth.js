@@ -74,4 +74,64 @@ router.get('/me', (req, res) => {
   }
 });
 
+// ── OAuth para clientes (solo perfil, sin Calendar) ──────────
+const clientOAuth2 = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.REDIRECT_URI_CLIENT
+);
+
+const CLIENT_SCOPES = [
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+];
+
+// GET /auth/client/google → redirige al login de Google (cliente)
+router.get('/client/google', (req, res) => {
+  const url = clientOAuth2.generateAuthUrl({
+    access_type: 'online',
+    scope: CLIENT_SCOPES
+  });
+  res.redirect(url);
+});
+
+// GET /auth/client/callback → Google devuelve el código
+router.get('/client/callback', async (req, res) => {
+  const { code } = req.query;
+  try {
+    const { tokens } = await clientOAuth2.getToken(code);
+    clientOAuth2.setCredentials(tokens);
+
+    const oauth2 = google.oauth2({ version: 'v2', auth: clientOAuth2 });
+    const { data } = await oauth2.userinfo.get();
+
+    req.session.client = {
+      name:    data.name,
+      email:   data.email,
+      picture: data.picture
+    };
+
+    console.log(`✅ Cliente conectado: ${data.email}`);
+    res.redirect('/');
+  } catch (err) {
+    console.error('Error en client OAuth callback:', err.message);
+    res.redirect('/?error=auth_failed');
+  }
+});
+
+// GET /auth/client/me → estado de sesión del cliente
+router.get('/client/me', (req, res) => {
+  if (req.session.client) {
+    res.json({ loggedIn: true, client: req.session.client });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+
+// GET /auth/client/logout → cierra sesión del cliente
+router.get('/client/logout', (req, res) => {
+  req.session.client = null;
+  res.redirect('/');
+});
+
 module.exports = router;
