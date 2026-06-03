@@ -239,6 +239,16 @@ async function confirmBooking() {
     document.getElementById('conf-barber').textContent = selBarber.name;
     document.getElementById('conf-name').textContent   = name;
     document.getElementById('conf-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
+
+    // Cargar dirección del negocio
+    try {
+      const bizRes = await fetch('/api/business');
+      const biz = await bizRes.json();
+      document.getElementById('conf-address').textContent = biz.address || 'Buenos Aires, Argentina';
+    } catch {
+      document.getElementById('conf-address').textContent = 'Buenos Aires, Argentina';
+    }
+
     goStep(4);
 
   } catch {
