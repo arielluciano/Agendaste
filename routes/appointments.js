@@ -55,9 +55,9 @@ router.post('/', async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [businessId || 1, barberId || 1, clientName, clientPhone, clientEmail, null, date, time, price, 'confirmed']
+ VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
+ RETURNING *`,
+[businessId || 1, barberId || 1, clientName, clientPhone, clientEmail, service, businessId || 1, date, time, price, 'confirmed']
     );
 
     const newAppointment = result.rows[0];
