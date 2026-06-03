@@ -1,89 +1,78 @@
 // ==============================
-// Rutas de barberos/empleados
+// Rutas de barberos — Supabase DB
 // ==============================
 const express = require('express');
 const router = express.Router();
+const db = require('../config/database');
 
-let barbers = [
-  {
-    id: 1,
-    name: 'Ariel',
-    role: 'Dueño',
-    active: true,
-    schedule: {
-      lunes:    { open: true, from: '09:00', to: '18:00' },
-      martes:   { open: true, from: '09:00', to: '18:00' },
-      miercoles:{ open: true, from: '09:00', to: '18:00' },
-      jueves:   { open: true, from: '09:00', to: '18:00' },
-      viernes:  { open: true, from: '09:00', to: '18:00' },
-      sabado:   { open: true, from: '09:00', to: '14:00' },
-    },
-    serviceIds: [1, 2, 3, 4, 5] // todos los servicios
+// GET /api/barbers → barberos activos
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT * FROM barbers WHERE active = true AND business_id = $1 ORDER BY id',
+      [1]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error obteniendo barberos' });
   }
-];
-let nextId = 2;
-
-// GET /api/barbers → todos los barberos activos
-router.get('/', (req, res) => {
-  res.json(barbers.filter(b => b.active));
 });
 
-// GET /api/barbers/all → todos incluyendo inactivos (admin)
-router.get('/all', (req, res) => {
-  res.json(barbers);
+// GET /api/barbers/all → todos incluyendo inactivos
+router.get('/all', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT * FROM barbers WHERE business_id = $1 ORDER BY id',
+      [1]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error obteniendo barberos' });
+  }
 });
 
-// GET /api/barbers/:id → un barbero específico
-router.get('/:id', (req, res) => {
-  const b = barbers.find(x => x.id === parseInt(req.params.id));
-  if (!b) return res.status(404).json({ error: 'Barbero no encontrado' });
-  res.json(b);
-});
-
-// POST /api/barbers → agregar barbero nuevo
-router.post('/', (req, res) => {
-  const { name, role, serviceIds, schedule } = req.body;
+// POST /api/barbers → agregar barbero
+router.post('/', async (req, res) => {
+  const { name, role } = req.body;
   if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
-
-  const newBarber = {
-    id: nextId++,
-    name,
-    role: role || 'Barbero',
-    active: true,
-    schedule: schedule || {
-      lunes:    { open: true, from: '09:00', to: '18:00' },
-      martes:   { open: true, from: '09:00', to: '18:00' },
-      miercoles:{ open: true, from: '09:00', to: '18:00' },
-      jueves:   { open: true, from: '09:00', to: '18:00' },
-      viernes:  { open: true, from: '09:00', to: '18:00' },
-      sabado:   { open: true, from: '09:00', to: '14:00' },
-    },
-    serviceIds: serviceIds || [1, 2, 3]
-  };
-
-  barbers.push(newBarber);
-  res.status(201).json(newBarber);
+  try {
+    const result = await db.query(
+      'INSERT INTO barbers (business_id, name, role, active) VALUES ($1, $2, $3, true) RETURNING *',
+      [1, name, role || 'Barbero']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error creando barbero' });
+  }
 });
 
 // PATCH /api/barbers/:id → actualizar barbero
-router.patch('/:id', (req, res) => {
-  const b = barbers.find(x => x.id === parseInt(req.params.id));
-  if (!b) return res.status(404).json({ error: 'Barbero no encontrado' });
-  const { name, role, active, serviceIds, schedule } = req.body;
-  if (name       !== undefined) b.name       = name;
-  if (role       !== undefined) b.role       = role;
-  if (active     !== undefined) b.active     = active;
-  if (serviceIds !== undefined) b.serviceIds = serviceIds;
-  if (schedule   !== undefined) b.schedule   = schedule;
-  res.json(b);
+router.patch('/:id', async (req, res) => {
+  const { name, role, active } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE barbers SET
+        name = COALESCE($1, name),
+        role = COALESCE($2, role),
+        active = COALESCE($3, active)
+       WHERE id = $4 RETURNING *`,
+      [name, role, active, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Barbero no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error actualizando barbero' });
+  }
 });
 
 // DELETE /api/barbers/:id → eliminar barbero
-router.delete('/:id', (req, res) => {
-  const index = barbers.findIndex(x => x.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ error: 'Barbero no encontrado' });
-  barbers.splice(index, 1);
-  res.json({ success: true });
+router.delete('/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM barbers WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error borrando barbero' });
+  }
 });
 
 module.exports = router;
