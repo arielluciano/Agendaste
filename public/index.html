@@ -48,7 +48,10 @@
 
 <nav class="navbar">
   <a href="/" class="navbar-brand">✂️ Barber<span>App</span></a>
-  <a href="/admin" class="btn btn-outline" style="font-size:13px;padding:7px 14px">Panel dueño →</a>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
+    <a href="/admin" class="btn btn-outline" style="font-size:13px;padding:7px 14px">Panel dueño →</a>
+  </div>
 </nav>
 
 <div class="container">
@@ -143,6 +146,11 @@
 
 <div id="toast"></div>
 
+<script>
+  fetch('/auth/client/me').then(r => {
+    if (r.ok) document.getElementById('btn-logout-client').style.display = '';
+  });
+</script>
 <script src="/js/client.js"></script>
 </body>
 </html>

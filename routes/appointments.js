@@ -4,9 +4,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { requireAuth } = require('../middleware/auth');
 
 // GET /api/appointments → todos los turnos
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { date, business_id } = req.query;
     let query = `
@@ -114,7 +115,7 @@ const end = new Date(start.getTime() + 30 * 60 * 1000);
 });
 
 // PATCH /api/appointments/:id/status → confirmar o cancelar
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', requireAuth, async (req, res) => {
   const { status } = req.body;
   try {
     const result = await db.query(
@@ -129,7 +130,7 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 // DELETE /api/appointments/:id → borrar turno
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     await db.query('DELETE FROM appointments WHERE id = $1', [req.params.id]);
     res.json({ success: true });
