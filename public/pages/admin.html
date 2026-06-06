@@ -53,6 +53,11 @@
     .gear-btn:hover { background:var(--bg-secondary); }
     .map-preview { border-radius:10px; overflow:hidden; margin-top:1rem; }
     .map-preview iframe { display:block; width:100%; height:180px; border:0; }
+    .schedule-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+    .schedule-row:last-child { border:none; }
+    .schedule-day-name { width:85px; font-size:13px; }
+    .schedule-row input[type=time] { flex:1; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text); font-size:13px; min-width:0; }
+    .schedule-sep { font-size:12px; color:var(--text-muted); }
   </style>
 </head>
 <body>
@@ -165,6 +170,19 @@
       <p style="font-size:13px;color:var(--text-muted);margin:1rem 0 6px">📍 Ubicación</p>
       <div class="map-preview" id="map-frame"></div>
     </div>
+  </div>
+</div>
+
+<!-- Overlay + modal de horarios -->
+<div id="schedule-overlay" class="config-overlay" onclick="closeSchedule()"></div>
+<div id="schedule-panel" class="config-panel">
+  <div class="config-header">
+    <span style="font-size:15px;font-weight:600">⏰ Horario — <span id="schedule-barber-name"></span></span>
+    <button class="config-close" onclick="closeSchedule()">×</button>
+  </div>
+  <div class="config-body">
+    <div id="schedule-days"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:1.5rem" onclick="saveSchedule()">Guardar horarios</button>
   </div>
 </div>
 

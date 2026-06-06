@@ -268,7 +268,7 @@ async function renderBarbers() {
             <div class="text-muted" style="font-size:12px">${b.role}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
-            <span class="text-muted" style="font-size:12px">${b.active ? 'Activo' : 'Inactivo'}</span>
+            <button class="btn-sm" onclick="openSchedule(${b.id}, ${JSON.stringify(b.name)})">⏰ Horario</button>
             <button class="toggle ${b.active ? 'on' : ''}" onclick="toggleBarber(${b.id}, ${b.active})" title="${b.active ? 'Desactivar' : 'Activar'}"></button>
             <button class="btn-sm cancel" onclick="deleteBarber(${b.id})" title="Eliminar">✕</button>
           </div>
@@ -329,6 +329,69 @@ async function toggleBarber(id, currentActive) {
     showToast(currentActive ? '⏸ Barbero desactivado' : '✅ Barbero activado');
   } catch {
     showToast('❌ Error al cambiar estado');
+  }
+}
+
+// ── Horarios por barbero ──────────────────────
+const DAY_NAMES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Lun→Dom
+
+async function openSchedule(barberId, barberName) {
+  document.getElementById('schedule-barber-name').textContent = barberName;
+  document.getElementById('schedule-panel').dataset.barberId = barberId;
+  document.getElementById('schedule-overlay').classList.add('open');
+  document.getElementById('schedule-panel').classList.add('open');
+
+  try {
+    const res      = await fetch(`/api/barbers/${barberId}/schedule`);
+    const schedule = await res.json();
+    const byDay    = {};
+    schedule.forEach(s => byDay[s.day_of_week] = s);
+
+    document.getElementById('schedule-days').innerHTML = DAYS_ORDER.map(dow => {
+      const d = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
+      const open  = (d.open_time  || '09:00').substring(0, 5);
+      const close = (d.close_time || '18:00').substring(0, 5);
+      return `
+        <div class="schedule-row" data-dow="${dow}">
+          <button class="toggle ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
+          <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
+          <input type="time" class="sched-open"  value="${open}">
+          <span class="schedule-sep">a</span>
+          <input type="time" class="sched-close" value="${close}">
+        </div>`;
+    }).join('');
+  } catch {
+    showToast('Error cargando horarios');
+  }
+}
+
+function closeSchedule() {
+  document.getElementById('schedule-overlay').classList.remove('open');
+  document.getElementById('schedule-panel').classList.remove('open');
+}
+
+async function saveSchedule() {
+  const barberId = document.getElementById('schedule-panel').dataset.barberId;
+  const rows     = document.querySelectorAll('#schedule-days .schedule-row');
+  const schedule = Array.from(rows).map(row => ({
+    day_of_week: Number(row.dataset.dow),
+    is_open:     row.querySelector('.toggle').classList.contains('on'),
+    open_time:   row.querySelector('.sched-open').value,
+    close_time:  row.querySelector('.sched-close').value
+  }));
+
+  try {
+    const res = await fetch(`/api/barbers/${barberId}/schedule`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ schedule })
+    });
+    if (!res.ok) throw new Error();
+    showToast('✅ Horarios guardados');
+    closeSchedule();
+  } catch {
+    showToast('❌ Error guardando horarios');
   }
 }
 
