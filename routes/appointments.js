@@ -9,14 +9,19 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/appointments → todos los turnos
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { date, business_id } = req.query;
+    const { date, business_id, from } = req.query;
     let query = `
-      SELECT a.*, s.name as service_name 
+      SELECT a.*, s.name as service_name
       FROM appointments a
       LEFT JOIN services s ON a.service_id = s.id
       WHERE 1=1`;
     const params = [];
 
+    if (from) {
+      const fromDate = from === 'today' ? new Date().toISOString().split('T')[0] : from;
+      params.push(fromDate);
+      query += ` AND date >= $${params.length}`;
+    }
     if (date) {
       params.push(date);
       query += ` AND date = $${params.length}`;

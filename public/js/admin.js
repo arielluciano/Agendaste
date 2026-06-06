@@ -32,24 +32,26 @@ async function checkAuth() {
   }
 }
 
-// ── Cargar turnos del día ────────────────────
+// ── Cargar próximos turnos ───────────────────
 async function loadAppointments() {
   const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
   const list  = document.getElementById('appointments-list');
 
   try {
-    const res = await fetch('/api/appointments');
+    const res = await fetch('/api/appointments?from=today');
     const appts = await res.json();
 
     // Stats
-    const pending = appts.filter(a => a.status === 'pending').length;
+    const tomorrowCount = appts.filter(a => (a.date || '').toString().split('T')[0] === tomorrowStr).length;
     const revenue = appts.reduce((sum, a) => sum + (a.price || 0), 0);
     document.getElementById('stat-today').textContent   = appts.length;
-    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('stat-pending').textContent = tomorrowCount;
     document.getElementById('stat-revenue').textContent = '$' + revenue.toLocaleString('es-AR');
 
     if (appts.length === 0) {
-      list.innerHTML = `<p class="text-muted" style="text-align:center;padding:2rem">No hay turnos para hoy</p>`;
+      list.innerHTML = `<p class="text-muted" style="text-align:center;padding:2rem">No hay próximos turnos</p>`;
       return;
     }
 
