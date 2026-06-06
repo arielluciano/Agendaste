@@ -161,7 +161,7 @@ async function loadSlots() {
   }
 
   try {
-    const res   = await fetch(`/api/appointments/slots/${selDate}`);
+    const res   = await fetch(`/api/appointments/slots/${selDate}?barber_id=${selBarber?.id || 1}`);
     const slots = await res.json();
 
     const now      = new Date();
