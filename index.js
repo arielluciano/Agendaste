@@ -31,10 +31,10 @@ app.use(session({
 const { requireAuth } = require('./middleware/auth');
 
 app.use('/auth', authRoutes);
-app.use('/api/services', serviceRoutes); // público para clientes
+app.use('/api/services', serviceRoutes);
+app.use('/api/barbers', require('./routes/barbers'));
 app.use('/api/appointments', requireAuth, appointmentRoutes);
 app.use('/api/calendar', requireAuth, calendarRoutes);
-app.use('/api/barbers', requireAuth, require('./routes/barbers'));
 app.use('/api/business', requireAuth, require('./routes/business'));
 app.use('/api/otp', require('./routes/otp'));
 
