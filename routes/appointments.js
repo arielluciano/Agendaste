@@ -75,11 +75,10 @@ router.post('/', async (req, res) => {
         );
         oauth2Client.setCredentials(req.session.tokens);
         const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-const [y, m, d] = date.split('-').map(Number);
-const [h, min] = time.split(':').map(Number);
-// Forzar hora de Argentina (UTC-3)
-const start = new Date(`${date}T${time.substring(0,5)}:00-03:00`);
-const end = new Date(start.getTime() + 30 * 60 * 1000);
+        const cleanDate = typeof date === 'string' ? date.split('T')[0] : date.toISOString().split('T')[0];
+        const cleanTime = typeof time === 'string' ? time.substring(0,5) : '09:00';
+        const start = new Date(`${cleanDate}T${cleanTime}:00-03:00`);
+        const end = new Date(start.getTime() + 30 * 60 * 1000);
 
         await calendar.events.insert({
           calendarId: 'primary',
