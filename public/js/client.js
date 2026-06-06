@@ -5,6 +5,10 @@
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
 
+// ── Contexto del negocio ─────────────────────
+const slug       = window.location.pathname.split('/').filter(Boolean)[0] || null;
+let businessId   = 1;
+
 let services = [];
 let barbers  = [];
 
@@ -15,6 +19,16 @@ let selSlot    = null;
 let curYear    = new Date().getFullYear();
 let curMonth   = new Date().getMonth();
 let step       = 0;
+
+// ── Resolver negocio desde slug ──────────────
+async function initBusiness() {
+  if (!slug) return;
+  try {
+    const res = await fetch(`/api/business?slug=${slug}`);
+    const biz = await res.json();
+    if (biz.id) businessId = biz.id;
+  } catch {}
+}
 
 // ── Login con Google ─────────────────────────
 async function checkClientLogin() {
@@ -37,7 +51,7 @@ async function loadServices() {
   grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Cargando servicios...</p>';
 
   try {
-    const res  = await fetch('/api/services');
+    const res  = await fetch(`/api/services?business_id=${businessId}`);
     const data = await res.json();
     services   = data.map(s => ({ ...s, dur: `${s.duration} min` }));
     renderServices();
@@ -67,7 +81,7 @@ function selectService(id) {
 // ── Barberos ─────────────────────────────────
 async function loadBarbers() {
   try {
-    const res = await fetch('/api/barbers');
+    const res = await fetch(`/api/barbers?business_id=${businessId}`);
     barbers   = await res.json();
   } catch {
     barbers = [];
@@ -161,7 +175,7 @@ async function loadSlots() {
   }
 
   try {
-    const res   = await fetch(`/api/appointments/slots/${selDate}?barber_id=${selBarber?.id || 1}`);
+    const res   = await fetch(`/api/appointments/slots/${selDate}?barber_id=${selBarber?.id || 1}&business_id=${businessId}`);
     const slots = await res.json();
 
     const now      = new Date();
@@ -235,7 +249,8 @@ async function confirmBooking() {
         barberName:  selBarber.name,
         date:        selDate,
         time:        selSlot,
-        price:       selService.price
+        price:       selService.price,
+        businessId
       })
     });
 
@@ -257,7 +272,7 @@ async function confirmBooking() {
 
     // Cargar dirección del negocio
     try {
-      const bizRes = await fetch('/api/business');
+      const bizRes = await fetch(`/api/business?business_id=${businessId}`);
       const biz = await bizRes.json();
       document.getElementById('conf-address').textContent = biz.address || 'Buenos Aires, Argentina';
     } catch {
@@ -317,5 +332,8 @@ function showToast(msg) {
 }
 
 // ── Init ──────────────────────────────────────
-checkClientLogin();
-loadBarbers();
+(async () => {
+  await initBusiness();
+  checkClientLogin();
+  loadBarbers();
+})();

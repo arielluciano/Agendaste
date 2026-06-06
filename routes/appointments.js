@@ -9,13 +9,17 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/appointments → todos los turnos
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { date, business_id, from } = req.query;
+    const { date, from } = req.query;
+    const bizId = req.businessId;
     let query = `
       SELECT a.*, s.name as service_name
       FROM appointments a
       LEFT JOIN services s ON a.service_id = s.id
       WHERE 1=1`;
     const params = [];
+
+    params.push(bizId);
+    query += ` AND a.business_id = $${params.length}`;
 
     if (from) {
       const fromDate = from === 'today' ? new Date().toISOString().split('T')[0] : from;
@@ -25,10 +29,6 @@ router.get('/', requireAuth, async (req, res) => {
     if (date) {
       params.push(date);
       query += ` AND date = $${params.length}`;
-    }
-    if (business_id) {
-      params.push(business_id);
-      query += ` AND business_id = $${params.length}`;
     }
 
     query += ' ORDER BY date, time';
@@ -176,9 +176,10 @@ router.get('/slots/:date', async (req, res) => {
       });
     }
 
+    const bizId2 = parseInt(req.query.business_id) || 1;
     const result = await db.query(
-      "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled'",
-      [req.params.date]
+      "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled' AND business_id = $2",
+      [req.params.date, bizId2]
     );
     const taken = result.rows.map(r => r.time.substring(0, 5));
     const slots = allSlots.map(s => ({

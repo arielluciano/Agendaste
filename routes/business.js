@@ -5,12 +5,18 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 
-// GET /api/business → datos del negocio (id=1)
+// GET /api/business → datos del negocio
+// Acepta ?slug=xxx (público) o usa session.business_id (admin)
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM businesses WHERE id = $1', [1]);
-    if (result.rows.length === 0) {
-      return res.json({ id: 1, name: '', address: '', phone: '', description: '' });
+    let result;
+    if (req.query.slug) {
+      result = await db.query('SELECT * FROM businesses WHERE slug = $1', [req.query.slug]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+    } else {
+      const bizId = req.session?.business_id || parseInt(req.query.business_id) || 1;
+      result = await db.query('SELECT * FROM businesses WHERE id = $1', [bizId]);
+      if (result.rows.length === 0) return res.json({ id: bizId, name: '', address: '', phone: '', description: '' });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -22,17 +28,16 @@ router.get('/', async (req, res) => {
 // PATCH /api/business → actualizar datos del negocio
 router.patch('/', async (req, res) => {
   const { name, address, phone, description } = req.body;
+  const bizId = req.session?.business_id || 1;
   try {
     const result = await db.query(
       `UPDATE businesses
          SET name = $1, address = $2, phone = $3, description = $4
        WHERE id = $5
        RETURNING *`,
-      [name ?? null, address ?? null, phone ?? null, description ?? null, 1]
+      [name ?? null, address ?? null, phone ?? null, description ?? null, bizId]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Negocio no encontrado' });
-    }
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error PATCH /api/business:', err.message);

@@ -2,8 +2,9 @@
 // Rutas de autenticación Google
 // ==============================
 const express = require('express');
-const router = express.Router();
+const router = require('express').Router();
 const { google } = require('googleapis');
+const db = require('../config/database');
 
 // Creamos el cliente OAuth con las credenciales del .env
 const oauth2Client = new google.auth.OAuth2(
@@ -44,13 +45,18 @@ router.get('/google/callback', async (req, res) => {
     // Obtenemos info del usuario
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data } = await oauth2.userinfo.get();
-    req.session.user = {
-      name: data.name,
-      email: data.email,
-      picture: data.picture
-    };
 
-    console.log(`✅ Usuario conectado: ${data.email}`);
+    // Verificar si el email está registrado como dueño
+    const ownerResult = await db.query('SELECT * FROM owners WHERE email = $1', [data.email]);
+    if (ownerResult.rows.length === 0) {
+      req.session.pendingUser = { name: data.name, email: data.email, picture: data.picture };
+      return res.redirect(`/registro?email=${encodeURIComponent(data.email)}`);
+    }
+
+    req.session.user = { name: data.name, email: data.email, picture: data.picture };
+    req.session.business_id = ownerResult.rows[0].business_id;
+
+    console.log(`✅ Usuario conectado: ${data.email} → negocio ${req.session.business_id}`);
     res.redirect('/admin');
 
   } catch (error) {

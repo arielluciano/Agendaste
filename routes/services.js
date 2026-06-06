@@ -7,10 +7,11 @@ const db = require('../config/database');
 
 // GET /api/services → servicios activos (para el cliente)
 router.get('/', async (req, res) => {
+  const bizId = parseInt(req.query.business_id) || req.session?.business_id || 1;
   try {
     const result = await db.query(
       'SELECT * FROM services WHERE active = true AND business_id = $1 ORDER BY id',
-      [1]
+      [bizId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -20,10 +21,11 @@ router.get('/', async (req, res) => {
 
 // GET /api/services/all → todos incluyendo inactivos (para el admin)
 router.get('/all', async (req, res) => {
+  const bizId = req.session?.business_id || 1;
   try {
     const result = await db.query(
       'SELECT * FROM services WHERE business_id = $1 ORDER BY id',
-      [1]
+      [bizId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -34,11 +36,12 @@ router.get('/all', async (req, res) => {
 // POST /api/services → agregar servicio nuevo
 router.post('/', async (req, res) => {
   const { name, price, dur } = req.body;
+  const bizId = req.session?.business_id || 1;
   if (!name || !price) return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
   try {
     const result = await db.query(
       'INSERT INTO services (business_id, name, price, duration, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
-      [1, name, parseInt(price), dur || '30 min']
+      [bizId, name, parseInt(price), dur || '30 min']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

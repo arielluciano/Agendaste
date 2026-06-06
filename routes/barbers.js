@@ -7,10 +7,11 @@ const db = require('../config/database');
 
 // GET /api/barbers → barberos activos
 router.get('/', async (req, res) => {
+  const bizId = parseInt(req.query.business_id) || req.session?.business_id || 1;
   try {
     const result = await db.query(
       'SELECT * FROM barbers WHERE active = true AND business_id = $1 ORDER BY id',
-      [1]
+      [bizId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -20,10 +21,11 @@ router.get('/', async (req, res) => {
 
 // GET /api/barbers/all → todos incluyendo inactivos
 router.get('/all', async (req, res) => {
+  const bizId = req.session?.business_id || 1;
   try {
     const result = await db.query(
       'SELECT * FROM barbers WHERE business_id = $1 ORDER BY id',
-      [1]
+      [bizId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -34,11 +36,12 @@ router.get('/all', async (req, res) => {
 // POST /api/barbers → agregar barbero
 router.post('/', async (req, res) => {
   const { name, role } = req.body;
+  const bizId = req.session?.business_id || 1;
   if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
   try {
     const result = await db.query(
       'INSERT INTO barbers (business_id, name, role, active) VALUES ($1, $2, $3, true) RETURNING *',
-      [1, name, role || 'Barbero']
+      [bizId, name, role || 'Barbero']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

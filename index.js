@@ -35,8 +35,9 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/barbers', require('./routes/barbers'));
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/calendar', requireAuth, calendarRoutes);
-app.use('/api/business', requireAuth, require('./routes/business'));
+app.use('/api/business', require('./routes/business'));
 app.use('/api/otp', require('./routes/otp'));
+app.use(require('./routes/register'));
 
 // Ruta raíz → página del cliente
 app.get('/', (req, res) => {
@@ -46,6 +47,11 @@ app.get('/', (req, res) => {
 // Panel del dueño
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html'));
+});
+
+// Ruta dinámica por slug → página del cliente del negocio
+app.get('/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ── Iniciar servidor ─────────────────────────

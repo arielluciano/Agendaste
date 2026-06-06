@@ -18,7 +18,8 @@ function generateToken(user) {
 function requireAuth(req, res, next) {
   // Primero verificar sesión de Google OAuth
   if (req.session && req.session.user) {
-    req.user = req.session.user;
+    req.user       = req.session.user;
+    req.businessId = req.session.business_id || 1;
     return next();
   }
 
@@ -27,8 +28,9 @@ function requireAuth(req, res, next) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      req.user = decoded;
+      const decoded  = jwt.verify(token, JWT_SECRET);
+      req.user       = decoded;
+      req.businessId = decoded.business_id || 1;
       return next();
     } catch (err) {
       return res.status(401).json({ error: 'Token inválido o expirado' });
