@@ -18,8 +18,11 @@ function generateToken(user) {
 function requireAuth(req, res, next) {
   // Primero verificar sesión de Google OAuth
   if (req.session && req.session.user) {
+    if (!req.session.business_id) {
+      return res.status(401).json({ error: 'Sesión sin negocio asociado, volvé a iniciar sesión' });
+    }
     req.user       = req.session.user;
-    req.businessId = req.session.business_id || 1;
+    req.businessId = req.session.business_id;
     return next();
   }
 

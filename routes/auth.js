@@ -53,11 +53,14 @@ router.get('/google/callback', async (req, res) => {
       return res.redirect(`/registro?email=${encodeURIComponent(data.email)}`);
     }
 
-    req.session.user = { name: data.name, email: data.email, picture: data.picture };
+    req.session.user        = { name: data.name, email: data.email, picture: data.picture };
     req.session.business_id = ownerResult.rows[0].business_id;
 
-    console.log(`✅ Usuario conectado: ${data.email} → negocio ${req.session.business_id}`);
-    res.redirect('/admin');
+    req.session.save((err) => {
+      if (err) console.error('Error guardando sesión:', err);
+      console.log(`✅ Usuario conectado: ${data.email} → negocio ${req.session.business_id}`);
+      res.redirect('/admin');
+    });
 
   } catch (error) {
     console.error('Error en OAuth callback:', error);
