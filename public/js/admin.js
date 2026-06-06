@@ -268,7 +268,7 @@ async function renderBarbers() {
             <div class="text-muted" style="font-size:12px">${b.role}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
-            <button class="btn-sm" onclick="openSchedule(${b.id}, ${JSON.stringify(b.name)})">⏰ Horario</button>
+            <button class="btn-sm" onclick="openSchedule(${b.id}, '${b.name.replace(/'/g, "\\'")}')">⏰ Horario</button>
             <button class="toggle ${b.active ? 'on' : ''}" onclick="toggleBarber(${b.id}, ${b.active})" title="${b.active ? 'Desactivar' : 'Activar'}"></button>
             <button class="btn-sm cancel" onclick="deleteBarber(${b.id})" title="Eliminar">✕</button>
           </div>
