@@ -35,8 +35,8 @@ router.post('/api/register', async (req, res) => {
     const slug = slugCheck.rows.length > 0 ? `${baseSlug}-${Date.now()}` : baseSlug;
 
     const bizResult = await db.query(
-      'INSERT INTO businesses (name, address, phone, slug) VALUES ($1, $2, $3, $4) RETURNING *',
-      [businessName, address || null, phone || null, slug]
+      'INSERT INTO businesses (name, address, phone, slug, owner_email) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [businessName, address || null, phone || null, slug, email]
     );
     const business = bizResult.rows[0];
 
