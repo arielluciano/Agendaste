@@ -36,7 +36,8 @@ router.get('/all', async (req, res) => {
 // POST /api/services → agregar servicio nuevo
 router.post('/', async (req, res) => {
   const { name, price, dur } = req.body;
-  const bizId = req.session?.business_id || 1;
+  const bizId = req.session?.business_id;
+  if (!bizId) return res.status(401).json({ error: 'No autenticado' });
   if (!name || !price) return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
   try {
     const result = await db.query(
