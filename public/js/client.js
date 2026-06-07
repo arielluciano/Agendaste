@@ -24,10 +24,21 @@ let step       = 0;
 async function initBusiness() {
   if (!slug) return;
   try {
-    const res = await fetch(`/api/business?slug=${slug}`);
+    const res = await fetch(`/api/business?slug=${encodeURIComponent(slug)}`);
+    if (!res.ok) {
+      console.error(`[initBusiness] slug "${slug}" devolvió ${res.status}`);
+      return;
+    }
     const biz = await res.json();
-    if (biz.id) businessId = biz.id;
-  } catch {}
+    if (biz.id != null) {
+      businessId = biz.id;
+      console.log(`[initBusiness] negocio "${biz.name}" → business_id=${businessId}`);
+    } else {
+      console.error('[initBusiness] respuesta sin id:', biz);
+    }
+  } catch (err) {
+    console.error('[initBusiness] error de red:', err);
+  }
 }
 
 // ── Login con Google ─────────────────────────
