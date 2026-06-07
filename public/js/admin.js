@@ -24,6 +24,7 @@ async function checkAuth() {
       loadAppointments();
       renderServices();
       renderBarbers();
+      loadSubscriptionStatus();
     } else {
       document.getElementById('login-view').style.display = 'block';
     }
@@ -392,6 +393,36 @@ async function saveSchedule() {
     closeSchedule();
   } catch {
     showToast('❌ Error guardando horarios');
+  }
+}
+
+// ── Suscripción / Trial ──────────────────────
+async function loadSubscriptionStatus() {
+  const banner = document.getElementById('trial-banner');
+  try {
+    const res  = await fetch('/api/subscriptions/status');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data.plan !== 'active' && data.trial_active) {
+      document.getElementById('trial-days').textContent = data.days_left;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch {
+    banner.style.display = 'none';
+  }
+}
+
+async function subscribe() {
+  try {
+    const res  = await fetch('/api/subscriptions/create', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Error al crear la suscripción')); return; }
+    window.location.href = data.init_point;
+  } catch {
+    showToast('❌ Error conectando con Mercado Pago');
   }
 }
 

@@ -36,6 +36,7 @@ app.use('/api/barbers', require('./routes/barbers'));
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/calendar', requireAuth, calendarRoutes);
 app.use('/api/business', require('./routes/business'));
+app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/otp', require('./routes/otp'));
 app.use(require('./routes/register'));
 
