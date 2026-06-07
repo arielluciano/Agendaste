@@ -427,11 +427,7 @@ async function loadBusiness() {
     showToast('❌ Error cargando configuración');
   }
 }
-  function copyLink() {
-  const link = document.getElementById('business-link').value;
-  navigator.clipboard.writeText(link);
-  showToast('✅ Link copiado!');
-  }
+
 async function saveBusiness() {
   const name        = document.getElementById('biz-name').value.trim();
   const address     = document.getElementById('biz-address').value.trim();
@@ -475,6 +471,10 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-
+  function copyLink() {
+  const link = document.getElementById('business-link').value;
+  navigator.clipboard.writeText(link);
+  showToast('✅ Link copiado!');
+  }
 // ── Init ──────────────────────────────────────
 checkAuth();

@@ -163,6 +163,15 @@
         placeholder="Breve descripción de tu barbería..."
         style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;resize:vertical;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
     </div>
+<div id="business-link-container" style="display:none;margin-bottom:1rem">
+  <label>🔗 Link para tus clientes</label>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <input type="text" id="business-link" readonly 
+           style="background:var(--bg-secondary);cursor:pointer;flex:1">
+    <button class="btn btn-outline" style="white-space:nowrap" 
+            onclick="copyLink()">Copiar</button>
+  </div>
+</div> 
     <button class="btn btn-primary" style="width:100%" onclick="saveBusiness()">
       Guardar cambios
     </button>
