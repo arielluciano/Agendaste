@@ -35,18 +35,19 @@ router.get('/all', async (req, res) => {
 
 // POST /api/services → agregar servicio nuevo
 router.post('/', async (req, res) => {
-  const { name, price, dur } = req.body;
+  const { name, price, duration } = req.body;
   const bizId = req.session?.business_id;
   if (!bizId) return res.status(401).json({ error: 'No autenticado' });
   if (!name || !price) return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
   try {
     const result = await db.query(
       'INSERT INTO services (business_id, name, price, duration, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
-      [bizId, name, parseInt(price), dur || '30 min']
+      [bizId, name, parseInt(price), parseInt(duration) || 30]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Error creando servicio' });
+    console.error('Error POST /api/services:', err.message, '| body:', req.body, '| bizId:', bizId);
+    res.status(500).json({ error: err.message });
   }
 });
 
