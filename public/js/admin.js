@@ -416,11 +416,22 @@ async function loadBusiness() {
     document.getElementById('biz-phone').value       = data.phone       || '';
     document.getElementById('biz-description').value = data.description || '';
     if (data.address) showMapPreview(data.address);
+
+    // Mostrar link del negocio
+    if (data.slug) {
+      const link = `${window.location.origin}/${data.slug}`;
+      document.getElementById('business-link').value = link;
+      document.getElementById('business-link-container').style.display = 'block';
+    }
   } catch {
     showToast('❌ Error cargando configuración');
   }
 }
-
+  function copyLink() {
+  const link = document.getElementById('business-link').value;
+  navigator.clipboard.writeText(link);
+  showToast('✅ Link copiado!');
+  }
 async function saveBusiness() {
   const name        = document.getElementById('biz-name').value.trim();
   const address     = document.getElementById('biz-address').value.trim();
