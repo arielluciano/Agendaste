@@ -345,6 +345,13 @@ function showToast(msg) {
 // ── Init ──────────────────────────────────────
 (async () => {
   await initBusiness();
+
+  // Apuntar el botón de login a la URL actual para volver al slug correcto tras OAuth
+  if (window.location.pathname !== '/') {
+    const loginLink = document.getElementById('btn-google-login');
+    if (loginLink) loginLink.href = `/auth/client/google?next=${encodeURIComponent(window.location.pathname)}`;
+  }
+
   checkClientLogin();
   loadBarbers();
 })();

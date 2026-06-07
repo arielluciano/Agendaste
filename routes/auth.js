@@ -97,6 +97,7 @@ const CLIENT_SCOPES = [
 
 // GET /auth/client/google → redirige al login de Google (cliente)
 router.get('/client/google', (req, res) => {
+  if (req.query.next) req.session.clientNext = req.query.next;
   const url = clientOAuth2.generateAuthUrl({
     access_type: 'online',
     scope: CLIENT_SCOPES
@@ -120,8 +121,11 @@ router.get('/client/callback', async (req, res) => {
       picture: data.picture
     };
 
-    console.log(`✅ Cliente conectado: ${data.email}`);
-    res.redirect('/');
+    const returnTo = req.session.clientNext || '/';
+    delete req.session.clientNext;
+
+    console.log(`✅ Cliente conectado: ${data.email} → volviendo a ${returnTo}`);
+    req.session.save(() => res.redirect(returnTo));
   } catch (err) {
     console.error('Error en client OAuth callback:', err.message);
     res.redirect('/?error=auth_failed');
