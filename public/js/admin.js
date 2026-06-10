@@ -5,13 +5,25 @@
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 
-// ── Verificar sesión al cargar ───────────────
 async function checkAuth() {
   try {
     const res  = await fetch('/auth/me');
     const data = await res.json();
 
     if (data.loggedIn) {
+      // Verificar si el trial venció
+      const statusRes = await fetch('/api/subscriptions/status');
+      if (statusRes.status === 402) {
+        document.getElementById('user-area').innerHTML = `
+          <div class="user-pill">
+            <img src="${data.user.picture}" alt="${data.user.name}">
+            <span>${data.user.name}</span>
+            <a href="/auth/logout" class="btn btn-outline" style="font-size:12px;padding:5px 10px">Salir</a>
+          </div>`;
+        showPaywall();
+        return;
+      }
+
       // Mostrar nombre y foto del usuario
       document.getElementById('user-area').innerHTML = `
         <div class="user-pill">
@@ -512,5 +524,25 @@ function showToast(msg) {
   navigator.clipboard.writeText(link);
   showToast('✅ Link copiado!');
   }
+
+  function showPaywall() {
+  document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('paywall-screen').style.display = 'block';
+}
+
+async function suscribirse() {
+  try {
+    const res = await fetch('/api/subscriptions/create', { method: 'POST' });
+    const data = await res.json();
+    if (data.init_point) {
+      window.location.href = data.init_point;
+    } else {
+      showToast('❌ Error al crear la suscripción');
+    }
+  } catch {
+    showToast('❌ Error de conexión');
+  }
+}
+
 // ── Init ──────────────────────────────────────
 checkAuth();
