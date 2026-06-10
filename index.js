@@ -51,8 +51,34 @@ app.get('/admin', (req, res) => {
 });
 
 // Ruta dinámica por slug → página del cliente del negocio
-app.get('/:slug', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/:slug', async (req, res) => {
+  try {
+    const result = await db.query('SELECT id FROM businesses WHERE slug = $1', [req.params.slug]);
+    if (result.rows.length === 0) {
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Negocio no encontrado — BarberApp</title>
+          <link rel="stylesheet" href="/css/styles.css">
+        </head>
+        <body>
+          <div style="text-align:center;padding:4rem 1rem">
+            <h1>404</h1>
+            <p>Negocio no encontrado</p>
+            <a href="/" class="btn btn-primary">Volver al inicio</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (err) {
+    console.error('Error verificando slug:', err.message);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
 });
 
 // ── Iniciar servidor ─────────────────────────

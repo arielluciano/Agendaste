@@ -201,6 +201,11 @@ async function addService() {
 
   if (!name || !dur || !price) { showToast('Completá todos los campos'); return; }
 
+  if (Number(price) <= 0 || Number(dur) <= 0) {
+    showToast('El precio y la duración deben ser mayores a 0');
+    return;
+  }
+
   try {
     const res = await fetch('/api/services', {
       method:  'POST',

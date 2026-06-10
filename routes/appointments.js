@@ -177,9 +177,10 @@ router.get('/slots/:date', async (req, res) => {
     }
 
     const bizId2 = parseInt(req.query.business_id) || 1;
+    const barberId2 = parseInt(barber_id) || 1;
     const result = await db.query(
-      "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled' AND business_id = $2",
-      [req.params.date, bizId2]
+      "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled' AND business_id = $2 AND barber_id = $3",
+      [req.params.date, bizId2, barberId2]
     );
     const taken = result.rows.map(r => r.time.substring(0, 5));
     const slots = allSlots.map(s => ({
