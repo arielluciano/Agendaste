@@ -54,6 +54,7 @@ async function loadAppointments() {
 
   try {
     const res = await fetch('/api/appointments?from=today');
+    if (res.status === 402) { showPaywall(); return; }
     const appts = await res.json();
 
     // Stats
