@@ -35,14 +35,14 @@ router.post('/send', async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: `"BarberApp" <${process.env.GMAIL_USER}>`,
+      from: `"Agendaste" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: '🔑 Tu código de verificación — BarberApp',
+      subject: '🔑 Tu código de verificación — Agendaste',
       html: `
         <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:2rem;border:1px solid #eee;border-radius:12px">
-          <h2 style="color:#1D9E75">✂️ BarberApp</h2>
+          <h2 style="color:#9A3412">✂️ Agendaste</h2>
           <p>Tu código de verificación es:</p>
-          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#1D9E75;padding:1rem;background:#E1F5EE;border-radius:8px;text-align:center">
+          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#9A3412;padding:1rem;background:#FAECE7;border-radius:8px;text-align:center">
             ${code}
           </div>
           <p style="color:#666;font-size:13px;margin-top:1rem">Este código expira en 10 minutos.</p>
