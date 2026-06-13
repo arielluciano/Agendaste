@@ -8,14 +8,14 @@
   <style>
     .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
     .service-card { cursor: pointer; text-align: left; }
-    .service-card:hover { border-color: var(--green); }
-    .service-card.selected { border: 2px solid var(--green); background: var(--green-light); }
-    .service-price { font-size: 20px; font-weight: 600; color: var(--green); margin: 4px 0; }
+    .service-card:hover { border-color: var(--primary); }
+    .service-card.selected { border: 2px solid var(--primary); background: var(--primary-light); }
+    .service-price { font-size: 20px; font-weight: 600; color: var(--primary); margin: 4px 0; }
     .service-dur { font-size: 12px; color: var(--text-muted); }
     .barbers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
     .barber-card { cursor: pointer; text-align: center; padding: 1.25rem 1rem; }
-    .barber-card:hover { border-color: var(--green); }
-    .barber-card.selected { border: 2px solid var(--green); background: var(--green-light); }
+    .barber-card:hover { border-color: var(--primary); }
+    .barber-card.selected { border: 2px solid var(--primary); background: var(--primary-light); }
     .barber-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto .75rem; }
     .barber-role { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
     .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
@@ -24,12 +24,12 @@
     .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .2s; }
     .day-cell:hover:not(.disabled):not(.empty) { background: var(--bg-secondary); }
     .day-cell.disabled { color: var(--text-muted); opacity: .4; cursor: default; }
-    .day-cell.selected { background: var(--green); color: white; font-weight: 600; }
+    .day-cell.selected { background: var(--primary); color: var(--cream); font-weight: 600; }
     .day-cell.today { border: 1px solid var(--border); font-weight: 600; }
     .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.5rem; }
     .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
     .slot:hover:not(.taken) { background: var(--bg-secondary); }
-    .slot.selected { background: var(--green); color: white; border-color: var(--green); }
+    .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
     .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
     .summary-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
     .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
@@ -38,16 +38,16 @@
     .step.active { display: block; }
     .step-dots { display: flex; gap: 6px; margin-bottom: 1.5rem; }
     .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: all .3s; }
-    .dot.active { background: var(--green); width: 20px; }
-    .dot.done { background: var(--green); }
+    .dot.active { background: var(--primary); width: 20px; }
+    .dot.done { background: var(--primary); }
     .success-icon { width: 56px; height: 56px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
-    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
 
 <nav class="navbar">
-  <a href="/" class="navbar-brand">✂️ Barber<span>App</span></a>
+  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste
   <div style="display:flex;gap:8px;align-items:center">
     <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
     <a href="/admin" class="btn btn-outline" style="font-size:13px;padding:7px 14px">Panel dueño →</a>
@@ -97,7 +97,7 @@
       <button class="btn btn-outline" onclick="nextMonth()" style="padding:7px 14px">→</button>
     </div>
     <div class="days-grid" id="cal-grid"></div>
-    <p class="section-title" style="font-size:14px">Horario disponible</p>
+    <p class="eyebrow" style="margin-bottom:1rem">Horario disponible</p>
     <div class="slots-grid" id="slots-grid"></div>
     <button class="btn btn-primary" id="btn-to-step3" disabled onclick="goStep(3)">Continuar →</button>
   </div>
@@ -114,7 +114,7 @@
       <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep3()">
     </div>
     <div class="divider"></div>
-    <p class="section-title" style="font-size:14px;margin-bottom:.75rem">Resumen</p>
+    <p class="eyebrow" style="margin-bottom:.75rem">Resumen</p>
     <div class="summary-box">
       <div class="summary-row"><span>Servicio</span><span id="sum-svc">—</span></div>
       <div class="summary-row"><span>Barbero</span><span id="sum-barber">—</span></div>
