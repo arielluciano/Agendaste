@@ -7,9 +7,12 @@
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-    .stat-card { background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
-    .stat-num { font-size: 26px; font-weight: 700; color: var(--text); }
-    .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: left; }
+    .stat-card-dark { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+    .stat-card-dark .stat-lbl { color: rgba(248,247,244,.55); }
+    .stat-num { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1; color: var(--text); }
+    .stat-card-dark .stat-num { color: var(--cream); }
+    .stat-lbl { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 4px; }
     .appt-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 8px; }
     .appt-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
     .appt-detail { font-size: 12px; color: var(--text-muted); }
@@ -29,7 +32,7 @@
     .toggle.on { background: var(--green); }
     .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: left .3s; }
     .toggle.on::after { left: 18px; }
-    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
     .login-box { text-align: center; padding: 3rem 1rem; }
     .login-box h2 { margin-bottom:.75rem; }
     .login-box p { color: var(--text-muted); font-size:14px; margin-bottom:1.5rem; }
@@ -66,7 +69,7 @@
 <body>
 
 <nav class="navbar">
-  <a href="/" class="navbar-brand">✂️ Barber<span>App</span></a>
+  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste
   <div id="user-area"></div>
 </nav>
 
@@ -112,7 +115,7 @@
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-lbl">Turnos hoy</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-lbl">Mañana</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos hoy</div></div>
+      <div class="stat-card stat-card-dark"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos hoy</div></div>
     </div>
 
     <div class="tabs">
