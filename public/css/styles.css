@@ -1,6 +1,10 @@
-/* ==============================
-   BarberApp — Estilos globales
-   ============================== */
+/* ==========================================================
+   Agendaste — Design system
+   "Barber técnico de precisión"
+   Anton (display) · Inter (cuerpo) · JetBrains Mono (labels)
+   ========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 * {
   box-sizing: border-box;
@@ -9,36 +13,89 @@
 }
 
 :root {
-  --green:        #1D9E75;
-  --green-dark:   #0F6E56;
-  --green-light:  #E1F5EE;
-  --amber:        #F5A623;
-  --red:          #E05353;
-  --bg:           #FFFFFF;
-  --bg-secondary: #F5F5F0;
-  --border:       #E5E5E0;
-  --text:         #1A1A1A;
-  --text-muted:   #6B6B6B;
-  --radius:       12px;
-  --radius-sm:    8px;
-  --shadow:       0 1px 4px rgba(0,0,0,.08);
+  /* ── Paleta ───────────────────────────────── */
+  --primary:        #9A3412;   /* naranja quemado */
+  --primary-dark:   #7C2D12;
+  --primary-light:  #FAECE7;   /* fondo suave para badges/acentos */
+
+  --cream:          #F8F7F4;   /* fondo de página */
+  --ink:            #1A1A17;   /* texto casi negro / superficies oscuras */
+
+  --success:        #1D9E75;
+  --success-light:  #E1F5EE;
+  --warning:        #F5A623;
+  --warning-light:  #FAEEDA;
+  --danger:         #E05353;
+  --danger-light:   #FAECE7;
+
+  --bg:             #FFFFFF;   /* superficie de tarjetas */
+  --bg-secondary:   #F8F7F4;   /* fondo de página (crema) */
+  --border:         #E5E4DF;
+  --text:           #1A1A17;
+  --text-muted:     #71716A;
+
+  --radius:         0.875rem;  /* 14px */
+  --radius-sm:      0.625rem;  /* 10px */
+  --shadow:         0 1px 4px rgba(26,26,23,.06);
+  --shadow-lg:      0 12px 32px rgba(26,26,23,.10);
+
+  /* ── Tipografías ──────────────────────────── */
+  --font-display: 'Anton', 'Inter', sans-serif;
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Alias de compatibilidad ──────────────────
+     Mantienen vivos los estilos inline de las páginas
+     que todavía usan los nombres viejos. Ir migrando
+     a los nombres nuevos y después borrar estos. */
+  --green:       var(--primary);
+  --green-dark:  var(--primary-dark);
+  --green-light: var(--primary-light);
+  --amber:       var(--warning);
+  --red:         var(--danger);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-secondary);
   color: var(--text);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Layout ─────────────────── */
+/* ── Tipografía display ─────────────────────────
+   Anton va SOLO en títulos (frases cortas). En textos
+   largos pierde legibilidad, por eso no se aplica a body. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.98;
+  color: var(--text);
+}
+h1 { font-size: clamp(2.4rem, 6vw, 4rem); }
+h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+h3 { font-size: 1.25rem; }
+
+/* Eyebrow / label técnico en mono */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+/* ── Layout ─────────────────────────────────── */
 .container {
   max-width: 700px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
 
-/* ── Navbar ─────────────────── */
+/* ── Navbar ─────────────────────────────────── */
 .navbar {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -49,43 +106,76 @@ body {
 }
 
 .navbar-brand {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--text);
   text-decoration: none;
 }
-
-.navbar-brand span {
-  color: var(--text);
+/* Cuadrito con la "A" — usar <span class="brand-mark">A</span> dentro del brand */
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--ink);
+  color: var(--cream);
+  border-radius: 7px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1;
 }
+.navbar-brand span:not(.brand-mark) { color: var(--text); }
 
-/* ── Botones ────────────────── */
+/* ── Botones ────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 18px;
+  padding: 12px 20px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  border: none;
-  transition: all .2s;
+  border: 1px solid transparent;
+  transition: transform .15s ease, background .2s ease;
   text-decoration: none;
 }
+.btn:active { transform: scale(.98); }
 
 .btn-primary {
-  background: var(--green);
-  color: white;
+  background: var(--ink);
+  color: var(--cream);
   width: 100%;
-  justify-content: center;
-  padding: 12px;
+  box-shadow: var(--shadow-lg);
 }
-.btn-primary:hover { background: var(--green-dark); }
-.btn-primary:disabled { opacity: .4; cursor: default; }
+.btn-primary:hover { background: #000; }
+.btn-primary:disabled {
+  opacity: .4;
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Variante de acento naranja (para CTAs secundarios destacados) */
+.btn-accent {
+  background: var(--primary);
+  color: var(--cream);
+  width: 100%;
+}
+.btn-accent:hover { background: var(--primary-dark); }
 
 .btn-outline {
-  background: transparent;
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
 }
@@ -96,84 +186,110 @@ body {
   border: 1px solid var(--border);
   color: var(--text);
   width: 100%;
-  justify-content: center;
-  padding: 11px;
 }
 .btn-google:hover { background: var(--bg-secondary); }
 
-/* ── Cards ──────────────────── */
+/* ── Cards ──────────────────────────────────── */
 .card {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem;
-  transition: border-color .2s;
+  transition: border-color .2s, box-shadow .2s;
 }
 
-/* ── Formularios ────────────── */
+/* Tarjeta oscura de acento (tipo "Facturación" del dashboard) */
+.card-dark {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--cream);
+}
+.card-dark .text-muted { color: rgba(248,247,244,.55); }
+
+/* ── Formularios ────────────────────────────── */
 input[type="text"],
 input[type="tel"],
+input[type="email"],
 input[type="number"],
-select {
+input[type="time"],
+select,
+textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 13px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
   font-size: 14px;
   background: var(--bg);
   color: var(--text);
-  transition: border-color .2s;
+  transition: border-color .2s, box-shadow .2s;
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, .15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(154,52,18,.15);
 }
 
 label {
   display: block;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .form-group { margin-bottom: 1rem; }
 
-/* ── Badges ─────────────────── */
+/* ── Badges ─────────────────────────────────── */
 .badge {
   display: inline-block;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.badge-confirmed { background: var(--green-light); color: #085041; }
-.badge-pending   { background: #FAEEDA; color: #854F0B; }
-.badge-cancelled { background: #FEE2E2; color: #7A0000; }
+.badge-confirmed { background: var(--success-light); color: #0F6E56; }
+.badge-pending   { background: var(--warning-light); color: #854F0B; }
+.badge-cancelled { background: var(--danger-light);  color: #991B1B; }
 
-/* ── Toast / notificaciones ─── */
+/* ── Toast ──────────────────────────────────── */
 #toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(80px);
-  background: #1A1A1A;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 14px;
+  background: var(--ink);
+  color: var(--cream);
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
   transition: transform .3s ease;
   z-index: 1000;
   white-space: nowrap;
+  box-shadow: var(--shadow-lg);
 }
 #toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ── Utilidades ─────────────── */
+/* ── Utilidades ─────────────────────────────── */
 .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
 .text-muted { color: var(--text-muted); font-size: 13px; }
-.text-green { color: var(--green); font-weight: 500; }
+.text-green { color: var(--primary); font-weight: 600; }   /* alias semántico → acento */
+.text-accent { color: var(--primary); font-weight: 600; }
+.mono { font-family: var(--font-mono); }
 .mt-1 { margin-top: .5rem; }
 .mt-2 { margin-top: 1rem; }
 .flex { display: flex; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+/* Respeta usuarios que reducen el movimiento */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
