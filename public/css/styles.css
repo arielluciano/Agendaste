@@ -132,6 +132,20 @@ h3 { font-size: 1.25rem; }
 }
 .navbar-brand span:not(.brand-mark) { color: var(--text); }
 
+/* Navbar de 3 secciones (logo | links | acciones), p.ej. landing */
+.navbar .landing-container { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 2rem; padding: 1rem 2rem; }
+.navbar .landing-container .navbar-brand { justify-self: start; }
+.nav-links { display: flex; align-items: center; gap: 2rem; justify-self: center; }
+.nav-links a { color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; }
+.nav-links a:hover { color: var(--primary); }
+.nav-actions { display: flex; align-items: center; gap: 1rem; justify-self: end; }
+.nav-actions .btn { width: auto; padding: 10px 18px; }
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .navbar .landing-container .nav-actions .btn-outline { display: none; }
+}
+
 /* ── Botones ────────────────────────────────── */
 .btn {
   display: inline-flex;

@@ -1,5 +1,5 @@
 // ==============================
-// BarberApp — Panel del dueño
+// Agendaste — Panel del dueño
 // ==============================
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];

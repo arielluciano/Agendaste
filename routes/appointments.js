@@ -89,7 +89,7 @@ router.post('/', async (req, res) => {
           calendarId: 'primary',
           resource: {
             summary: `✂️ ${service} — ${clientName}`,
-            description: `Cliente: ${clientName}\nTeléfono: ${clientPhone || 'Sin teléfono'}\nServicio: ${service}\nPrecio: $${price}\n\nReservado via BarberApp`,
+            description: `Cliente: ${clientName}\nTeléfono: ${clientPhone || 'Sin teléfono'}\nServicio: ${service}\nPrecio: $${price}\n\nReservado via Agendaste`,
             start: { dateTime: start.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
             end: { dateTime: end.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
             reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 30 }] }

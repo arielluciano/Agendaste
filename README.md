@@ -1,11 +1,11 @@
-# ✂️ BarberApp
+# ✂️ Agendaste
 
 App de turnos para barberías y peluquerías con integración a Google Calendar.
 
 ## Estructura del proyecto
 
 ```
-barberapp/
+agendaste/
 ├── index.js                  ← Servidor principal (Express)
 ├── package.json
 ├── .env.example              ← Copialo como .env y completá tus claves

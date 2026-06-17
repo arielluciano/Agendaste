@@ -1,5 +1,5 @@
 // ==============================
-// BarberApp — Servidor principal
+// Agendaste — Servidor principal
 // ==============================
 require('dotenv').config();
 const db = require('./config/database');
@@ -61,7 +61,7 @@ app.get('/:slug', async (req, res) => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Negocio no encontrado — BarberApp</title>
+          <title>Negocio no encontrado — Agendaste</title>
           <link rel="stylesheet" href="/css/styles.css">
         </head>
         <body>
@@ -83,7 +83,7 @@ app.get('/:slug', async (req, res) => {
 
 // ── Iniciar servidor ─────────────────────────
 app.listen(PORT, () => {
-  console.log(`✅ BarberApp corriendo en http://localhost:${PORT}`);
+  console.log(`✅ Agendaste corriendo en http://localhost:${PORT}`);
   console.log(`   Cliente:  http://localhost:${PORT}/`);
   console.log(`   Admin:    http://localhost:${PORT}/admin`);
 });

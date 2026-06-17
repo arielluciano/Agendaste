@@ -4,7 +4,7 @@
 const jwt = require('jsonwebtoken');
 const db  = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'barberapp-secret-jwt-2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'agendaste-secret-jwt-2026';
 
 // Generar token
 function generateToken(user) {

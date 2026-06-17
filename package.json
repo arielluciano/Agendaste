@@ -1,5 +1,5 @@
 {
-  "name": "barberapp",
+  "name": "agendaste",
   "version": "1.0.0",
   "description": "App de turnos para barberías y peluquerías",
   "main": "index.js",

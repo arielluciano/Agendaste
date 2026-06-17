@@ -1,5 +1,5 @@
 // ==============================
-// BarberApp — Lógica del cliente
+// Agendaste — Lógica del cliente
 // ==============================
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -313,7 +313,7 @@ function addToGCal() {
     `Barbero: ${selBarber.name}\n` +
     `Precio: $${selService.price.toLocaleString('es-AR')}\n` +
     `Dirección: [nombre de tu barbería]\n\n` +
-    `Reservado via BarberApp`
+    `Reservado via Agendaste`
   );
 
   const url = `https://calendar.google.com/calendar/render?action=TEMPLATE`

@@ -40,7 +40,7 @@ router.post('/add', requireAuth, async (req, res) => {
 
     const event = {
       summary: `✂️ ${service} — ${clientName}`,
-      description: `Servicio: ${service}\nCliente: ${clientName}\nPrecio: $${price}\n\nReservado via BarberApp`,
+      description: `Servicio: ${service}\nCliente: ${clientName}\nPrecio: $${price}\n\nReservado via Agendaste`,
       start: {
         dateTime: startDate.toISOString(),
         timeZone: 'America/Argentina/Buenos_Aires'
@@ -87,7 +87,7 @@ router.get('/events', requireAuth, async (req, res) => {
       maxResults: 20,
       singleEvents: true,
       orderBy: 'startTime',
-      q: 'BarberApp' // solo eventos creados por nuestra app
+      q: 'Agendaste' // solo eventos creados por nuestra app
     });
 
     res.json({ events: response.data.items });

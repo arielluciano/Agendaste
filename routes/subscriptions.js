@@ -33,7 +33,7 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
 
     const subscription = await preApproval.create({
       body: {
-        reason: `BarberApp — Suscripción ${business.name} (${barberCount} barbero${barberCount > 1 ? 's' : ''})`,
+        reason: `Agendaste — Suscripción ${business.name} (${barberCount} barbero${barberCount > 1 ? 's' : ''})`,
         external_reference: String(bizId),
         payer_email: owner?.email,
         // MP exige una URL pública con HTTPS — en local hay que setear BASE_URL (ej. túnel ngrok)
