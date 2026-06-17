@@ -42,7 +42,7 @@ app.use(require('./routes/register'));
 
 // Ruta raíz → landing de Agendaste
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Panel del dueño
@@ -74,10 +74,10 @@ app.get('/:slug', async (req, res) => {
         </html>
       `);
     }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'client.html'));
   } catch (err) {
     console.error('Error verificando slug:', err.message);
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'client.html'));
   }
 });
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarberApp — Reservá tu turno</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .service-card { cursor: pointer; text-align: left; }
+    .service-card:hover { border-color: var(--primary); }
+    .service-card.selected { border: 2px solid var(--primary); background: var(--primary-light); }
+    .service-price { font-size: 20px; font-weight: 600; color: var(--primary); margin: 4px 0; }
+    .service-dur { font-size: 12px; color: var(--text-muted); }
+    .barbers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .barber-card { cursor: pointer; text-align: center; padding: 1.25rem 1rem; }
+    .barber-card:hover { border-color: var(--primary); }
+    .barber-card.selected { border: 2px solid var(--primary); background: var(--primary-light); }
+    .barber-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto .75rem; }
+    .barber-role { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1rem; }
+    .day-label { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0; }
+    .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .day-cell:hover:not(.disabled):not(.empty) { background: var(--bg-secondary); }
+    .day-cell.disabled { color: var(--text-muted); opacity: .4; cursor: default; }
+    .day-cell.selected { background: var(--primary); color: var(--cream); font-weight: 600; }
+    .day-cell.today { border: 1px solid var(--border); font-weight: 600; }
+    .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+    .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .slot:hover:not(.taken) { background: var(--bg-secondary); }
+    .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
+    .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
+    .summary-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+    .summary-row span:first-child { color: var(--text-muted); }
+    .step { display: none; }
+    .step.active { display: block; }
+    .step-dots { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+    .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: all .3s; }
+    .dot.active { background: var(--primary); width: 20px; }
+    .dot.done { background: var(--primary); }
+    .success-icon { width: 56px; height: 56px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
+    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
+    <a href="/admin" class="btn btn-outline" style="font-size:13px;padding:7px 14px">Panel dueño →</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="step-dots">
+  <div class="dot active" id="dot-login"></div>
+  <div class="dot" id="dot0"></div>
+  <div class="dot" id="dot1"></div>
+  <div class="dot" id="dot2"></div>
+  <div class="dot" id="dot3"></div>
+</div>
+
+  <!-- Login del cliente -->
+  <div class="step active" id="step-login">
+    <div style="text-align:center;padding:2.5rem 0 2rem">
+      <div style="font-size:48px;margin-bottom:1rem">✂️</div>
+      <h2 style="margin-bottom:.5rem">Reservá tu turno</h2>
+      <p class="text-muted" style="margin-bottom:2rem">Iniciá sesión con Google para continuar</p>
+      <a href="/auth/client/google" id="btn-google-login" class="btn btn-google">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continuar con Google
+      </a>
+    </div>
+  </div>
+
+  <!-- PASO 0: Elegir servicio -->
+  <div class="step" id="step0">
+    <p class="section-title">¿Qué servicio querés?</p>
+    <div class="services-grid" id="services-grid"></div>
+  </div>
+
+  <!-- PASO 1: Elegir barbero -->
+  <div class="step" id="step1">
+    <p class="section-title">¿Con quién querés atenderte?</p>
+    <div class="barbers-grid" id="barbers-grid"></div>
+  </div>
+
+  <!-- PASO 2: Elegir día y hora -->
+  <div class="step" id="step2">
+    <p class="section-title">Elegí un día</p>
+    <div class="calendar-nav">
+      <button class="btn btn-outline" onclick="prevMonth()" style="padding:7px 14px">←</button>
+      <strong id="cal-title"></strong>
+      <button class="btn btn-outline" onclick="nextMonth()" style="padding:7px 14px">→</button>
+    </div>
+    <div class="days-grid" id="cal-grid"></div>
+    <p class="eyebrow" style="margin-bottom:1rem">Horario disponible</p>
+    <div class="slots-grid" id="slots-grid"></div>
+    <button class="btn btn-primary" id="btn-to-step3" disabled onclick="goStep(3)">Continuar →</button>
+  </div>
+
+  <!-- PASO 3: Datos del cliente -->
+  <div class="step" id="step3">
+    <p class="section-title">Tus datos</p>
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input type="text" id="inp-name" placeholder="Ej: Martín García" oninput="checkStep3()">
+    </div>
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep3()">
+    </div>
+    <div class="divider"></div>
+    <p class="eyebrow" style="margin-bottom:.75rem">Resumen</p>
+    <div class="summary-box">
+      <div class="summary-row"><span>Servicio</span><span id="sum-svc">—</span></div>
+      <div class="summary-row"><span>Barbero</span><span id="sum-barber">—</span></div>
+      <div class="summary-row"><span>Día</span><span id="sum-day">—</span></div>
+      <div class="summary-row"><span>Hora</span><span id="sum-time">—</span></div>
+      <div class="summary-row"><span style="font-weight:600;color:var(--text)">Total</span><span id="sum-price" style="font-weight:600;color:var(--green)">—</span></div>
+    </div>
+    <button class="btn btn-primary" id="btn-confirm" disabled onclick="confirmBooking()">Confirmar turno</button>
+  </div>
+
+  <!-- PASO 4: Confirmación -->
+  <div class="step" id="step4" style="text-align:center;padding:1rem 0">
+    <div class="success-icon">✓</div>
+    <h2 style="margin-bottom:.5rem">¡Turno confirmado!</h2>
+    <p class="text-muted" style="margin-bottom:1.5rem">Te esperamos el <strong id="conf-day"></strong> a las <strong id="conf-time"></strong></p>
+      <div class="summary-box" style="text-align:left">
+        <div class="summary-row"><span>Servicio</span><span id="conf-svc"></span></div>
+        <div class="summary-row"><span>Barbero</span><span id="conf-barber"></span></div>
+        <div class="summary-row"><span>Nombre</span><span id="conf-name"></span></div>
+        <div class="summary-row"><span>Total</span><span id="conf-price" class="text-green"></span></div>
+        <div class="summary-row"><span>📍 Dirección</span><span id="conf-address" class="text-muted"></span></div>
+      </div>
+    <button class="btn btn-outline mt-2" style="width:100%;justify-content:center" onclick="addToGCal()">
+      📅 Agregar a Google Calendar
+    </button>
+    <button class="btn btn-primary mt-1" onclick="resetBooking()">Hacer otro turno</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  fetch('/auth/client/me').then(r => {
+    if (r.ok) document.getElementById('btn-logout-client').style.display = '';
+  });
+</script>
+<script src="/js/client.js"></script>
+</body>
+</html>

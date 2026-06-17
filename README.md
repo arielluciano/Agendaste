@@ -15,7 +15,8 @@ barberapp/
 │   ├── calendar.js           ← Integración Google Calendar
 │   └── appointments.js       ← CRUD de turnos
 └── public/
-    ├── index.html            ← Vista del cliente (reservar turno)
+    ├── index.html            ← Landing de Agendaste
+    ├── client.html           ← Vista del cliente (reservar turno)
     ├── pages/
     │   └── admin.html        ← Panel del dueño
     ├── css/
