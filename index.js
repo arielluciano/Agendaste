@@ -40,9 +40,9 @@ app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/otp', require('./routes/otp'));
 app.use(require('./routes/register'));
 
-// Ruta raíz → página del cliente
+// Ruta raíz → landing de Agendaste
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
 // Panel del dueño

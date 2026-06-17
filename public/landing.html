@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendaste — Software de turnos online</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .landing-container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+    .navbar .landing-container { display: flex; align-items: center; justify-content: space-between; padding: 0; }
+    .navbar { padding: 0; }
+    .navbar .landing-container { padding: .875rem 1.5rem; }
+    .nav-links { display: flex; align-items: center; gap: 1.75rem; }
+    .nav-links a { color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-actions { display: flex; align-items: center; gap: .75rem; }
+    .nav-actions .btn { width: auto; padding: 10px 18px; }
+    @media (max-width: 720px) { .nav-links { display: none; } }
+
+    section { padding: 4.5rem 0; }
+    .hero { padding: 5.5rem 0 5rem; text-align: center; }
+    .hero .eyebrow { display: block; margin-bottom: 1rem; }
+    .hero h1 { max-width: 760px; margin: 0 auto 1.25rem; }
+    .hero p.lead { font-size: 17px; color: var(--text-muted); max-width: 560px; margin: 0 auto 2rem; line-height: 1.55; }
+    .hero .btn { width: auto; padding: 16px 28px; font-size: 13px; }
+
+    .section-head { text-align: center; margin-bottom: 2.5rem; }
+    .section-head .eyebrow { display: block; margin-bottom: .75rem; }
+    .section-head h2 { margin: 0; }
+
+    .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media (max-width: 760px) { .grid-6 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .grid-6 { grid-template-columns: 1fr; } }
+    .audience-card { text-align: center; padding: 1.75rem 1rem; }
+    .audience-card .icon { font-size: 32px; margin-bottom: .75rem; }
+    .audience-card .label { font-size: 14px; font-weight: 600; }
+
+    .features { background: var(--bg-secondary); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } }
+    .feature-card { padding: 1.75rem 1.25rem; }
+    .feature-card .icon { font-size: 28px; margin-bottom: .9rem; }
+    .feature-card .label { font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+    .pricing-card { max-width: 420px; margin: 0 auto; text-align: center; padding: 2.5rem 2rem; }
+    .pricing-amount { font-family: var(--font-display); font-size: clamp(2.6rem, 6vw, 3.4rem); color: var(--text); line-height: 1; }
+    .pricing-amount span { font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: var(--text-muted); }
+    .pricing-sub { font-size: 13px; color: var(--text-muted); margin: .5rem 0 1.75rem; }
+    .pricing-perks { list-style: none; margin: 0 0 1.75rem; padding: 0; text-align: left; display: inline-block; }
+    .pricing-perks li { font-size: 14px; margin-bottom: .6rem; display: flex; align-items: center; gap: 8px; }
+    .pricing-card .btn { width: 100%; padding: 14px 20px; }
+
+    .cta-final { background: var(--ink); color: var(--cream); text-align: center; }
+    .cta-final h2 { color: var(--cream); margin-bottom: 1.75rem; }
+    .cta-final .btn { width: auto; padding: 16px 28px; font-size: 13px; }
+
+    footer { background: var(--ink); color: rgba(248,247,244,.55); text-align: center; padding: 1.75rem 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="landing-container">
+    <a href="/" class="navbar-brand"><span class="brand-mark">A</span> AGENDASTE</a>
+    <div class="nav-links">
+      <a href="#features">Características</a>
+      <a href="#precios">Precios</a>
+    </div>
+    <div class="nav-actions">
+      <a href="/admin" class="btn btn-outline">Iniciar sesión</a>
+      <a href="/registro" class="btn btn-accent">Empezar gratis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="landing-container">
+    <span class="eyebrow">SOFTWARE DE TURNOS ONLINE</span>
+    <h1>GESTIONÁ TU NEGOCIO SIN COMPLICACIONES</h1>
+    <p class="lead">La plataforma más simple para barberías, peluquerías, estéticas y más. Probá gratis 14 días sin tarjeta.</p>
+    <a href="/registro" class="btn btn-accent">EMPEZAR GRATIS →</a>
+  </div>
+</section>
+
+<!-- PARA QUIÉN ES -->
+<section id="audiencia">
+  <div class="landing-container">
+    <div class="section-head">
+      <span class="eyebrow">PARA QUIÉN ES</span>
+    </div>
+    <div class="grid-6">
+      <div class="card audience-card"><div class="icon">✂️</div><div class="label">Barberías</div></div>
+      <div class="card audience-card"><div class="icon">💅</div><div class="label">Estéticas y manicura</div></div>
+      <div class="card audience-card"><div class="icon">🦷</div><div class="label">Odontólogos</div></div>
+      <div class="card audience-card"><div class="icon">🐾</div><div class="label">Veterinarias</div></div>
+      <div class="card audience-card"><div class="icon">🎨</div><div class="label">Tatuajes</div></div>
+      <div class="card audience-card"><div class="icon">🏋️</div><div class="label">Personal trainers</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="landing-container">
+    <div class="section-head">
+      <span class="eyebrow">QUÉ INCLUYE</span>
+    </div>
+    <div class="grid-4">
+      <div class="card card-dark feature-card"><div class="icon">📅</div><div class="label">Agenda online 24/7</div></div>
+      <div class="card card-dark feature-card"><div class="icon">📲</div><div class="label">Google Calendar sync</div></div>
+      <div class="card card-dark feature-card"><div class="icon">👥</div><div class="label">Multi-profesional</div></div>
+      <div class="card card-dark feature-card"><div class="icon">💬</div><div class="label">WhatsApp integrado</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRECIOS -->
+<section id="precios">
+  <div class="landing-container">
+    <div class="section-head">
+      <span class="eyebrow">PRECIOS</span>
+    </div>
+    <div class="card pricing-card">
+      <div class="pricing-amount">$5.000 <span>ARS / profesional / mes</span></div>
+      <p class="pricing-sub">14 días gratis · sin tarjeta requerida</p>
+      <ul class="pricing-perks">
+        <li>✓ Agenda online ilimitada</li>
+        <li>✓ Sincronización con Google Calendar</li>
+        <li>✓ Recordatorios por WhatsApp</li>
+      </ul>
+      <a href="/registro" class="btn btn-accent">EMPEZAR GRATIS</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <div class="landing-container">
+    <h2>¿LISTO PARA SIMPLIFICAR TU NEGOCIO?</h2>
+    <a href="/registro" class="btn btn-accent">REGISTRÁ TU NEGOCIO GRATIS</a>
+  </div>
+</section>
+
+<footer>
+  © 2026 Agendaste
+</footer>
+
+</body>
+</html>
