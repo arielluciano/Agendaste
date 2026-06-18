@@ -190,6 +190,14 @@
     <button class="config-close" onclick="closeBusinessPanel()">×</button>
   </div>
   <div class="config-body">
+    <div class="form-group" style="padding-bottom:1.25rem;border-bottom:1px solid var(--border)">
+      <p class="section-label" style="margin-top:0">Horario de atención del local</p>
+      <div id="biz-schedule-days"></div>
+      <button type="button" class="btn btn-outline" style="width:100%;margin-top:10px" onclick="applyScheduleToBarbers()">
+        Aplicar a todos los barberos
+      </button>
+    </div>
+
     <div class="form-group">
       <label>Nombre del negocio</label>
       <input type="text" id="biz-name" placeholder="Ej: Barber House">

@@ -83,6 +83,31 @@ router.patch('/:id/schedule', async (req, res) => {
   }
 });
 
+// POST /api/barbers/apply-schedule → aplica un horario base a todos los barberos del negocio
+router.post('/apply-schedule', async (req, res) => {
+  const { schedule } = req.body;
+  const bizId = req.session?.business_id || 1;
+  if (!Array.isArray(schedule)) return res.status(400).json({ error: 'Formato inválido' });
+  try {
+    const barbersResult = await db.query('SELECT id FROM barbers WHERE business_id = $1', [bizId]);
+    for (const barber of barbersResult.rows) {
+      for (const day of schedule) {
+        await db.query(
+          `INSERT INTO barber_schedules (barber_id, day_of_week, is_open, open_time, close_time, has_split, open_time_2, close_time_2)
+           VALUES ($1, $2, $3, $4, $5, false, NULL, NULL)
+           ON CONFLICT (barber_id, day_of_week)
+           DO UPDATE SET is_open = $3, open_time = $4, close_time = $5, has_split = false, open_time_2 = NULL, close_time_2 = NULL`,
+          [barber.id, day.day_of_week, day.is_open, day.open_time, day.close_time]
+        );
+      }
+    }
+    res.json({ success: true, barbersUpdated: barbersResult.rows.length });
+  } catch (err) {
+    console.error('Error POST /api/barbers/apply-schedule:', err.message);
+    res.status(500).json({ error: 'Error aplicando horario a los barberos' });
+  }
+});
+
 // PATCH /api/barbers/:id → actualizar barbero
 router.patch('/:id', async (req, res) => {
   const { name, role, active } = req.body;

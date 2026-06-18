@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     } else {
       const bizId = req.session?.business_id || parseInt(req.query.business_id) || 1;
       result = await db.query('SELECT * FROM businesses WHERE id = $1', [bizId]);
-      if (result.rows.length === 0) return res.json({ id: bizId, name: '', address: '', phone: '', description: '' });
+      if (result.rows.length === 0) return res.json({ id: bizId, name: '', address: '', phone: '', description: '', schedule: null });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -27,15 +27,15 @@ router.get('/', async (req, res) => {
 
 // PATCH /api/business → actualizar datos del negocio
 router.patch('/', async (req, res) => {
-  const { name, address, phone, description } = req.body;
+  const { name, address, phone, description, schedule } = req.body;
   const bizId = req.session?.business_id || 1;
   try {
     const result = await db.query(
       `UPDATE businesses
-         SET name = $1, address = $2, phone = $3, description = $4
-       WHERE id = $5
+         SET name = $1, address = $2, phone = $3, description = $4, schedule = $5
+       WHERE id = $6
        RETURNING *`,
-      [name ?? null, address ?? null, phone ?? null, description ?? null, bizId]
+      [name ?? null, address ?? null, phone ?? null, description ?? null, schedule ? JSON.stringify(schedule) : null, bizId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
     res.json(result.rows[0]);

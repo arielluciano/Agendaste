@@ -257,6 +257,8 @@ label {
 
 .form-group { margin-bottom: 1rem; }
 
+.section-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .18em; margin: 1.25rem 0 .75rem; }
+
 /* ── Badges ─────────────────────────────────── */
 .badge {
   display: inline-block;

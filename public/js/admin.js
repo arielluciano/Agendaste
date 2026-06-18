@@ -493,6 +493,7 @@ async function loadBusiness() {
     document.getElementById('biz-phone').value       = data.phone       || '';
     document.getElementById('biz-description').value = data.description || '';
     if (data.address) showMapPreview(data.address);
+    renderBizSchedule(data.schedule);
 
     // Mostrar link del negocio
     if (data.slug) {
@@ -505,23 +506,75 @@ async function loadBusiness() {
   }
 }
 
+function renderBizSchedule(schedule) {
+  const byDay = {};
+  (schedule || []).forEach(s => byDay[s.day_of_week] = s);
+
+  document.getElementById('biz-schedule-days').innerHTML = DAYS_ORDER.map(dow => {
+    const d     = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
+    const open  = (d.open_time  || '09:00').substring(0, 5);
+    const close = (d.close_time || '18:00').substring(0, 5);
+    return `
+      <div class="schedule-day" data-dow="${dow}">
+        <div class="schedule-day-head">
+          <button class="toggle ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
+          <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
+        </div>
+        <div class="schedule-franjas">
+          <div class="schedule-franja-row">
+            <input type="time" class="biz-sched-open"  value="${open}">
+            <span class="schedule-sep">a</span>
+            <input type="time" class="biz-sched-close" value="${close}">
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function readBizSchedule() {
+  const days = document.querySelectorAll('#biz-schedule-days .schedule-day');
+  return Array.from(days).map(day => ({
+    day_of_week: Number(day.dataset.dow),
+    is_open:     day.querySelector('.toggle').classList.contains('on'),
+    open_time:   day.querySelector('.biz-sched-open').value,
+    close_time:  day.querySelector('.biz-sched-close').value
+  }));
+}
+
 async function saveBusiness() {
   const name        = document.getElementById('biz-name').value.trim();
   const address     = document.getElementById('biz-address').value.trim();
   const phone       = document.getElementById('biz-phone').value.trim();
   const description = document.getElementById('biz-description').value.trim();
+  const schedule    = readBizSchedule();
 
   try {
     const res = await fetch('/api/business', {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, address, phone, description })
+      body:    JSON.stringify({ name, address, phone, description, schedule })
     });
     if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
     showToast('✅ Configuración guardada');
     if (address) showMapPreview(address);
   } catch {
     showToast('❌ Error guardando configuración');
+  }
+}
+
+async function applyScheduleToBarbers() {
+  const schedule = readBizSchedule();
+  try {
+    const res = await fetch('/api/barbers/apply-schedule', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ schedule })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Error aplicando horario')); return; }
+    showToast(`✅ Horario aplicado a ${data.barbersUpdated} barbero${data.barbersUpdated === 1 ? '' : 's'}`);
+  } catch {
+    showToast('❌ Error aplicando horario a los barberos');
   }
 }
 
