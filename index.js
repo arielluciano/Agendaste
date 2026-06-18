@@ -28,7 +28,7 @@ app.use(session({
 }));
 
 // ── Rutas ────────────────────────────────────
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireSession } = require('./middleware/auth');
 
 app.use('/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
@@ -48,6 +48,11 @@ app.get('/', (req, res) => {
 // Panel del dueño
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html'));
+});
+
+// Configuración del negocio (requiere sesión iniciada)
+app.get('/admin/settings', requireSession, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'settings.html'));
 });
 
 // Ruta dinámica por slug → página del cliente del negocio

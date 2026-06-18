@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendaste — Configuración</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .user-pill { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
+    .user-pill img { width:28px; height:28px; border-radius:50%; }
+
+    .settings-wrap { max-width:960px; margin:0 auto; padding:2rem 1rem 4rem; }
+    .settings-back { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); text-decoration:none; margin-bottom:1.5rem; }
+    .settings-back:hover { color:var(--primary); }
+
+    .settings-layout { display:flex; gap:2rem; align-items:flex-start; }
+    .settings-menu { width:230px; flex-shrink:0; display:flex; flex-direction:column; gap:4px; position:sticky; top:90px; }
+    .settings-menu-item {
+      display:flex; align-items:center; gap:10px; width:100%; padding:11px 14px;
+      border:1px solid transparent; border-radius:var(--radius-sm); background:none; text-align:left;
+      font-family:var(--font-mono); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--text-muted); cursor:pointer; transition:all .2s;
+    }
+    .settings-menu-item:hover { background:var(--bg-secondary); color:var(--text); }
+    .settings-menu-item.active { background:var(--primary); color:var(--cream); }
+
+    .settings-content { flex:1; min-width:0; }
+    .settings-section { display:none; }
+    .settings-section.active { display:block; }
+    .section-title { font-family:var(--font-display); font-size:24px; font-weight:400; text-transform:uppercase; margin-bottom:1.25rem; }
+
+    /* ── Horario del local (mismo patrón visual que el modal de horario por barbero) ── */
+    .schedule-day { padding:12px 0; border-bottom:1px solid var(--border); }
+    .schedule-day:last-child { border:none; }
+    .schedule-day-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .schedule-day-name { flex:1; font-size:13px; font-weight:600; color:var(--text); }
+    .schedule-franjas { display:flex; flex-direction:column; gap:8px; padding-left:48px; }
+    .schedule-franja-row { display:flex; align-items:center; gap:8px; }
+    .schedule-franja-row input[type=time] { flex:1; min-width:0; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); font-size:13px; }
+    .schedule-sep { font-size:12px; color:var(--text-muted); }
+    .toggle { width:38px; height:22px; background:var(--border); border-radius:11px; cursor:pointer; position:relative; border:none; transition:background .3s; flex-shrink:0; }
+    .toggle.on { background:var(--primary); }
+    .toggle::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:white; transition:left .3s; }
+    .toggle.on::after { left:18px; }
+
+    .map-preview { border-radius:10px; overflow:hidden; margin-top:1rem; }
+    .map-preview iframe { display:block; width:100%; height:180px; border:0; }
+
+    .sub-status-plan { font-family:var(--font-display); font-size:22px; text-transform:uppercase; white-space:nowrap; }
+
+    @media (max-width:760px) {
+      .settings-layout { flex-direction:column; }
+      .settings-menu { width:100%; flex-direction:row; position:static; overflow-x:auto; padding-bottom:2px; }
+      .settings-menu-item { white-space:nowrap; flex:none; }
+      .schedule-franjas { padding-left:0; }
+      #sub-card .flex-between { flex-direction:column; align-items:flex-start; gap:1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
+  <div class="nav-actions" id="user-area"></div>
+</nav>
+
+<div class="settings-wrap">
+  <a href="/admin" class="settings-back">← Volver al panel</a>
+
+  <div class="settings-layout">
+    <nav class="settings-menu" id="settings-menu">
+      <button class="settings-menu-item active" data-section="negocio" onclick="showSection('negocio')">🏪 Mi negocio</button>
+      <button class="settings-menu-item" data-section="horario" onclick="showSection('horario')">⏰ Horario del local</button>
+      <button class="settings-menu-item" data-section="suscripcion" onclick="showSection('suscripcion')">💳 Suscripción</button>
+    </nav>
+
+    <main class="settings-content">
+
+      <!-- Mi negocio -->
+      <section class="settings-section active" id="section-negocio">
+        <p class="section-title">Mi negocio</p>
+        <div class="card" style="padding:1.5rem">
+          <div class="form-group">
+            <label>Nombre del negocio</label>
+            <input type="text" id="biz-name" placeholder="Ej: Barber House">
+          </div>
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" id="biz-address" placeholder="Ej: Av. Corrientes 1234, CABA">
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="biz-phone" placeholder="Ej: +54 9 11 1234-5678">
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="biz-description" rows="3"
+              placeholder="Breve descripción de tu barbería..."
+              style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;resize:vertical;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+          </div>
+          <div id="business-link-container" style="display:none;margin-bottom:1rem">
+            <label>🔗 Link para tus clientes</label>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <input type="text" id="business-link" readonly
+                     style="background:var(--bg-secondary);cursor:pointer;flex:1">
+              <button class="btn btn-outline" style="white-space:nowrap"
+                      onclick="copyLink()">Copiar</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveBusiness()">Guardar cambios</button>
+          <div id="map-preview" style="display:none">
+            <p style="font-size:13px;color:var(--text-muted);margin:1rem 0 6px">📍 Ubicación</p>
+            <div class="map-preview" id="map-frame"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Horario del local -->
+      <section class="settings-section" id="section-horario">
+        <p class="section-title">Horario del local</p>
+        <div class="card" style="padding:1.5rem">
+          <div id="biz-schedule-days"></div>
+          <button type="button" class="btn btn-outline" style="width:100%;margin-top:1rem" onclick="applyScheduleToBarbers()">
+            Aplicar a todos los barberos
+          </button>
+          <button class="btn btn-primary" style="margin-top:.75rem" onclick="saveBusiness()">
+            Guardar horario
+          </button>
+        </div>
+      </section>
+
+      <!-- Suscripción -->
+      <section class="settings-section" id="section-suscripcion">
+        <p class="section-title">Suscripción</p>
+        <div class="card" id="sub-card" style="padding:1.5rem">
+          <p class="text-muted" style="padding:1rem 0">Cargando estado de la suscripción...</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/js/settings.js"></script>
+</body>
+</html>
