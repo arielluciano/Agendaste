@@ -32,6 +32,9 @@
     .slot:hover:not(.taken) { background: var(--bg-secondary); }
     .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
     .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
+    @media (max-width: 480px) {
+      .slots-grid { grid-template-columns: repeat(3, 1fr); padding-bottom: 1rem; }
+    }
     .summary-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
     .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
     .summary-row span:first-child { color: var(--text-muted); }
