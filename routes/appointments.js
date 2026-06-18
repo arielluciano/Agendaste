@@ -167,12 +167,22 @@ router.get('/slots/:date', async (req, res) => {
         return res.json(allSlots.map(s => ({ time: s, available: false })));
       }
 
-      const { open_time, close_time } = schedResult.rows[0];
+      const { open_time, close_time, has_split, open_time_2, close_time_2 } = schedResult.rows[0];
       const openMins  = toMinutes(open_time.substring(0, 5));
       const closeMins = toMinutes(close_time.substring(0, 5));
+
+      let open2Mins  = null;
+      let close2Mins = null;
+      if (has_split && open_time_2 && close_time_2) {
+        open2Mins  = toMinutes(open_time_2.substring(0, 5));
+        close2Mins = toMinutes(close_time_2.substring(0, 5));
+      }
+
       allowedSlots = allSlots.filter(s => {
         const m = toMinutes(s);
-        return m >= openMins && m < closeMins;
+        const inFranja1 = m >= openMins && m < closeMins;
+        const inFranja2 = open2Mins !== null && m >= open2Mins && m < close2Mins;
+        return inFranja1 || inFranja2;
       });
     }
 

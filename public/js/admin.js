@@ -368,21 +368,46 @@ async function openSchedule(barberId, barberName) {
     schedule.forEach(s => byDay[s.day_of_week] = s);
 
     document.getElementById('schedule-days').innerHTML = DAYS_ORDER.map(dow => {
-      const d = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
-      const open  = (d.open_time  || '09:00').substring(0, 5);
-      const close = (d.close_time || '18:00').substring(0, 5);
+      const d = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00', has_split: false, open_time_2: '16:00', close_time_2: '20:00' };
+      const open    = (d.open_time    || '09:00').substring(0, 5);
+      const close   = (d.close_time   || '18:00').substring(0, 5);
+      const open2   = (d.open_time_2  || '16:00').substring(0, 5);
+      const close2  = (d.close_time_2 || '20:00').substring(0, 5);
+      const hasSplit = !!d.has_split;
       return `
-        <div class="schedule-row" data-dow="${dow}">
-          <button class="toggle ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
-          <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
-          <input type="time" class="sched-open"  value="${open}">
-          <span class="schedule-sep">a</span>
-          <input type="time" class="sched-close" value="${close}">
+        <div class="schedule-day ${hasSplit ? 'split' : ''}" data-dow="${dow}">
+          <div class="schedule-day-head">
+            <button class="toggle ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
+            <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
+            <label class="schedule-split-toggle">
+              <button type="button" class="toggle toggle-sm sched-split ${hasSplit ? 'on' : ''}" onclick="toggleSplit(this)" title="Horario partido"></button>
+              Partido
+            </label>
+          </div>
+          <div class="schedule-franjas">
+            <div class="schedule-franja-row">
+              <span class="schedule-franja-num">1</span>
+              <input type="time" class="sched-open"  value="${open}">
+              <span class="schedule-sep">a</span>
+              <input type="time" class="sched-close" value="${close}">
+            </div>
+            <div class="schedule-franja-row sched-franja-2">
+              <span class="schedule-franja-num">2</span>
+              <input type="time" class="sched-open-2"  value="${open2}">
+              <span class="schedule-sep">a</span>
+              <input type="time" class="sched-close-2" value="${close2}">
+            </div>
+          </div>
         </div>`;
     }).join('');
   } catch {
     showToast('Error cargando horarios');
   }
+}
+
+function toggleSplit(btn) {
+  btn.classList.toggle('on');
+  btn.closest('.schedule-day').classList.toggle('split', btn.classList.contains('on'));
 }
 
 function closeSchedule() {
@@ -392,12 +417,15 @@ function closeSchedule() {
 
 async function saveSchedule() {
   const barberId = document.getElementById('schedule-panel').dataset.barberId;
-  const rows     = document.querySelectorAll('#schedule-days .schedule-row');
-  const schedule = Array.from(rows).map(row => ({
-    day_of_week: Number(row.dataset.dow),
-    is_open:     row.querySelector('.toggle').classList.contains('on'),
-    open_time:   row.querySelector('.sched-open').value,
-    close_time:  row.querySelector('.sched-close').value
+  const days     = document.querySelectorAll('#schedule-days .schedule-day');
+  const schedule = Array.from(days).map(day => ({
+    day_of_week:  Number(day.dataset.dow),
+    is_open:      day.querySelector('.toggle:not(.sched-split)').classList.contains('on'),
+    open_time:    day.querySelector('.sched-open').value,
+    close_time:   day.querySelector('.sched-close').value,
+    has_split:    day.querySelector('.sched-split').classList.contains('on'),
+    open_time_2:  day.querySelector('.sched-open-2').value,
+    close_time_2: day.querySelector('.sched-close-2').value
   }));
 
   try {
