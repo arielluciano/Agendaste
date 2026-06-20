@@ -203,6 +203,19 @@ h3 { font-size: 1.25rem; }
 }
 .btn-google:hover { background: var(--bg-secondary); }
 
+.btn-whatsapp {
+  background: #25D366;
+  color: #fff;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.btn-whatsapp:hover { background: #1ebe5a; }
+
+/* ── Iconos ─────────────────────────────────── */
+.icon { width: 1.25em; height: 1.25em; stroke-width: 2; vertical-align: middle; flex-shrink: 0; }
+.icon-lg { width: 36px; height: 36px; }
+.icon-sm { width: 18px; height: 18px; }
+
 /* ── Cards ──────────────────────────────────── */
 .card {
   background: var(--bg);

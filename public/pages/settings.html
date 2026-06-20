@@ -71,7 +71,7 @@
   <div class="settings-layout">
     <nav class="settings-menu" id="settings-menu">
       <button class="settings-menu-item active" data-section="negocio" onclick="showSection('negocio')">🏪 Mi negocio</button>
-      <button class="settings-menu-item" data-section="horario" onclick="showSection('horario')">⏰ Horario del local</button>
+      <button class="settings-menu-item" data-section="horario" onclick="showSection('horario')"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Horario del local</button>
       <button class="settings-menu-item" data-section="suscripcion" onclick="showSection('suscripcion')">💳 Suscripción</button>
     </nav>
 
@@ -110,7 +110,7 @@
           </div>
           <button class="btn btn-primary" onclick="saveBusiness()">Guardar cambios</button>
           <div id="map-preview" style="display:none">
-            <p style="font-size:13px;color:var(--text-muted);margin:1rem 0 6px">📍 Ubicación</p>
+            <p style="font-size:13px;color:var(--text-muted);margin:1rem 0 6px"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> Ubicación</p>
             <div class="map-preview" id="map-frame"></div>
           </div>
         </div>

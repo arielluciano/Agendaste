@@ -20,6 +20,15 @@ let curYear    = new Date().getFullYear();
 let curMonth   = new Date().getMonth();
 let step       = 0;
 
+// ── Datos del turno confirmado (para WhatsApp/Calendar) ──
+let confBusinessName = '';
+let confDay      = '';
+let confTime     = '';
+let confService  = '';
+let confBarber   = '';
+let confAddress  = '';
+let confPhone    = '';
+
 // ── Resolver negocio desde slug ──────────────
 async function initBusiness() {
   if (!slug) return;
@@ -274,21 +283,30 @@ async function confirmBooking() {
     }
 
     const [y, m, d] = selDate.split('-');
-    document.getElementById('conf-day').textContent    = `${d} de ${MONTHS[parseInt(m) - 1]}`;
-    document.getElementById('conf-time').textContent   = selSlot;
-    document.getElementById('conf-svc').textContent    = selService.name;
-    document.getElementById('conf-barber').textContent = selBarber.name;
+    confDay     = `${d} de ${MONTHS[parseInt(m) - 1]}`;
+    confTime    = selSlot;
+    confService = selService.name;
+    confBarber  = selBarber.name;
+    confPhone   = phone;
+
+    document.getElementById('conf-day').textContent    = confDay;
+    document.getElementById('conf-time').textContent   = confTime;
+    document.getElementById('conf-svc').textContent    = confService;
+    document.getElementById('conf-barber').textContent = confBarber;
     document.getElementById('conf-name').textContent   = name;
     document.getElementById('conf-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
 
-    // Cargar dirección del negocio
+    // Cargar nombre y dirección del negocio
     try {
       const bizRes = await fetch(`/api/business?business_id=${businessId}`);
       const biz = await bizRes.json();
-      document.getElementById('conf-address').textContent = biz.address || 'Buenos Aires, Argentina';
+      confBusinessName = biz.name || 'Agendaste';
+      confAddress = biz.address || 'Buenos Aires, Argentina';
     } catch {
-      document.getElementById('conf-address').textContent = 'Buenos Aires, Argentina';
+      confBusinessName = 'Agendaste';
+      confAddress = 'Buenos Aires, Argentina';
     }
+    document.getElementById('conf-address').textContent = confAddress;
 
     goStep(4);
 
@@ -320,6 +338,23 @@ function addToGCal() {
     + `&text=${title}`
     + `&dates=${fmt(start)}/${fmt(end)}`
     + `&details=${details}`;
+
+  window.open(url, '_blank');
+}
+
+// ── Compartir por WhatsApp ───────────────────
+function shareWhatsApp() {
+  const message =
+    `✂️ ¡Turno confirmado en ${confBusinessName}!\n` +
+    `📅 Fecha: ${confDay}\n` +
+    `⏰ Hora: ${confTime}\n` +
+    `💈 Servicio: ${confService}\n` +
+    `👤 Profesional: ${confBarber}\n` +
+    `📍 Dirección: ${confAddress}\n\n` +
+    `Reservado via Agendaste`;
+
+  const phoneDigits = confPhone.replace(/\D/g, '');
+  const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(message)}`;
 
   window.open(url, '_blank');
 }

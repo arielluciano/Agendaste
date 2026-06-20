@@ -29,7 +29,7 @@ async function checkAuth() {
         <div class="user-pill">
           <img src="${data.user.picture}" alt="${data.user.name}">
           <span>${data.user.name}</span>
-          <button class="gear-btn" onclick="location.href='/admin/settings'" title="Configuración del negocio">⚙️</button>
+          <button class="gear-btn" onclick="location.href='/admin/settings'" title="Configuración del negocio"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 10.27 7 3.34"/><path d="m11 13.73-4 6.93"/><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M14 12h8"/><path d="m17 20.66-1-1.73"/><path d="m17 3.34-1 1.73"/><path d="M2 12h2"/><path d="m20.66 17-1.73-1"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m3.34 7 1.73 1"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="8"/></svg></button>
           <a href="/auth/logout" class="btn btn-outline" style="font-size:12px;padding:5px 10px">Salir</a>
         </div>`;
       document.getElementById('admin-view').style.display = 'block';
@@ -76,7 +76,7 @@ list.innerHTML = appts.map(a => `
       <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
           <div class="appt-actions">
             <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
-            <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Cal</button>
+            <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Cal</button>
           </div>
         </div>
         <div>
@@ -287,7 +287,7 @@ async function renderBarbers() {
             <div class="text-muted" style="font-size:12px">${b.role}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
-            <button class="btn-sm" onclick="openSchedule(${b.id}, '${b.name.replace(/'/g, "\\'")}')">⏰ Horario</button>
+            <button class="btn-sm" onclick="openSchedule(${b.id}, '${b.name.replace(/'/g, "\\'")}')"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Horario</button>
             <button class="toggle ${b.active ? 'on' : ''}" onclick="toggleBarber(${b.id}, ${b.active})" title="${b.active ? 'Desactivar' : 'Activar'}"></button>
             <button class="btn-sm cancel" onclick="deleteBarber(${b.id})" title="Eliminar">✕</button>
           </div>

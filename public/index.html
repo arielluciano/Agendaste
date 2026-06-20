@@ -25,7 +25,7 @@
     @media (max-width: 760px) { .grid-6 { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 480px) { .grid-6 { grid-template-columns: 1fr; } }
     .audience-card { text-align: center; padding: 1.75rem 1rem; }
-    .audience-card .icon { font-size: 32px; margin-bottom: .75rem; }
+    .audience-card .icon-wrap { font-size: 32px; margin-bottom: .75rem; }
     .audience-card .label { font-size: 14px; font-weight: 600; }
 
     .features { background: var(--bg-secondary); }
@@ -33,7 +33,7 @@
     @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } }
     .feature-card { padding: 1.75rem 1.25rem; }
-    .feature-card .icon { font-size: 28px; margin-bottom: .9rem; }
+    .feature-card .icon-wrap { font-size: 28px; margin-bottom: .9rem; }
     .feature-card .label { font-size: 14px; font-weight: 600; line-height: 1.4; }
 
     .pricing-card { max-width: 420px; margin: 0 auto; text-align: center; padding: 2.5rem 2rem; }
@@ -84,12 +84,62 @@
       <span class="eyebrow">PARA QUIÉN ES</span>
     </div>
     <div class="grid-6">
-      <div class="card audience-card"><div class="icon">✂️</div><div class="label">Barberías</div></div>
-      <div class="card audience-card"><div class="icon">💅</div><div class="label">Estéticas y manicura</div></div>
-      <div class="card audience-card"><div class="icon">🦷</div><div class="label">Odontólogos</div></div>
-      <div class="card audience-card"><div class="icon">🐾</div><div class="label">Veterinarias</div></div>
-      <div class="card audience-card"><div class="icon">🎨</div><div class="label">Tatuajes</div></div>
-      <div class="card audience-card"><div class="icon">🏋️</div><div class="label">Personal trainers</div></div>
+      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg></div><div class="label">Barberías</div></div>
+      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor" stroke="none">
+<path d="M925 4706 c-154 -39 -274 -156 -319 -310 -10 -34 -18 -42 -46 -50
+-48 -14 -133 -101 -148 -152 -15 -53 -16 -225 0 -276 16 -54 79 -122 133 -144
+l45 -19 0 -1197 0 -1196 -32 -7 c-44 -10 -130 -99 -146 -151 -16 -53 -16 -225
+0 -278 15 -51 100 -138 148 -152 28 -8 36 -16 46 -50 45 -154 179 -281 332
+-313 71 -15 574 -15 644 0 151 32 272 139 324 287 21 62 26 68 62 80 45 15
+103 67 129 115 22 41 31 241 13 307 -14 55 -101 144 -149 155 l-31 7 0 146 0
+147 214 214 c182 182 216 212 232 204 11 -6 131 -27 268 -49 l249 -38 196
+-224 c108 -124 198 -229 199 -233 2 -5 -10 -42 -26 -82 -42 -102 -56 -176 -55
+-297 3 -398 311 -722 711 -747 360 -22 680 212 778 568 25 91 25 291 0 379
+-78 270 -276 467 -543 542 -99 27 -265 29 -367 4 -49 -12 -72 -13 -81 -6 -19
+16 -509 589 -513 600 -2 5 340 483 759 1062 551 760 764 1062 767 1085 5 42
+-33 83 -77 83 -32 0 -7 21 -1533 -1313 -219 -191 -401 -347 -405 -346 -5 0
+-100 108 -213 240 -278 326 -271 319 -307 319 -52 0 -98 -65 -77 -110 17 -35
+1527 -1785 1552 -1799 22 -12 35 -10 116 15 225 69 442 17 607 -146 128 -126
+188 -283 176 -459 -10 -153 -65 -271 -176 -382 -111 -111 -229 -166 -382 -176
+-176 -12 -333 48 -459 176 -121 122 -175 254 -174 426 0 104 20 180 70 275 58
+109 67 91 -211 409 -156 178 -254 283 -269 287 -14 3 -132 23 -263 43 l-238
+37 -262 375 -262 374 0 397 -1 396 31 7 c48 11 135 100 149 155 18 66 9 266
+-13 307 -26 48 -84 100 -129 115 -36 12 -41 18 -62 80 -43 122 -116 201 -243
+261 l-68 32 -310 2 c-224 1 -324 -2 -360 -11z m651 -161 c27 -8 67 -29 88 -47
+36 -29 96 -111 96 -130 0 -4 -225 -8 -499 -8 l-500 0 11 33 c18 51 107 133
+164 151 71 21 568 23 640 1z m359 -370 c23 -22 25 -32 25 -120 0 -89 -2 -98
+-25 -121 l-25 -24 -656 2 -656 3 -19 24 c-16 19 -19 40 -19 118 0 86 2 96 25
+118 l24 25 651 0 651 0 24 -25z m2137 -182 c-43 -60 -284 -393 -536 -741 -370
+-511 -461 -631 -471 -620 -6 7 -67 78 -135 157 l-123 144 53 46 c30 25 331
+288 669 584 338 295 617 537 618 537 2 0 -32 -48 -75 -107z m-2712 -247 c0 -3
+-118 -96 -262 -207 -145 -111 -282 -218 -305 -237 l-43 -34 0 241 0 241 305 0
+c168 0 305 -2 305 -4z m410 -188 l-1 -193 -217 -166 c-119 -92 -349 -269 -509
+-393 l-293 -226 0 244 0 243 442 342 441 341 69 0 68 0 0 -192z m-1 -640 l0
+-243 -432 -333 c-238 -182 -467 -359 -509 -393 l-78 -60 0 245 0 244 506 391
+c279 215 508 391 510 391 2 0 4 -109 3 -242z m230 -328 c34 -50 60 -94 57 -99
+-3 -5 -33 -32 -66 -61 l-60 -52 0 151 c0 83 2 151 4 151 2 0 32 -41 65 -90z
+m-230 -362 l0 -243 -399 -307 -400 -308 -110 0 -110 0 0 159 0 158 506 392
+c279 215 508 391 510 391 2 0 4 -109 3 -242z m433 70 c25 -35 47 -68 51 -74 3
+-6 -68 -84 -159 -175 l-164 -164 0 141 0 140 112 97 c61 53 113 97 114 97 1 0
+22 -28 46 -62z m-435 -925 c-2 -2 -122 -2 -267 -1 l-262 3 263 203 264 204 3
+-203 c1 -111 1 -204 -1 -206z m168 -188 c23 -22 25 -32 25 -120 0 -88 -2 -98
+-25 -120 l-24 -25 -651 0 -651 0 -24 25 c-23 22 -25 32 -25 120 0 88 2 98 25
+120 l24 25 651 0 651 0 24 -25z m-175 -433 c0 -19 -60 -101 -96 -130 -67 -56
+-107 -62 -404 -62 -321 0 -346 5 -425 83 -28 29 -56 67 -63 85 l-11 32 500 0
+c274 0 499 -4 499 -8z"/>
+<path d="M2479 2641 c-36 -36 -39 -43 -39 -96 0 -53 3 -60 39 -96 36 -36 43
+-39 96 -39 53 0 60 3 96 39 36 36 39 43 39 96 0 53 -3 60 -39 96 -36 36 -43
+39 -96 39 -53 0 -60 -3 -96 -39z"/>
+<path d="M3865 1556 c-203 -49 -341 -255 -308 -459 16 -94 57 -169 129 -237
+88 -81 149 -104 279 -105 93 0 105 3 168 33 86 42 157 113 199 199 30 63 33
+75 33 168 -1 130 -24 191 -105 279 -107 114 -248 158 -395 122z m169 -160
+c211 -64 238 -355 42 -459 -31 -16 -59 -22 -116 -22 -64 0 -82 4 -123 28 -186
+110 -157 379 50 453 49 17 89 17 147 0z"/>
+</g></svg></div><div class="label">Estéticas y manicura</div></div>
+      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></svg></div><div class="label">Odontólogos</div></div>
+      <div class="card audience-card"><div class="icon-wrap">🐾</div><div class="label">Veterinarias</div></div>
+      <div class="card audience-card"><div class="icon-wrap">🎨</div><div class="label">Tatuajes</div></div>
+      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"/><path d="m9.6 14.4 4.8-4.8"/></svg></div><div class="label">Personal trainers</div></div>
     </div>
   </div>
 </section>
@@ -101,10 +151,10 @@
       <span class="eyebrow">QUÉ INCLUYE</span>
     </div>
     <div class="grid-4">
-      <div class="card card-dark feature-card"><div class="icon">📅</div><div class="label">Agenda online 24/7</div></div>
-      <div class="card card-dark feature-card"><div class="icon">📲</div><div class="label">Google Calendar sync</div></div>
-      <div class="card card-dark feature-card"><div class="icon">👥</div><div class="label">Multi-profesional</div></div>
-      <div class="card card-dark feature-card"><div class="icon">💬</div><div class="label">WhatsApp integrado</div></div>
+      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><div class="label">Agenda online 24/7</div></div>
+      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 10v4h4"/><path d="m11 14 1.535-1.605a5 5 0 0 1 8 1.5"/><path d="M16 2v4"/><path d="m21 18-1.535 1.605a5 5 0 0 1-8-1.5"/><path d="M21 22v-4h-4"/><path d="M21 8.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4.3"/><path d="M3 10h4"/><path d="M8 2v4"/></svg></div><div class="label">Google Calendar sync</div></div>
+      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="label">Multi-profesional</div></div>
+      <div class="card card-dark feature-card"><div class="icon-wrap">💬</div><div class="label">WhatsApp integrado</div></div>
     </div>
   </div>
 </section>
