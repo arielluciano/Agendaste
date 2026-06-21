@@ -48,11 +48,12 @@ function resolveAuth(req, res) {
   return false;
 }
 
-// Verifica si el negocio puede seguir operando (trial vigente o suscripción activa)
+// Verifica si el negocio puede seguir operando (trial vigente, suscripción activa,
+// o todavía dentro del período ya pagado de una suscripción cancelada)
 async function checkSubscription(businessId, res) {
   try {
     const result = await db.query(
-      'SELECT plan, trial_ends_at FROM owners WHERE business_id = $1 LIMIT 1',
+      'SELECT plan, trial_ends_at, access_until FROM owners WHERE business_id = $1 LIMIT 1',
       [businessId]
     );
     const owner = result.rows[0];
@@ -60,8 +61,9 @@ async function checkSubscription(businessId, res) {
 
     const trialActive        = owner.trial_ends_at && new Date(owner.trial_ends_at) > new Date();
     const subscriptionActive = owner.plan === 'active';
+    const withinAccessUntil  = owner.access_until && new Date(owner.access_until) > new Date();
 
-    if (!trialActive && !subscriptionActive) {
+    if (!trialActive && !subscriptionActive && !withinAccessUntil) {
       res.status(402).json({ error: 'Trial vencido. Suscribite para continuar.' });
       return false;
     }

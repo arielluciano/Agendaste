@@ -12,6 +12,23 @@ const PRICE_PER_BARBER = 5000; // ARS por barbero por mes
 const mpConfig    = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 const preApproval = new PreApproval(mpConfig);
 
+// Aplica el estado "cancelada" tanto si llega por el endpoint manual como por el webhook de MP.
+// access_until = next_payment_date que tenía agendado MP → el dueño conserva acceso hasta esa fecha.
+async function applyCancellation(businessId, preapprovalId, nextPaymentDate) {
+  const accessUntil = nextPaymentDate || new Date().toISOString();
+
+  await db.query(
+    `UPDATE subscriptions SET status = 'cancelled', updated_at = NOW() WHERE mp_preapproval_id = $1`,
+    [preapprovalId]
+  );
+  await db.query(
+    `UPDATE owners SET plan = 'cancelled', access_until = $1 WHERE business_id = $2`,
+    [accessUntil, businessId]
+  );
+
+  return accessUntil;
+}
+
 // POST /api/subscriptions/create → crea la suscripción en MP y devuelve el link de pago
 router.post('/create', requireAuthNoTrialGate, async (req, res) => {
   const bizId = req.businessId;
@@ -72,14 +89,22 @@ router.get('/webhook', async (req, res) => {
       const status     = preapprovalData.status;
       const businessId = parseInt(preapprovalData.external_reference, 10);
 
-      await db.query(
-        `UPDATE subscriptions SET status = $1, updated_at = NOW() WHERE mp_preapproval_id = $2`,
-        [status, dataId]
-      );
+      if (status === 'cancelled') {
+        // La cancelación puede llegar por este webhook en vez del endpoint manual —
+        // se aplica igual y de forma idempotente para no duplicar estado.
+        if (businessId) {
+          await applyCancellation(businessId, dataId, preapprovalData.next_payment_date);
+        }
+      } else {
+        await db.query(
+          `UPDATE subscriptions SET status = $1, updated_at = NOW() WHERE mp_preapproval_id = $2`,
+          [status, dataId]
+        );
 
-      if (businessId) {
-        const newPlan = status === 'authorized' ? 'active' : 'trial';
-        await db.query('UPDATE owners SET plan = $1 WHERE business_id = $2', [newPlan, businessId]);
+        if (businessId) {
+          const newPlan = status === 'authorized' ? 'active' : 'trial';
+          await db.query('UPDATE owners SET plan = $1 WHERE business_id = $2', [newPlan, businessId]);
+        }
       }
     }
 
@@ -94,7 +119,7 @@ router.get('/webhook', async (req, res) => {
 router.get('/status', requireAuthNoTrialGate, async (req, res) => {
   try {
     const ownerResult = await db.query(
-      'SELECT plan, trial_ends_at FROM owners WHERE business_id = $1 LIMIT 1',
+      'SELECT plan, trial_ends_at, access_until FROM owners WHERE business_id = $1 LIMIT 1',
       [req.businessId]
     );
     const owner = ownerResult.rows[0] || {};
@@ -116,11 +141,44 @@ router.get('/status', requireAuthNoTrialGate, async (req, res) => {
       trial_active: trialActive,
       days_left: daysLeft,
       subscription_status: subscription?.status || null,
-      subscription_amount: subscription?.amount || null
+      subscription_amount: subscription?.amount || null,
+      access_until: owner.access_until || null
     });
   } catch (err) {
     console.error('Error GET /api/subscriptions/status:', err.message);
     res.status(500).json({ error: 'Error obteniendo estado de suscripción' });
+  }
+});
+
+// POST /api/subscriptions/cancel → el dueño cancela su propia suscripción
+router.post('/cancel', requireAuthNoTrialGate, async (req, res) => {
+  const bizId = req.businessId;
+
+  try {
+    const subResult = await db.query(
+      'SELECT * FROM subscriptions WHERE business_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [bizId]
+    );
+    const subscription = subResult.rows[0];
+
+    if (!subscription || !subscription.mp_preapproval_id) {
+      return res.status(404).json({ error: 'No se encontró una suscripción para cancelar' });
+    }
+    if (subscription.status === 'cancelled') {
+      return res.status(409).json({ error: 'La suscripción ya está cancelada' });
+    }
+
+    const updated = await preApproval.update({
+      id: subscription.mp_preapproval_id,
+      body: { status: 'cancelled' }
+    });
+
+    const accessUntil = await applyCancellation(bizId, subscription.mp_preapproval_id, updated.next_payment_date);
+
+    res.json({ success: true, access_until: accessUntil });
+  } catch (err) {
+    console.error('Error cancelando suscripción MP:', err.message);
+    res.status(500).json({ error: 'Error cancelando la suscripción' });
   }
 });
 

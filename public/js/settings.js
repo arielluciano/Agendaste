@@ -158,6 +158,16 @@ async function loadSubscriptionStatus() {
 function renderSubscription(data) {
   const card = document.getElementById('sub-card');
 
+  const accessUntilDate = data.access_until ? new Date(data.access_until) : null;
+  const hasGraceAccess   = accessUntilDate && accessUntilDate.getTime() > Date.now();
+
+  if (data.plan === 'cancelled' && hasGraceAccess) {
+    card.innerHTML = `
+      <span class="badge badge-cancelled">SUSCRIPCIÓN CANCELADA</span>
+      <p style="margin:.75rem 0 0;font-size:14px">Suscripción cancelada · tenés acceso hasta el <strong>${accessUntilDate.toLocaleDateString('es-AR')}</strong></p>`;
+    return;
+  }
+
   if (data.plan === 'active') {
     card.innerHTML = `
       <div class="flex-between">
@@ -169,7 +179,9 @@ function renderSubscription(data) {
           $${(data.subscription_amount || 0).toLocaleString('es-AR')}
           <span style="font-family:var(--font-sans);font-size:12px;font-weight:400;text-transform:none;color:var(--text-muted)"> /mes</span>
         </div>
-      </div>`;
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-outline-danger" onclick="openCancelModal()">Cancelar suscripción</button>`;
     return;
   }
 
@@ -195,6 +207,38 @@ async function subscribe() {
     window.location.href = data.init_point;
   } catch {
     showToast('❌ Error conectando con Mercado Pago');
+  }
+}
+
+function openCancelModal() {
+  document.getElementById('cancel-sub-overlay').classList.add('open');
+}
+
+function closeCancelModal() {
+  document.getElementById('cancel-sub-overlay').classList.remove('open');
+}
+
+async function confirmCancelSubscription() {
+  const btn = document.getElementById('btn-confirm-cancel-sub');
+  btn.disabled = true;
+  btn.textContent = 'Cancelando...';
+
+  try {
+    const res  = await fetch('/api/subscriptions/cancel', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('❌ ' + (data.error || 'Error cancelando la suscripción'));
+      btn.disabled = false;
+      btn.textContent = 'Sí, cancelar';
+      return;
+    }
+    closeCancelModal();
+    showToast('✅ Suscripción cancelada');
+    loadSubscriptionStatus();
+  } catch {
+    showToast('❌ Error de conexión');
+    btn.disabled = false;
+    btn.textContent = 'Sí, cancelar';
   }
 }
 

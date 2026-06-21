@@ -48,6 +48,18 @@
     .map-preview iframe { display:block; width:100%; height:180px; border:0; }
 
     .sub-status-plan { font-family:var(--font-display); font-size:22px; text-transform:uppercase; white-space:nowrap; }
+    .btn-outline-danger { background:var(--bg); border:1px solid var(--danger); color:var(--danger); width:auto; }
+    .btn-outline-danger:hover { background:var(--danger-light); }
+    .btn-danger { background:var(--danger); color:var(--cream); width:auto; }
+    .btn-danger:hover { filter:brightness(0.92); }
+
+    /* ── Modal de confirmación (cancelar suscripción) ── */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:none; align-items:center; justify-content:center; padding:1rem; }
+    .confirm-overlay.open { display:flex; }
+    .confirm-modal { background:var(--bg); border-radius:var(--radius); padding:1.75rem; max-width:380px; width:100%; box-shadow:var(--shadow-lg); }
+    .confirm-modal p { color:var(--text-muted); font-size:14px; margin:.5rem 0 1.5rem; }
+    .confirm-modal-actions { display:flex; gap:10px; }
+    .confirm-modal-actions .btn { flex:1; width:100%; }
 
     @media (max-width:760px) {
       .settings-layout { flex-direction:column; }
@@ -143,6 +155,18 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Modal de confirmación: cancelar suscripción -->
+<div class="confirm-overlay" id="cancel-sub-overlay">
+  <div class="confirm-modal">
+    <h3>¿Cancelar tu suscripción?</h3>
+    <p>Vas a dejar de pagar, pero conservás el acceso hasta el final del período ya abonado. Después de esa fecha tu negocio queda bloqueado hasta que te vuelvas a suscribir.</p>
+    <div class="confirm-modal-actions">
+      <button class="btn btn-outline" onclick="closeCancelModal()">Volver</button>
+      <button class="btn btn-danger" id="btn-confirm-cancel-sub" onclick="confirmCancelSubscription()">Sí, cancelar</button>
+    </div>
+  </div>
+</div>
 
 <script src="/js/settings.js"></script>
 </body>
