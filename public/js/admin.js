@@ -45,50 +45,104 @@ async function checkAuth() {
   }
 }
 
-// ── Cargar próximos turnos ───────────────────
+// ── Fecha en horario de Argentina (no UTC) ───
+const DAY_ABBR_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DAY_PILLS_COUNT = 14;
+
+function arDateKey(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(d);
+}
+
+function apptDateKey(a) {
+  return (a.date || '').toString().split('T')[0];
+}
+
+let allAppointments = [];
+let selectedDateKey = null;
+
+// ── Cargar próximos turnos (un solo fetch) ───
 async function loadAppointments() {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  const list  = document.getElementById('appointments-list');
+  const list = document.getElementById('appointments-list');
 
   try {
     const res = await fetch('/api/appointments?from=today');
     if (res.status === 402) { showPaywall(); return; }
-    const appts = await res.json();
+    allAppointments = await res.json();
 
-    // Stats
-    const tomorrowCount = appts.filter(a => (a.date || '').toString().split('T')[0] === tomorrowStr).length;
-    const revenue = appts.reduce((sum, a) => sum + (a.price || 0), 0);
-    document.getElementById('stat-today').textContent   = appts.length;
-    document.getElementById('stat-pending').textContent = tomorrowCount;
-    document.getElementById('stat-revenue').textContent = '$' + revenue.toLocaleString('es-AR');
+    const todayKey    = arDateKey();
+    const tomorrowKey = arDateKey(new Date(Date.now() + 86400000));
+    const todayAppts  = allAppointments.filter(a => apptDateKey(a) === todayKey);
 
-    if (appts.length === 0) {
-      list.innerHTML = `<p class="text-muted" style="text-align:center;padding:2rem">No hay próximos turnos</p>`;
-      return;
-    }
+    document.getElementById('stat-today').textContent   = todayAppts.length;
+    document.getElementById('stat-pending').textContent  = allAppointments.filter(a => apptDateKey(a) === tomorrowKey).length;
+    document.getElementById('stat-revenue').textContent  = '$' + todayAppts.reduce((sum, a) => sum + (a.price || 0), 0).toLocaleString('es-AR');
 
-list.innerHTML = appts.map(a => `
-  <div class="card appt-card" id="appt-${a.id}">
-    <div>
-      <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
-      <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
-          <div class="appt-actions">
-            <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
-          </div>
-        </div>
-        <div>
-          <div class="appt-time">${a.time ? a.time.substring(0,5) : '—'}</div>
-          <div class="appt-price">$${(a.price || 0).toLocaleString('es-AR')}</div>
-          <div style="text-align:right;margin-top:4px"><span class="badge badge-${a.status}">${a.status === 'confirmed' ? 'Confirmado' : a.status === 'pending' ? 'Pendiente' : 'Cancelado'}</span></div>
-        </div>
-      </div>
-    `).join('');
+    if (!selectedDateKey) selectedDateKey = todayKey;
 
+    renderDayPills();
+    renderAppointmentsForSelectedDay();
   } catch {
     list.innerHTML = `<p class="text-muted" style="text-align:center;padding:2rem">Error cargando turnos</p>`;
   }
+}
+
+// ── Selector de día (pills) ───────────────────
+function renderDayPills() {
+  const todayKey  = arDateKey();
+  const container = document.getElementById('day-pills');
+  const now       = new Date();
+
+  const pillsHtml = [];
+  for (let i = 0; i < DAY_PILLS_COUNT; i++) {
+    const key   = arDateKey(new Date(now.getTime() + i * 86400000));
+    const dow   = new Date(key + 'T12:00:00').getDay();
+    const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : DAY_ABBR_SHORT[dow];
+    const dayNum  = Number(key.split('-')[2]);
+    const count   = allAppointments.filter(a => apptDateKey(a) === key).length;
+    const selected = key === selectedDateKey;
+
+    pillsHtml.push(`
+      <div class="day-pill ${selected ? 'selected' : ''}" onclick="selectDayPill('${key}')">
+        <div class="day-pill-label">${label}</div>
+        <div class="day-pill-num">${dayNum}</div>
+        <div class="day-pill-count">${count} turno${count === 1 ? '' : 's'}</div>
+      </div>`);
+  }
+  container.innerHTML = pillsHtml.join('');
+}
+
+function selectDayPill(key) {
+  selectedDateKey = key;
+  renderDayPills();
+  renderAppointmentsForSelectedDay();
+}
+
+// ── Render de la lista del día seleccionado ──
+function renderAppointmentsForSelectedDay() {
+  const list  = document.getElementById('appointments-list');
+  const appts = allAppointments.filter(a => apptDateKey(a) === selectedDateKey);
+
+  if (appts.length === 0) {
+    list.innerHTML = `<p class="text-muted" style="text-align:center;padding:2rem">Sin turnos para este día</p>`;
+    return;
+  }
+
+  list.innerHTML = appts.map(a => `
+    <div class="card appt-card" id="appt-${a.id}">
+      <div>
+        <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
+        <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
+            <div class="appt-actions">
+              <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
+            </div>
+          </div>
+          <div>
+            <div class="appt-time">${a.time ? a.time.substring(0,5) : '—'}</div>
+            <div class="appt-price">$${(a.price || 0).toLocaleString('es-AR')}</div>
+            <div style="text-align:right;margin-top:4px"><span class="badge badge-${a.status}">${a.status === 'confirmed' ? 'Confirmado' : a.status === 'pending' ? 'Pendiente' : 'Cancelado'}</span></div>
+          </div>
+        </div>
+      `).join('');
 }
 
 // ── Confirmar / cancelar turno ───────────────

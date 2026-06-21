@@ -7,6 +7,12 @@ const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { sendConfirmationEmail } = require('../services/email');
 
+// Fecha de hoy (YYYY-MM-DD) en horario de Argentina, no UTC —
+// el server corre en UTC y eso corría el corte de "hoy" varias horas.
+function todayAR() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+}
+
 // GET /api/appointments → todos los turnos
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -23,7 +29,7 @@ router.get('/', requireAuth, async (req, res) => {
     query += ` AND a.business_id = $${params.length}`;
 
     if (from) {
-      const fromDate = from === 'today' ? new Date().toISOString().split('T')[0] : from;
+      const fromDate = from === 'today' ? todayAR() : from;
       params.push(fromDate);
       query += ` AND date >= $${params.length}`;
     }
