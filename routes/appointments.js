@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { sendConfirmationEmail } = require('../services/email');
 
 // GET /api/appointments → todos los turnos
 router.get('/', requireAuth, async (req, res) => {
@@ -99,6 +100,29 @@ router.post('/', async (req, res) => {
       }
     } catch (calErr) {
       console.log(`⚠️ No se pudo agregar al calendar: ${calErr.message}`);
+    }
+
+    // Enviar email de confirmación al cliente (no debe bloquear la creación del turno)
+    if (newAppointment.client_email) {
+      try {
+        const [businessResult, barberResult] = await Promise.all([
+          db.query('SELECT name, address FROM businesses WHERE id = $1', [newAppointment.business_id]),
+          db.query('SELECT name FROM barbers WHERE id = $1', [newAppointment.barber_id])
+        ]);
+
+        await sendConfirmationEmail({
+          to: newAppointment.client_email,
+          clientName,
+          businessName: businessResult.rows[0]?.name,
+          service,
+          barber: barberResult.rows[0]?.name,
+          date: newAppointment.date,
+          time,
+          address: businessResult.rows[0]?.address
+        });
+      } catch (emailErr) {
+        console.log(`⚠️ No se pudo enviar el email de confirmación: ${emailErr.message}`);
+      }
     }
 
     res.status(201).json({
