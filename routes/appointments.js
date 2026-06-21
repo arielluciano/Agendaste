@@ -49,6 +49,9 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
+  // El email del cliente logueado con Google es la fuente más confiable
+  const resolvedClientEmail = req.session?.client?.email || clientEmail || null;
+
   try {
     // Verificar que el horario no esté ocupado
     const conflict = await db.query(
@@ -64,7 +67,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
  VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
  RETURNING *`,
-[businessId || 1, barberId || 1, clientName, clientPhone, clientEmail, service, businessId || 1, date, time, price, 'confirmed']
+[businessId || 1, barberId || 1, clientName, clientPhone, resolvedClientEmail, service, businessId || 1, date, time, price, 'confirmed']
     );
 
     const newAppointment = result.rows[0];

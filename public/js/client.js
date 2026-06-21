@@ -29,6 +29,9 @@ let confBarber   = '';
 let confAddress  = '';
 let confPhone    = '';
 
+// ── Cliente logueado con Google ──────────────
+let loggedClient = null;
+
 // ── Resolver negocio desde slug ──────────────
 async function initBusiness() {
   if (!slug) return;
@@ -56,6 +59,7 @@ async function checkClientLogin() {
     const res  = await fetch('/auth/client/me');
     const data = await res.json();
     if (data.loggedIn) {
+      loggedClient = data.client;
       document.getElementById('step-login').classList.remove('active');
       document.getElementById('step0').classList.add('active');
       document.getElementById('dot-login').classList.add('done');
@@ -264,6 +268,7 @@ async function confirmBooking() {
       body: JSON.stringify({
         clientName:  name,
         clientPhone: phone,
+        clientEmail: loggedClient?.email || null,
         service:     selService.name,
         barberId:    selBarber.id,
         barberName:  selBarber.name,
