@@ -204,60 +204,65 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 // GET /api/appointments/slots/:date → horarios disponibles
 router.get('/slots/:date', async (req, res) => {
-  const allSlots = ['9:00','9:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'];
-  const { barber_id } = req.query;
+  const bizId2 = parseInt(req.query.business_id) || 1;
+  const barberId2 = parseInt(req.query.barber_id) || 1;
 
   function toMinutes(t) {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   }
 
+  function toTimeStr(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  // Genera horarios cada 30 minutos entre openMins y closeMins (sin incluir el cierre)
+  function generateSlots(openMins, closeMins) {
+    const slots = [];
+    for (let m = openMins; m < closeMins; m += 30) {
+      slots.push(toTimeStr(m));
+    }
+    return slots;
+  }
+
   try {
-    let allowedSlots = allSlots;
+    const dayOfWeek = new Date(req.params.date + 'T12:00:00').getDay();
+    const schedResult = await db.query(
+      'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
+      [barberId2, dayOfWeek]
+    );
 
-    if (barber_id) {
-      const dayOfWeek = new Date(req.params.date + 'T12:00:00').getDay();
-      const schedResult = await db.query(
-        'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
-        [barber_id, dayOfWeek]
-      );
-
-      if (schedResult.rows.length === 0 || !schedResult.rows[0].is_open) {
-        return res.json(allSlots.map(s => ({ time: s, available: false })));
-      }
-
-      const { open_time, close_time, has_split, open_time_2, close_time_2 } = schedResult.rows[0];
-      const openMins  = toMinutes(open_time.substring(0, 5));
-      const closeMins = toMinutes(close_time.substring(0, 5));
-
-      let open2Mins  = null;
-      let close2Mins = null;
-      if (has_split && open_time_2 && close_time_2) {
-        open2Mins  = toMinutes(open_time_2.substring(0, 5));
-        close2Mins = toMinutes(close_time_2.substring(0, 5));
-      }
-
-      allowedSlots = allSlots.filter(s => {
-        const m = toMinutes(s);
-        const inFranja1 = m >= openMins && m < closeMins;
-        const inFranja2 = open2Mins !== null && m >= open2Mins && m < close2Mins;
-        return inFranja1 || inFranja2;
-      });
+    if (schedResult.rows.length === 0 || !schedResult.rows[0].is_open) {
+      return res.json([]);
     }
 
-    const bizId2 = parseInt(req.query.business_id) || 1;
-    const barberId2 = parseInt(barber_id) || 1;
+    const { open_time, close_time, has_split, open_time_2, close_time_2 } = schedResult.rows[0];
+    const openMins  = toMinutes(open_time.substring(0, 5));
+    const closeMins = toMinutes(close_time.substring(0, 5));
+
+    let allSlots = generateSlots(openMins, closeMins);
+
+    if (has_split && open_time_2 && close_time_2) {
+      const open2Mins  = toMinutes(open_time_2.substring(0, 5));
+      const close2Mins = toMinutes(close_time_2.substring(0, 5));
+      allSlots = allSlots.concat(generateSlots(open2Mins, close2Mins));
+    }
+
     const result = await db.query(
       "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled' AND business_id = $2 AND barber_id = $3",
       [req.params.date, bizId2, barberId2]
     );
     const taken = result.rows.map(r => r.time.substring(0, 5));
+
     const slots = allSlots.map(s => ({
       time: s,
-      available: allowedSlots.includes(s) && !taken.includes(s)
+      available: !taken.includes(s)
     }));
     res.json(slots);
   } catch (err) {
+    console.error('Error GET /api/appointments/slots/:date:', err.message);
     res.status(500).json({ error: 'Error obteniendo slots' });
   }
 });
