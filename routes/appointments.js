@@ -41,6 +41,47 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/appointments/mine → turnos del cliente logueado (Google)
+router.get('/mine', async (req, res) => {
+  const clientEmail = req.session?.client?.email;
+  if (!clientEmail) {
+    return res.status(401).json({ error: 'No hay sesión de cliente' });
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT a.*, s.name as service_name, b.name as barber_name,
+              biz.name as business_name, biz.slug as business_slug, biz.address as business_address
+       FROM appointments a
+       LEFT JOIN services s ON a.service_id = s.id
+       LEFT JOIN barbers b ON a.barber_id = b.id
+       LEFT JOIN businesses biz ON a.business_id = biz.id
+       WHERE a.client_email = $1
+       ORDER BY a.date, a.time`,
+      [clientEmail]
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+    const upcoming = [];
+    const past = [];
+
+    for (const appt of result.rows) {
+      const apptDate = appt.date instanceof Date ? appt.date.toISOString().split('T')[0] : String(appt.date).split('T')[0];
+      const normalized = { ...appt, date: apptDate };
+      if (apptDate >= today) {
+        upcoming.push(normalized);
+      } else {
+        past.push(normalized);
+      }
+    }
+
+    res.json({ upcoming, past });
+  } catch (err) {
+    console.error('Error GET /api/appointments/mine:', err.message);
+    res.status(500).json({ error: 'Error obteniendo tus turnos' });
+  }
+});
+
 // POST /api/appointments → crear nuevo turno
 router.post('/', async (req, res) => {
   const { clientName, clientPhone, clientEmail, service, barberId, date, time, price, businessId } = req.body;
@@ -157,6 +198,29 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Error actualizando turno' });
+  }
+});
+
+// PATCH /api/appointments/:id/cancel-mine → el cliente cancela su propio turno
+router.patch('/:id/cancel-mine', async (req, res) => {
+  const clientEmail = req.session?.client?.email;
+  if (!clientEmail) {
+    return res.status(401).json({ error: 'No hay sesión de cliente' });
+  }
+
+  try {
+    // El WHERE con client_email asegura que solo se cancele un turno propio
+    const result = await db.query(
+      `UPDATE appointments SET status = 'cancelled'
+       WHERE id = $1 AND client_email = $2
+       RETURNING *`,
+      [req.params.id, clientEmail]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error PATCH /api/appointments/:id/cancel-mine:', err.message);
+    res.status(500).json({ error: 'Error cancelando el turno' });
   }
 });
 

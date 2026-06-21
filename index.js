@@ -55,6 +55,11 @@ app.get('/admin/settings', requireSession, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'settings.html'));
 });
 
+// "Mis turnos" del cliente (login con Google del lado del cliente)
+app.get('/mis-turnos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'mis-turnos.html'));
+});
+
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
   try {

@@ -330,13 +330,14 @@ function addToGCal() {
   const end   = new Date(start.getTime() + 30 * 60000);
   const fmt   = dt => dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
 
-  const title   = encodeURIComponent(`✂️ Turno — ${selService.name}`);
-  const details = encodeURIComponent(
+  const title       = encodeURIComponent(`✂️ Turno — ${selService.name}`);
+  const addressLine = confAddress ? `Dirección: ${confAddress}\n` : '';
+  const details     = encodeURIComponent(
     `Servicio: ${selService.name}\n` +
     `Barbero: ${selBarber.name}\n` +
     `Precio: $${selService.price.toLocaleString('es-AR')}\n` +
-    `Dirección: [nombre de tu barbería]\n\n` +
-    `Reservado via Agendaste`
+    addressLine +
+    `\nReservado via Agendaste`
   );
 
   const url = `https://calendar.google.com/calendar/render?action=TEMPLATE`

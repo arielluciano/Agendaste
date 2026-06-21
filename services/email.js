@@ -9,13 +9,20 @@ function getClient() {
   return resend;
 }
 
+const MESES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
+// Parseo manual de YYYY-MM-DD para evitar corrimientos por zona horaria
+function formatDateEs(date) {
+  const isoDate = date instanceof Date ? date.toISOString() : String(date);
+  const [year, month, day] = isoDate.split('T')[0].split('-').map(Number);
+  return `${day} de ${MESES_ES[month - 1]} de ${year}`;
+}
+
 function buildConfirmationHtml({ clientName, businessName, service, barber, date, time, address }) {
-  const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  const formattedDate = formatDateEs(date);
 
   const rows = [
     ['Servicio', service],
@@ -33,37 +40,48 @@ function buildConfirmationHtml({ clientName, businessName, service, barber, date
   `).join('');
 
   return `
-  <div style="background:#F8F7F4; padding:32px 16px; font-family:'Segoe UI', Arial, sans-serif;">
-    <div style="max-width:480px; margin:0 auto; background:#FFFFFF; border-radius:16px; overflow:hidden; border:1px solid #E7E3DC;">
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Language" content="es">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turno confirmado</title>
+  </head>
+  <body style="margin:0; padding:0;">
+    <div style="background:#F8F7F4; padding:32px 16px; font-family:'Segoe UI', Arial, sans-serif;">
+      <div style="max-width:480px; margin:0 auto; background:#FFFFFF; border-radius:16px; overflow:hidden; border:1px solid #E7E3DC;">
 
-      <div style="background:#1A1A17; padding:28px 32px; text-align:center;">
-        <p style="margin:0; color:#F8F7F4; font-size:20px; font-weight:700; letter-spacing:0.02em;">${businessName || 'Agendaste'}</p>
+        <div style="background:#1A1A17; padding:28px 32px; text-align:center;">
+          <p style="margin:0; color:#F8F7F4; font-size:20px; font-weight:700; letter-spacing:0.02em;">${businessName || 'Agendaste'}</p>
+        </div>
+
+        <div style="padding:32px;">
+          <p style="margin:0 0 4px; color:#9A3412; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Turno confirmado</p>
+          <h1 style="margin:0 0 16px; color:#1A1A17; font-size:22px;">¡Hola${clientName ? ' ' + clientName : ''}!</h1>
+          <p style="margin:0 0 24px; color:#1A1A17; font-size:15px; line-height:1.5;">
+            Tu turno fue reservado con éxito. Estos son los detalles:
+          </p>
+
+          <table style="width:100%; border-collapse:collapse; background:#FAECE7; border-radius:12px;" cellpadding="0" cellspacing="0">
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <p style="margin:24px 0 0; color:#6B6A63; font-size:14px; line-height:1.5;">
+            Si necesitás cambiar o cancelar tu turno, comunicate directamente con ${businessName || 'el negocio'}.
+          </p>
+        </div>
+
+        <div style="background:#F8F7F4; padding:20px 32px; text-align:center; border-top:1px solid #E7E3DC;">
+          <p style="margin:0; color:#6B6A63; font-size:12px;">Reservado vía Agendaste</p>
+        </div>
+
       </div>
-
-      <div style="padding:32px;">
-        <p style="margin:0 0 4px; color:#9A3412; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Turno confirmado</p>
-        <h1 style="margin:0 0 16px; color:#1A1A17; font-size:22px;">¡Hola${clientName ? ' ' + clientName : ''}!</h1>
-        <p style="margin:0 0 24px; color:#1A1A17; font-size:15px; line-height:1.5;">
-          Tu turno fue reservado con éxito. Estos son los detalles:
-        </p>
-
-        <table style="width:100%; border-collapse:collapse; background:#FAECE7; border-radius:12px;" cellpadding="0" cellspacing="0">
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <p style="margin:24px 0 0; color:#6B6A63; font-size:14px; line-height:1.5;">
-          Si necesitás cambiar o cancelar tu turno, comunicate directamente con ${businessName || 'el negocio'}.
-        </p>
-      </div>
-
-      <div style="background:#F8F7F4; padding:20px 32px; text-align:center; border-top:1px solid #E7E3DC;">
-        <p style="margin:0; color:#6B6A63; font-size:12px;">Reservado vía Agendaste</p>
-      </div>
-
     </div>
-  </div>
+  </body>
+  </html>
   `;
 }
 

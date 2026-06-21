@@ -53,6 +53,7 @@
 <nav class="navbar">
   <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
   <div class="nav-actions">
+    <a href="/mis-turnos" id="link-mis-turnos" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Mis turnos</a>
     <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
   </div>
 </nav>
@@ -153,8 +154,11 @@
 <div id="toast"></div>
 
 <script>
-  fetch('/auth/client/me').then(r => {
-    if (r.ok) document.getElementById('btn-logout-client').style.display = '';
+  fetch('/auth/client/me').then(r => r.json()).then(data => {
+    if (data.loggedIn) {
+      document.getElementById('btn-logout-client').style.display = '';
+      document.getElementById('link-mis-turnos').style.display = '';
+    }
   });
 </script>
 <script src="/js/client.js"></script>

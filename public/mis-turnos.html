@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis turnos — Agendaste</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    .appt-card { margin-bottom: 10px; }
+    .appt-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .appt-business { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 4px; }
+    .appt-service { font-size: 15px; font-weight: 600; }
+    .appt-meta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
+    .appt-meta-row { display: flex; align-items: center; gap: 6px; }
+    .appt-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn-sm {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 12px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      transition: all .2s;
+    }
+    .btn-sm:hover { background: var(--bg-secondary); }
+    .btn-sm.cancel { border-color: var(--danger); color: var(--danger); }
+    .btn-sm.cancel:hover { background: var(--danger-light); }
+    .btn-sm.reschedule { border-color: var(--primary); color: var(--primary); }
+    .btn-sm.reschedule:hover { background: var(--primary-light); }
+    .empty-state { text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
+  <div class="nav-actions">
+    <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Login del cliente -->
+  <div id="view-login" style="display:none">
+    <div style="text-align:center;padding:2.5rem 0 2rem">
+      <div style="font-size:48px;margin-bottom:1rem">✂️</div>
+      <h2 style="margin-bottom:.5rem">Mis turnos</h2>
+      <p class="text-muted" style="margin-bottom:2rem">Iniciá sesión con Google para ver tus turnos</p>
+      <a href="/auth/client/google?next=/mis-turnos" class="btn btn-google">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continuar con Google
+      </a>
+    </div>
+  </div>
+
+  <!-- Turnos del cliente -->
+  <div id="view-turnos" style="display:none">
+    <p class="section-title">
+      <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+      Próximos turnos
+    </p>
+    <div id="upcoming-list"></div>
+
+    <div class="divider" style="margin:2rem 0"></div>
+
+    <p class="section-title">Turnos pasados</p>
+    <div id="past-list"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+<script src="/js/mis-turnos.js"></script>
+</body>
+</html>
