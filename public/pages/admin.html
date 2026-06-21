@@ -78,6 +78,12 @@
     .trial-banner { display:none; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.25rem; margin-bottom:1.5rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); }
     .trial-banner strong { font-size:14px; }
     .trial-banner p { margin:2px 0 0; font-size:13px; color:var(--text-muted); }
+    /* ── Form inline "Agregar turno" ── */
+    .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .slot:hover:not(.taken) { background: var(--bg-secondary); }
+    .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
+    .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -142,8 +148,47 @@
     <div class="tab-panel active" id="tab-turnos">
       <div class="flex-between" style="margin-bottom:1rem">
         <p class="section-title" style="margin:0">Próximos turnos</p>
-        <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="loadAppointments()">↻ Actualizar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" id="btn-toggle-add-appt" onclick="toggleAddAppointmentForm()">+ Agregar turno</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="loadAppointments()">↻ Actualizar</button>
+        </div>
       </div>
+
+      <div class="card" id="add-appointment-form" style="display:none;margin-bottom:1rem">
+        <p class="section-label" style="margin-top:0">Nuevo turno manual</p>
+        <div class="form-group">
+          <label>Barbero</label>
+          <select id="new-appt-barber" onchange="loadManualSlots()">
+            <option value="">Seleccioná un barbero</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Servicio</label>
+          <select id="new-appt-service" onchange="checkManualForm()">
+            <option value="">Seleccioná un servicio</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="new-appt-date" onchange="loadManualSlots()">
+        </div>
+        <div class="form-group">
+          <label>Horario</label>
+          <div class="slots-grid" id="new-appt-slots">
+            <p class="text-muted" style="grid-column:1/-1;font-size:13px">Elegí barbero y fecha</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nombre del cliente</label>
+          <input type="text" id="new-appt-name" placeholder="Ej: Martín García" oninput="checkManualForm()">
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="tel" id="new-appt-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkManualForm()">
+        </div>
+        <button class="btn btn-primary" id="btn-save-manual-appt" disabled onclick="saveManualAppointment()">Guardar turno</button>
+      </div>
+
       <div id="appointments-list">
         <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
       </div>

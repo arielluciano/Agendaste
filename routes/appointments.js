@@ -92,12 +92,26 @@ router.post('/', async (req, res) => {
 
   // El email del cliente logueado con Google es la fuente más confiable
   const resolvedClientEmail = req.session?.client?.email || clientEmail || null;
+  // Si hay sesión de dueño (alta manual desde el admin), el negocio es el de su sesión, no el del body
+  const resolvedBusinessId = req.session?.business_id || parseInt(businessId) || 1;
+  const resolvedBarberId = parseInt(barberId) || 1;
 
   try {
+    // Si el turno lo crea el dueño desde el admin, el barbero debe ser de su propio negocio
+    if (req.session?.business_id) {
+      const barberCheck = await db.query(
+        'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
+        [resolvedBarberId, resolvedBusinessId]
+      );
+      if (barberCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'El barbero no pertenece a tu negocio' });
+      }
+    }
+
     // Verificar que el horario no esté ocupado
     const conflict = await db.query(
       'SELECT id FROM appointments WHERE date = $1 AND time = $2 AND barber_id = $3 AND status != $4',
-      [date, time, barberId || 1, 'cancelled']
+      [date, time, resolvedBarberId, 'cancelled']
     );
 
     if (conflict.rows.length > 0) {
@@ -108,7 +122,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
  VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
  RETURNING *`,
-[businessId || 1, barberId || 1, clientName, clientPhone, resolvedClientEmail, service, businessId || 1, date, time, price, 'confirmed']
+[resolvedBusinessId, resolvedBarberId, clientName, clientPhone, resolvedClientEmail, service, resolvedBusinessId, date, time, price, 'confirmed']
     );
 
     const newAppointment = result.rows[0];
@@ -204,7 +218,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 // GET /api/appointments/slots/:date → horarios disponibles
 router.get('/slots/:date', async (req, res) => {
-  const bizId2 = parseInt(req.query.business_id) || 1;
+  const bizId2 = parseInt(req.query.business_id) || req.session?.business_id || 1;
   const barberId2 = parseInt(req.query.barber_id) || 1;
 
   function toMinutes(t) {

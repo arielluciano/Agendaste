@@ -106,6 +106,160 @@ async function updateStatus(id, status) {
   }
 }
 
+// ── Agregar turno manual (cliente por teléfono) ──
+let manualServices = [];
+let manualSelectedSlot = null;
+
+function toggleAddAppointmentForm() {
+  const isOpen = document.getElementById('add-appointment-form').style.display === 'block';
+  if (isOpen) closeAddAppointmentForm(); else openAddAppointmentForm();
+}
+
+function openAddAppointmentForm() {
+  document.getElementById('add-appointment-form').style.display = 'block';
+  document.getElementById('btn-toggle-add-appt').textContent = 'Cancelar';
+  resetManualForm();
+  loadManualFormOptions();
+}
+
+function closeAddAppointmentForm() {
+  document.getElementById('add-appointment-form').style.display = 'none';
+  document.getElementById('btn-toggle-add-appt').textContent = '+ Agregar turno';
+  resetManualForm();
+}
+
+function resetManualForm() {
+  document.getElementById('new-appt-barber').value = '';
+  document.getElementById('new-appt-service').value = '';
+  document.getElementById('new-appt-date').value = '';
+  document.getElementById('new-appt-name').value = '';
+  document.getElementById('new-appt-phone').value = '';
+  document.getElementById('new-appt-slots').innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Elegí barbero y fecha</p>';
+  manualSelectedSlot = null;
+  const btn = document.getElementById('btn-save-manual-appt');
+  btn.disabled = true;
+  btn.textContent = 'Guardar turno';
+}
+
+async function loadManualFormOptions() {
+  const barberSelect  = document.getElementById('new-appt-barber');
+  const serviceSelect = document.getElementById('new-appt-service');
+  document.getElementById('new-appt-date').min = new Date().toISOString().split('T')[0];
+
+  try {
+    const [barbersRes, servicesRes] = await Promise.all([
+      fetch('/api/barbers'),
+      fetch('/api/services')
+    ]);
+    const barbers  = await barbersRes.json();
+    manualServices = await servicesRes.json();
+
+    barberSelect.innerHTML = '<option value="">Seleccioná un barbero</option>' +
+      barbers.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    serviceSelect.innerHTML = '<option value="">Seleccioná un servicio</option>' +
+      manualServices.map(s => `<option value="${s.id}">${s.name} — $${s.price.toLocaleString('es-AR')}</option>`).join('');
+  } catch {
+    showToast('❌ Error cargando barberos/servicios');
+  }
+}
+
+async function loadManualSlots() {
+  const barberId = document.getElementById('new-appt-barber').value;
+  const date      = document.getElementById('new-appt-date').value;
+  const grid      = document.getElementById('new-appt-slots');
+  manualSelectedSlot = null;
+  checkManualForm();
+
+  if (!barberId || !date) {
+    grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Elegí barbero y fecha</p>';
+    return;
+  }
+
+  grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Cargando horarios...</p>';
+
+  try {
+    const res   = await fetch(`/api/appointments/slots/${date}?barber_id=${barberId}`);
+    const slots = await res.json();
+
+    if (slots.length === 0) {
+      grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Sin horarios disponibles ese día</p>';
+      return;
+    }
+
+    grid.innerHTML = slots.map(s => `
+      <div class="slot ${!s.available ? 'taken' : ''}" data-time="${s.time}"
+           onclick="${s.available ? `selectManualSlot('${s.time}')` : ''}">
+        ${s.time}${!s.available ? '<br><small>Ocupado</small>' : ''}
+      </div>
+    `).join('');
+  } catch {
+    grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Error cargando horarios</p>';
+  }
+}
+
+function selectManualSlot(time) {
+  manualSelectedSlot = time;
+  document.querySelectorAll('#new-appt-slots .slot').forEach(el => {
+    el.classList.toggle('selected', el.dataset.time === time);
+  });
+  checkManualForm();
+}
+
+function checkManualForm() {
+  const barberId  = document.getElementById('new-appt-barber').value;
+  const serviceId = document.getElementById('new-appt-service').value;
+  const date      = document.getElementById('new-appt-date').value;
+  const name      = document.getElementById('new-appt-name').value.trim();
+  const phone     = document.getElementById('new-appt-phone').value.trim();
+  const ok = barberId && serviceId && date && manualSelectedSlot && name && phone;
+  document.getElementById('btn-save-manual-appt').disabled = !ok;
+}
+
+async function saveManualAppointment() {
+  const barberId  = document.getElementById('new-appt-barber').value;
+  const serviceId = document.getElementById('new-appt-service').value;
+  const date      = document.getElementById('new-appt-date').value;
+  const name      = document.getElementById('new-appt-name').value.trim();
+  const phone     = document.getElementById('new-appt-phone').value.trim();
+  const service   = manualServices.find(s => String(s.id) === serviceId);
+
+  const btn = document.getElementById('btn-save-manual-appt');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    const res = await fetch('/api/appointments', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName:  name,
+        clientPhone: phone,
+        service:     service?.name,
+        barberId:    Number(barberId),
+        date,
+        time:        manualSelectedSlot,
+        price:       service?.price
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast('❌ ' + err.error);
+      btn.disabled = false;
+      btn.textContent = 'Guardar turno';
+      return;
+    }
+
+    showToast('✅ Turno agregado');
+    closeAddAppointmentForm();
+    loadAppointments();
+  } catch {
+    showToast('❌ Error de conexión');
+    btn.disabled = false;
+    btn.textContent = 'Guardar turno';
+  }
+}
+
 // ── Servicios ────────────────────────────────
 async function renderServices() {
   const list = document.getElementById('services-list');
