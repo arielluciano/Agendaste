@@ -64,6 +64,11 @@
         </div>
       </div>
 
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:1rem;font-family:var(--font-sans);font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:var(--text)">
+        <input type="checkbox" id="inp-accept-terms" style="width:auto;margin-top:2px" oninput="checkForm()">
+        <span>Acepto los <a href="/terminos" target="_blank" rel="noopener">Términos</a> y la <a href="/privacidad" target="_blank" rel="noopener">Política de Privacidad</a></span>
+      </label>
+
       <button class="btn btn-primary" id="btn-register" style="width:100%;margin-top:.75rem" disabled onclick="doRegister()">
         Crear negocio →
       </button>
@@ -99,7 +104,8 @@
   function checkForm() {
     const ok = document.getElementById('inp-owner-name').value.trim() &&
                document.getElementById('inp-email').value.trim() &&
-               document.getElementById('inp-biz-name').value.trim();
+               document.getElementById('inp-biz-name').value.trim() &&
+               document.getElementById('inp-accept-terms').checked;
     document.getElementById('btn-register').disabled = !ok;
   }
 

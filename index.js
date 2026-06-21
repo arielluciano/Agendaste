@@ -58,6 +58,15 @@ app.get('/mis-turnos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'mis-turnos.html'));
 });
 
+// Páginas legales
+app.get('/privacidad', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
+});
+
+app.get('/terminos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
+});
+
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
   try {

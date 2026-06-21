@@ -41,8 +41,8 @@ router.post('/api/register', async (req, res) => {
     const business = bizResult.rows[0];
 
     await db.query(
-      `INSERT INTO owners (business_id, name, email, plan, trial_ends_at)
-       VALUES ($1, $2, $3, 'trial', NOW() + INTERVAL '14 days')`,
+      `INSERT INTO owners (business_id, name, email, plan, trial_ends_at, terms_accepted_at)
+       VALUES ($1, $2, $3, 'trial', NOW() + INTERVAL '14 days', NOW())`,
       [business.id, ownerName, email]
     );
 
