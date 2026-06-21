@@ -76,7 +76,6 @@ list.innerHTML = appts.map(a => `
       <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
           <div class="appt-actions">
             <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
-            <button class="btn-sm" onclick="addToCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Cal</button>
           </div>
         </div>
         <div>
@@ -104,67 +103,6 @@ async function updateStatus(id, status) {
     loadAppointments();
   } catch {
     showToast('Error al actualizar');
-  }
-}
-
-// ── Agregar turno al Google Calendar ─────────
-async function addToCalendar(appt) {
-  try {
-    const res = await fetch('/api/calendar/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientName: appt.clientName,
-        clientPhone: appt.clientPhone || 'Sin teléfono',
-        service:    appt.service,
-        date:       appt.date,
-        time:       appt.time,
-        price:      appt.price,
-        duration:   30
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('📅 Turno agregado a tu Google Calendar');
-      window.open(data.eventLink, '_blank');
-    } else {
-      showToast('❌ ' + data.error);
-    }
-  } catch {
-    showToast('❌ Error conectando con Calendar');
-  }
-}
-
-// ── Ver eventos de Google Calendar ───────────
-async function loadCalendarEvents() {
-  const container = document.getElementById('calendar-events');
-  container.innerHTML = '<p class="text-muted">Cargando eventos...</p>';
-
-  try {
-    const res    = await fetch('/api/calendar/events');
-    const data   = await res.json();
-
-    if (data.error) {
-      container.innerHTML = `<p class="text-muted">${data.error}</p>`;
-      return;
-    }
-
-    if (!data.events.length) {
-      container.innerHTML = '<p class="text-muted">No hay próximos eventos</p>';
-      return;
-    }
-
-    container.innerHTML = data.events.map(e => {
-      const start = new Date(e.start?.dateTime || e.start?.date);
-      return `
-        <div class="card" style="margin-bottom:8px;padding:.75rem">
-          <div style="font-size:14px;font-weight:600">${e.summary}</div>
-          <div class="text-muted">${start.toLocaleDateString('es-AR')} — ${start.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'})}</div>
-        </div>`;
-    }).join('');
-
-  } catch {
-    container.innerHTML = '<p class="text-muted">Error cargando eventos</p>';
   }
 }
 

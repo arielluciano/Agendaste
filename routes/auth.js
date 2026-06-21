@@ -15,7 +15,6 @@ const oauth2Client = new google.auth.OAuth2(
 
 // Permisos que pedimos al usuario de Google
 const SCOPES = [
-  'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile'
 ];
@@ -23,9 +22,8 @@ const SCOPES = [
 // GET /auth/google → redirige al login de Google
 router.get('/google', (req, res) => {
   const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',   // offline = nos da refresh_token
-    scope: SCOPES,
-    prompt: 'consent'
+    access_type: 'online',
+    scope: SCOPES
   });
   res.redirect(url);
 });
@@ -38,9 +36,6 @@ router.get('/google/callback', async (req, res) => {
     // Intercambiamos el código por tokens reales
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-
-    // Guardamos los tokens en la sesión del usuario
-    req.session.tokens = tokens;
 
     // Obtenemos info del usuario
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });

@@ -114,38 +114,6 @@ router.post('/', async (req, res) => {
     const newAppointment = result.rows[0];
     console.log(`📋 Nuevo turno: ${clientName} — ${service} el ${date} a las ${time}`);
 
-    // Intentar agregar al Google Calendar del dueño
-    try {
-      const { google } = require('googleapis');
-      if (req.session && req.session.tokens) {
-        const oauth2Client = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID,
-          process.env.GOOGLE_CLIENT_SECRET,
-          process.env.REDIRECT_URI
-        );
-        oauth2Client.setCredentials(req.session.tokens);
-        const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-        const cleanDate = typeof date === 'string' ? date.split('T')[0] : date.toISOString().split('T')[0];
-        const cleanTime = typeof time === 'string' ? time.substring(0,5) : '09:00';
-        const start = new Date(`${cleanDate}T${cleanTime}:00-03:00`);
-        const end = new Date(start.getTime() + 30 * 60 * 1000);
-
-        await calendar.events.insert({
-          calendarId: 'primary',
-          resource: {
-            summary: `✂️ ${service} — ${clientName}`,
-            description: `Cliente: ${clientName}\nTeléfono: ${clientPhone || 'Sin teléfono'}\nServicio: ${service}\nPrecio: $${price}\n\nReservado via Agendaste`,
-            start: { dateTime: start.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
-            end: { dateTime: end.toISOString(), timeZone: 'America/Argentina/Buenos_Aires' },
-            reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 30 }] }
-          }
-        });
-        console.log(`📅 Turno agregado al Google Calendar`);
-      }
-    } catch (calErr) {
-      console.log(`⚠️ No se pudo agregar al calendar: ${calErr.message}`);
-    }
-
     // Enviar email de confirmación al cliente (no debe bloquear la creación del turno)
     if (newAppointment.client_email) {
       try {

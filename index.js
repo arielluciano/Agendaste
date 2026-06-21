@@ -8,7 +8,6 @@ const session = require('express-session');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
-const calendarRoutes = require('./routes/calendar');
 const appointmentRoutes = require('./routes/appointments');
 const serviceRoutes = require('./routes/services');
 
@@ -34,7 +33,6 @@ app.use('/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/barbers', require('./routes/barbers'));
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/calendar', requireAuth, calendarRoutes);
 app.use('/api/business', require('./routes/business'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/otp', require('./routes/otp'));
