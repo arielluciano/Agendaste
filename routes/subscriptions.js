@@ -5,12 +5,18 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuthNoTrialGate } = require('../middleware/auth');
-const { MercadoPagoConfig, PreApproval } = require('mercadopago');
+const {
+  MercadoPagoConfig,
+  PreApproval,
+  Payment,
+  WebhookSignatureValidator
+} = require('mercadopago');
 
 const PRICE_PER_BARBER = 5000; // ARS por barbero por mes
 
 const mpConfig    = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 const preApproval = new PreApproval(mpConfig);
+const mpPayment   = new Payment(mpConfig);
 
 // Aplica el estado "cancelada" tanto si llega por el endpoint manual como por el webhook de MP.
 // access_until = next_payment_date que tenía agendado MP → el dueño conserva acceso hasta esa fecha.
@@ -27,6 +33,32 @@ async function applyCancellation(businessId, preapprovalId, nextPaymentDate) {
   );
 
   return accessUntil;
+}
+
+// Consulta el preapproval en MP y sincroniza subscriptions/owners con su estado actual.
+// Punto único de procesamiento: lo usan tanto las notificaciones de subscription_preapproval
+// como las de subscription_authorized_payment (una vez resuelto el preapproval asociado al pago).
+async function processPreapprovalUpdate(preapprovalId) {
+  const preapprovalData = await preApproval.get({ id: preapprovalId });
+  const status     = preapprovalData.status;
+  const businessId = parseInt(preapprovalData.external_reference, 10);
+
+  if (status === 'cancelled') {
+    if (businessId) {
+      await applyCancellation(businessId, preapprovalId, preapprovalData.next_payment_date);
+    }
+    return;
+  }
+
+  await db.query(
+    `UPDATE subscriptions SET status = $1, updated_at = NOW() WHERE mp_preapproval_id = $2`,
+    [status, preapprovalId]
+  );
+
+  if (businessId) {
+    const newPlan = status === 'authorized' ? 'active' : 'trial';
+    await db.query('UPDATE owners SET plan = $1 WHERE business_id = $2', [newPlan, businessId]);
+  }
 }
 
 // POST /api/subscriptions/create → crea la suscripción en MP y devuelve el link de pago
@@ -78,39 +110,46 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
   }
 });
 
-// GET /api/subscriptions/webhook → notificaciones de Mercado Pago (alta, pago, cancelación)
-router.get('/webhook', async (req, res) => {
+// POST /api/subscriptions/webhook → notificaciones de Mercado Pago (formato Webhooks moderno)
+// Eventos manejados: subscription_preapproval (cambios de estado de la suscripción)
+// y subscription_authorized_payment (cobro de la cuota mensual).
+router.post('/webhook', async (req, res) => {
+  // 1) Validar la firma antes de tocar nada. Sin esto, cualquiera podría pegarle
+  // a este endpoint con notificaciones falsas para activar/cancelar suscripciones ajenas.
   try {
-    const type   = req.query.type || req.query.topic;
-    const dataId = req.query['data.id'] || req.query.id;
+    WebhookSignatureValidator.validate({
+      xSignature: req.headers['x-signature'],
+      xRequestId: req.headers['x-request-id'],
+      dataId: req.query['data.id'],
+      secret: process.env.MP_WEBHOOK_SECRET
+    });
+  } catch (err) {
+    console.error('Webhook MP: firma inválida —', err.message);
+    return res.sendStatus(401);
+  }
+
+  // 2) Firma válida: procesar el evento. Errores acá se loguean pero igual
+  // respondemos 200 para que MP no reintente indefinidamente una notificación
+  // que de todos modos no vamos a poder procesar.
+  try {
+    const type   = req.body?.type;
+    const dataId = req.body?.data?.id;
 
     if (type === 'subscription_preapproval' && dataId) {
-      const preapprovalData = await preApproval.get({ id: dataId });
-      const status     = preapprovalData.status;
-      const businessId = parseInt(preapprovalData.external_reference, 10);
-
-      if (status === 'cancelled') {
-        // La cancelación puede llegar por este webhook en vez del endpoint manual —
-        // se aplica igual y de forma idempotente para no duplicar estado.
-        if (businessId) {
-          await applyCancellation(businessId, dataId, preapprovalData.next_payment_date);
-        }
-      } else {
-        await db.query(
-          `UPDATE subscriptions SET status = $1, updated_at = NOW() WHERE mp_preapproval_id = $2`,
-          [status, dataId]
-        );
-
-        if (businessId) {
-          const newPlan = status === 'authorized' ? 'active' : 'trial';
-          await db.query('UPDATE owners SET plan = $1 WHERE business_id = $2', [newPlan, businessId]);
-        }
+      await processPreapprovalUpdate(dataId);
+    } else if (type === 'subscription_authorized_payment' && dataId) {
+      const paymentData   = await mpPayment.get({ id: dataId });
+      const preapprovalId = paymentData?.point_of_interaction?.transaction_data?.subscription_id;
+      if (preapprovalId) {
+        await processPreapprovalUpdate(preapprovalId);
       }
     }
+    // Otros tipos de notificación (ej. "payment" sueltos) no son relevantes para
+    // suscripciones y se ignoran sin error.
 
     res.sendStatus(200);
   } catch (err) {
-    console.error('Error en webhook de Mercado Pago:', err.message);
+    console.error('Error procesando webhook de Mercado Pago:', err.message);
     res.sendStatus(200);
   }
 });
