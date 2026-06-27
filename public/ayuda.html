@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayuda · Agendaste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F8F7F4;
+    --ink:#1A1A17;
+    --primary:#9A3412;
+    --border:#E5E4DF;
+    --muted:#6b6a64;
+    --card:#fffefb;
+    --radius:0.875rem;
+    --font-display:'Anton',system-ui,sans-serif;
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+
+  /* Layout */
+  .wrap{max-width:1080px;margin:0 auto;padding:0 1.5rem}
+  .layout{display:grid;grid-template-columns:240px 1fr;gap:3rem;align-items:start}
+  @media (max-width:860px){.layout{grid-template-columns:1fr;gap:1.5rem}}
+
+  /* Header */
+  header{border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
+  .head-inner{display:flex;align-items:center;gap:.75rem;padding:1rem 0}
+  .logo-mark{
+    width:38px;height:38px;border-radius:.55rem;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .logo-mark span{font-family:var(--font-display);color:var(--bg);font-size:1.4rem;line-height:1;padding-top:2px}
+  .logo-word{font-family:var(--font-mono);letter-spacing:.22em;font-size:.8rem;font-weight:500;text-transform:uppercase}
+  .head-tag{margin-left:auto;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  @media (max-width:520px){.head-tag{display:none}}
+
+  /* Hero */
+  .hero{padding:3.5rem 0 2.5rem;border-bottom:1px solid var(--border)}
+  .eyebrow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--primary);margin-bottom:1rem}
+  .hero h1{font-family:var(--font-display);font-size:clamp(2.6rem,7vw,4.5rem);line-height:.95;text-transform:uppercase;letter-spacing:.01em}
+  .hero p{margin-top:1.1rem;max-width:46ch;color:var(--muted);font-size:1.05rem}
+
+  /* TOC */
+  nav.toc{position:sticky;top:84px}
+  @media (max-width:860px){nav.toc{position:static}}
+  .toc-title{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.9rem}
+  .toc ol{list-style:none;counter-reset:toc}
+  .toc li{counter-increment:toc;margin-bottom:.15rem}
+  .toc a{
+    display:flex;gap:.6rem;align-items:baseline;text-decoration:none;
+    padding:.4rem .5rem;border-radius:.5rem;font-size:.92rem;color:var(--ink);
+    transition:background .15s,color .15s;
+  }
+  .toc a::before{content:counter(toc,decimal-leading-zero);font-family:var(--font-mono);font-size:.72rem;color:var(--primary);flex-shrink:0}
+  .toc a:hover,.toc a:focus-visible{background:var(--card);color:var(--primary);outline:none}
+
+  /* Sections */
+  main{padding:2.5rem 0 4rem;min-width:0}
+  section{scroll-margin-top:84px;padding:2rem 0;border-bottom:1px solid var(--border)}
+  section:first-child{padding-top:.5rem}
+  section:last-child{border-bottom:none}
+  .sec-num{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--primary);display:block;margin-bottom:.5rem}
+  section h2{font-family:var(--font-display);font-size:clamp(1.5rem,3.5vw,2rem);text-transform:uppercase;line-height:1.05;margin-bottom:1rem}
+  section h3{font-size:1.02rem;font-weight:700;margin:1.4rem 0 .4rem}
+  section p{margin-bottom:.8rem;max-width:62ch}
+  section ul,section ol.steps{margin:.4rem 0 1rem;padding-left:0;max-width:62ch}
+  section ul{list-style:none}
+  section ul li{position:relative;padding-left:1.3rem;margin-bottom:.5rem}
+  section ul li::before{content:'';position:absolute;left:0;top:.65em;width:6px;height:6px;border-radius:1px;background:var(--primary)}
+  ol.steps{list-style:none;counter-reset:step}
+  ol.steps li{counter-increment:step;position:relative;padding-left:2.4rem;margin-bottom:.9rem}
+  ol.steps li::before{
+    content:counter(step);position:absolute;left:0;top:-2px;
+    width:1.7rem;height:1.7rem;border-radius:.45rem;background:var(--ink);color:var(--bg);
+    font-family:var(--font-mono);font-size:.85rem;display:flex;align-items:center;justify-content:center;
+  }
+  strong{font-weight:700}
+  code{font-family:var(--font-mono);font-size:.85em;background:var(--card);border:1px solid var(--border);padding:.1em .4em;border-radius:.35rem}
+
+  /* Callout */
+  .note{
+    background:var(--card);border:1px solid var(--border);border-left:3px solid var(--primary);
+    border-radius:var(--radius);padding:1rem 1.2rem;margin:1.2rem 0;max-width:62ch;
+  }
+  .note .lbl{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--primary);display:block;margin-bottom:.35rem}
+  .note p{margin:0}
+
+  /* Summary bar demo */
+  .demo-bar{
+    display:flex;flex-wrap:wrap;gap:1.2rem;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:.9rem 1.2rem;margin:1rem 0;max-width:62ch;
+  }
+  .demo-bar span{font-family:var(--font-mono);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+  .demo-bar b{color:var(--primary)}
+
+  footer{border-top:1px solid var(--border);padding:2rem 0;color:var(--muted);font-family:var(--font-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head-inner">
+    <div class="logo-mark"><span>A</span></div>
+    <div class="logo-word">Agendaste</div>
+    <div class="head-tag">Manual del dueño</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Centro de ayuda</div>
+    <h1>Cómo usar<br>tu agenda</h1>
+    <p>Todo lo que necesitás para manejar tus turnos, tu equipo y tus clientes desde el panel. Sin vueltas.</p>
+  </div>
+</div>
+
+<div class="wrap layout">
+
+  <nav class="toc" aria-label="Índice del manual">
+    <div class="toc-title">Contenido</div>
+    <ol>
+      <li><a href="#ingresar">Ingresar al panel</a></li>
+      <li><a href="#configurar">Configurar tu negocio</a></li>
+      <li><a href="#equipo">Cargar tu equipo</a></li>
+      <li><a href="#link">Compartir el link de reservas</a></li>
+      <li><a href="#dia">Tu día de un vistazo</a></li>
+      <li><a href="#turnos">Confirmar y cancelar turnos</a></li>
+      <li><a href="#suscripcion">Tu suscripción</a></li>
+      <li><a href="#dudas">Dudas frecuentes</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section id="ingresar">
+      <span class="sec-num">01 · Acceso</span>
+      <h2>Ingresar al panel</h2>
+      <p>Entrás a tu panel desde <strong>agendaste.com.ar/admin</strong> y te logueás con tu cuenta de Google. No tenés que crear ni recordar otra contraseña: usás la misma cuenta de Google de siempre.</p>
+      <ol class="steps">
+        <li>Abrí <code>agendaste.com.ar/admin</code> en tu celular o computadora.</li>
+        <li>Tocá <strong>Ingresar con Google</strong> y elegí tu cuenta.</li>
+        <li>Listo. Ya estás adentro de tu panel.</li>
+      </ol>
+      <div class="note">
+        <span class="lbl">Tip</span>
+        <p>Guardá la página en favoritos o agregala a la pantalla de inicio del celular para entrar de un toque.</p>
+      </div>
+    </section>
+
+    <section id="configurar">
+      <span class="sec-num">02 · Puesta a punto</span>
+      <h2>Configurar tu negocio</h2>
+      <p>Antes de recibir el primer turno, dejá lista la base. Esto lo hacés una sola vez y después solo retocás cuando algo cambia.</p>
+      <h3>Lo que conviene cargar</h3>
+      <ul>
+        <li><strong>Horarios de atención:</strong> los días y las horas en que tomás turnos. Fuera de ese rango, nadie puede reservar.</li>
+        <li><strong>Servicios:</strong> cada servicio con su nombre, su duración y su precio. La duración es importante: define cuánto ocupa cada turno en la agenda.</li>
+        <li><strong>Datos del local:</strong> nombre, dirección y forma de contacto, para que el cliente sepa a dónde va.</li>
+      </ul>
+      <div class="note">
+        <span class="lbl">Por qué importa la duración</span>
+        <p>Si un servicio dura 30 minutos, el sistema ofrece turnos cada 30 minutos. Si lo cargás mal, te van a quedar huecos o se te van a superponer clientes.</p>
+      </div>
+    </section>
+
+    <section id="equipo">
+      <span class="sec-num">03 · Tu equipo</span>
+      <h2>Cargar tu equipo</h2>
+      <p>Si trabajás con más gente, cargá a cada integrante para que los clientes puedan elegir con quién atenderse y para que cada uno tenga su propia agenda.</p>
+      <ol class="steps">
+        <li>Andá a la sección de tu equipo dentro del panel.</li>
+        <li>Agregá a cada persona con su nombre.</li>
+        <li>Asigná los horarios de cada uno (pueden ser distintos entre sí).</li>
+      </ol>
+      <p>Si trabajás solo, podés saltear este paso: tus turnos quedan todos en tu agenda.</p>
+    </section>
+
+    <section id="link">
+      <span class="sec-num">04 · Tus clientes</span>
+      <h2>Compartir el link de reservas</h2>
+      <p>Tus clientes no usan el panel. Ellos sacan turno desde tu link público, que podés mandar por WhatsApp, ponerlo en tu Instagram o pegarlo donde quieras.</p>
+      <ol class="steps">
+        <li>Copiá tu link de reservas desde el panel.</li>
+        <li>Pegalo en tu bio de Instagram, en tu estado de WhatsApp o se lo mandás directo al cliente.</li>
+        <li>El cliente entra, elige servicio, día y horario, y reserva solo. A vos te aparece el turno en la agenda al instante.</li>
+      </ol>
+      <div class="note">
+        <span class="lbl">La idea</span>
+        <p>Que el cliente saque turno sin que vos tengas que contestar mensajes ni anotar nada a mano. Menos ida y vuelta, menos turnos perdidos.</p>
+      </div>
+    </section>
+
+    <section id="dia">
+      <span class="sec-num">05 · El día a día</span>
+      <h2>Tu día de un vistazo</h2>
+      <p>Al entrar al panel ves la agenda del día elegido con todos los turnos en orden. Arriba de la lista tenés una barra resumen con los números que importan:</p>
+      <div class="demo-bar">
+        <span>Confirmados: <b>8</b></span>
+        <span>Cancelados: <b>2</b></span>
+        <span>Total: <b>$24.000</b></span>
+      </div>
+      <ul>
+        <li><strong>Confirmados:</strong> cuántos turnos válidos tenés ese día.</li>
+        <li><strong>Cancelados:</strong> cuántos se dieron de baja.</li>
+        <li><strong>Total:</strong> la plata del día. Cuenta solo los turnos confirmados; los cancelados no suman.</li>
+      </ul>
+      <p>Cambiando el día seleccionado, la lista y el resumen se actualizan para esa fecha.</p>
+    </section>
+
+    <section id="turnos">
+      <span class="sec-num">06 · Gestión</span>
+      <h2>Confirmar y cancelar turnos</h2>
+      <p>Cada turno de la lista muestra el cliente, el horario y el servicio. Desde ahí lo gestionás.</p>
+      <h3>Cancelar un turno</h3>
+      <p>Cuando un cliente avisa que no viene, cancelá el turno. Ese horario vuelve a quedar libre para que otra persona lo pueda reservar, y el turno deja de sumar al total del día.</p>
+      <div class="note">
+        <span class="lbl">Importante</span>
+        <p>Un turno cancelado no desaparece: queda registrado para que después puedas ver cuántas cancelaciones tuviste. Simplemente deja de contar como turno activo y no suma plata.</p>
+      </div>
+    </section>
+
+    <section id="suscripcion">
+      <span class="sec-num">07 · Tu cuenta</span>
+      <h2>Tu suscripción</h2>
+      <p>Agendaste funciona con una suscripción mensual que se paga a través de Mercado Pago. Mientras la suscripción está activa, tenés el panel y las reservas funcionando sin límite.</p>
+      <ul>
+        <li>El pago es mensual y se renueva solo.</li>
+        <li>Podés ver el estado de tu suscripción desde tu cuenta.</li>
+      </ul>
+      <div class="note">
+        <span class="lbl">A confirmar</span>
+        <p>Ajustá esta sección con el precio real, el período de prueba y cómo se da de baja, según lo que definas al activar los cobros.</p>
+      </div>
+    </section>
+
+    <section id="dudas">
+      <span class="sec-num">08 · Ayuda</span>
+      <h2>Dudas frecuentes</h2>
+      <h3>Un cliente dice que no puede sacar turno</h3>
+      <p>Casi siempre es porque ese día u horario está fuera de tu horario de atención, o ya está ocupado. Revisá tu configuración de horarios.</p>
+      <h3>Cancelé un turno pero el cliente igual vino</h3>
+      <p>Si lo cancelaste por error, sacá un turno nuevo en ese horario. El horario cancelado quedó libre, así que vas a poder volver a reservarlo.</p>
+      <h3>¿Mis clientes necesitan crear una cuenta?</h3>
+      <p>No. Ellos solo entran a tu link, eligen y reservan. La cuenta de Google es únicamente para vos, el dueño.</p>
+      <h3>¿Cómo cambio mis precios u horarios?</h3>
+      <p>Desde la configuración de tu negocio, en cualquier momento. Los cambios se aplican a los turnos nuevos.</p>
+      <div class="note">
+        <span class="lbl">¿Seguís con dudas?</span>
+        <p>Escribinos a turnos@agendaste.com.ar y te damos una mano.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">Agendaste · Manual del dueño · agendaste.com.ar</div>
+</footer>
+
+</body>
+</html>

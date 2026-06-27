@@ -43,6 +43,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Centro de ayuda
+app.get('/ayuda', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ayuda.html'));
+});
+
 // Panel del dueño
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html'));
