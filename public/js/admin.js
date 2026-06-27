@@ -75,7 +75,7 @@ async function loadAppointments() {
 
     document.getElementById('stat-today').textContent   = todayAppts.length;
     document.getElementById('stat-pending').textContent  = allAppointments.filter(a => apptDateKey(a) === tomorrowKey).length;
-    document.getElementById('stat-revenue').textContent  = '$' + todayAppts.reduce((sum, a) => sum + (a.price || 0), 0).toLocaleString('es-AR');
+    document.getElementById('stat-revenue').textContent  = '$' + todayAppts.filter(a => a.status === 'confirmed').reduce((sum, a) => sum + (a.price || 0), 0).toLocaleString('es-AR');
 
     if (!selectedDateKey) selectedDateKey = todayKey;
 
@@ -127,7 +127,15 @@ function renderAppointmentsForSelectedDay() {
     return;
   }
 
-  list.innerHTML = appts.map(a => `
+  let confirmed = 0, cancelled = 0, total = 0;
+  for (const a of appts) {
+    if (a.status === 'confirmed') { confirmed++; total += a.price || 0; }
+    else if (a.status === 'cancelled') { cancelled++; }
+  }
+
+  const summaryBar = `<div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:8px 0 12px;border-bottom:1px solid var(--border);margin-bottom:12px">CONFIRMADOS: ${confirmed} · CANCELADOS: ${cancelled} · TOTAL: $${total.toLocaleString('es-AR')}</div>`;
+
+  list.innerHTML = summaryBar + appts.map(a => `
     <div class="card appt-card" id="appt-${a.id}">
       <div>
         <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
