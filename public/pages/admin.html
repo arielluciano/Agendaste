@@ -29,10 +29,7 @@
     .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .service-row:last-child { border: none; }
     .price-input { width: 90px; padding: 6px 8px; text-align: right; border-radius: 6px; }
-    .toggle { width: 38px; height: 22px; background: var(--border); border-radius: 11px; cursor: pointer; position: relative; border: none; transition: background .3s; }
-    .toggle.on { background: var(--green); }
-    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: left .3s; }
-    .toggle.on::after { left: 18px; }
+    /* .toggle → definido en styles.css */
     .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
     .login-box { text-align: center; padding: 3rem 1rem; }
     .login-box h2 { margin-bottom:.75rem; }
@@ -68,9 +65,7 @@
     .schedule-day.split .schedule-franja-num { display:inline-block; }
     .schedule-row input[type=time], .schedule-franja-row input[type=time] { flex:1; min-width:0; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); font-size:13px; }
     .schedule-sep { font-size:12px; color:var(--text-muted); }
-    .toggle-sm { width:28px; height:16px; }
-    .toggle-sm::after { width:12px; height:12px; }
-    .toggle-sm.on::after { left:14px; }
+    /* .toggle-sm → definido en styles.css */
     @media (max-width:380px) {
       .schedule-day-head { flex-wrap:wrap; }
       .schedule-franjas { padding-left:0; }
