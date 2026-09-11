@@ -72,7 +72,14 @@ router.post('/verify', async (req, res) => {
     delete otpStore[email];
     return res.status(400).json({ error: 'El código expiró' });
   }
-  if (stored.code !== code) return res.status(400).json({ error: 'Código incorrecto' });
+  if (stored.code !== code) {
+    stored.attempts = (stored.attempts || 0) + 1;
+    if (stored.attempts >= 5) {
+      delete otpStore[email];
+      return res.status(429).json({ error: 'Demasiados intentos fallidos. Pedí un código nuevo.' });
+    }
+    return res.status(400).json({ error: 'Código incorrecto' });
+  }
 
   // Código válido — guardar sesión del cliente
   delete otpStore[email];
