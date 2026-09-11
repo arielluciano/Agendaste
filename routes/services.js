@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { requireAuth } = require('../middleware/auth');
 
 // GET /api/services → servicios activos (para el cliente)
 router.get('/', async (req, res) => {
@@ -52,7 +53,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/services/:id → actualizar servicio
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAuth, async (req, res) => {
   const { name, price, dur, active } = req.body;
   try {
     const result = await db.query(
@@ -61,8 +62,8 @@ router.patch('/:id', async (req, res) => {
         price = COALESCE($2, price),
         duration = COALESCE($3, duration),
         active = COALESCE($4, active)
-       WHERE id = $5 RETURNING *`,
-      [name, price ? parseInt(price) : null, dur, active, req.params.id]
+       WHERE id = $5 AND business_id = $6 RETURNING *`,
+      [name, price ? parseInt(price) : null, dur, active, req.params.id, req.businessId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
     res.json(result.rows[0]);
@@ -72,9 +73,13 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/services/:id → eliminar servicio
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    await db.query('DELETE FROM services WHERE id = $1', [req.params.id]);
+    const result = await db.query(
+      'DELETE FROM services WHERE id = $1 AND business_id = $2 RETURNING id',
+      [req.params.id, req.businessId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Error borrando servicio' });

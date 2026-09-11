@@ -4,6 +4,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
+const { requireAuth } = require('../middleware/auth');
 
 // GET /api/business → datos del negocio
 // Acepta ?slug=xxx (público) o usa session.business_id (admin)
@@ -26,9 +27,9 @@ router.get('/', async (req, res) => {
 });
 
 // PATCH /api/business → actualizar datos del negocio
-router.patch('/', async (req, res) => {
+router.patch('/', requireAuth, async (req, res) => {
   const { name, address, phone, description, schedule } = req.body;
-  const bizId = req.session?.business_id || 1;
+  const bizId = req.businessId;
   try {
     const result = await db.query(
       `UPDATE businesses

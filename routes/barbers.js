@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { requireAuth } = require('../middleware/auth');
 
 // GET /api/barbers → barberos activos
 router.get('/', async (req, res) => {
@@ -34,14 +35,13 @@ router.get('/all', async (req, res) => {
 });
 
 // POST /api/barbers → agregar barbero
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const { name, role } = req.body;
-  const bizId = req.session?.business_id || 1;
   if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
   try {
     const result = await db.query(
       'INSERT INTO barbers (business_id, name, role, active) VALUES ($1, $2, $3, true) RETURNING *',
-      [bizId, name, role || 'Barbero']
+      [req.businessId, name, role || 'Barbero']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -63,11 +63,16 @@ router.get('/:id/schedule', async (req, res) => {
 });
 
 // PATCH /api/barbers/:id/schedule → guardar horarios del barbero
-router.patch('/:id/schedule', async (req, res) => {
+router.patch('/:id/schedule', requireAuth, async (req, res) => {
   const { schedule } = req.body;
   const barberId = req.params.id;
   if (!Array.isArray(schedule)) return res.status(400).json({ error: 'Formato inválido' });
   try {
+    const ownerCheck = await db.query(
+      'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
+      [barberId, req.businessId]
+    );
+    if (ownerCheck.rows.length === 0) return res.status(403).json({ error: 'No autorizado' });
     for (const day of schedule) {
       await db.query(
         `INSERT INTO barber_schedules (barber_id, day_of_week, is_open, open_time, close_time, has_split, open_time_2, close_time_2)
@@ -84,9 +89,9 @@ router.patch('/:id/schedule', async (req, res) => {
 });
 
 // POST /api/barbers/apply-schedule → aplica un horario base a todos los barberos del negocio
-router.post('/apply-schedule', async (req, res) => {
+router.post('/apply-schedule', requireAuth, async (req, res) => {
   const { schedule } = req.body;
-  const bizId = req.session?.business_id || 1;
+  const bizId = req.businessId;
   if (!Array.isArray(schedule)) return res.status(400).json({ error: 'Formato inválido' });
   try {
     const barbersResult = await db.query('SELECT id FROM barbers WHERE business_id = $1', [bizId]);
@@ -109,7 +114,7 @@ router.post('/apply-schedule', async (req, res) => {
 });
 
 // PATCH /api/barbers/:id → actualizar barbero
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAuth, async (req, res) => {
   const { name, role, active } = req.body;
   try {
     const result = await db.query(
@@ -117,8 +122,8 @@ router.patch('/:id', async (req, res) => {
         name = COALESCE($1, name),
         role = COALESCE($2, role),
         active = COALESCE($3, active)
-       WHERE id = $4 RETURNING *`,
-      [name, role, active, req.params.id]
+       WHERE id = $4 AND business_id = $5 RETURNING *`,
+      [name, role, active, req.params.id, req.businessId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Barbero no encontrado' });
     res.json(result.rows[0]);
@@ -128,8 +133,13 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/barbers/:id → eliminar barbero
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    const check = await db.query(
+      'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
+      [req.params.id, req.businessId]
+    );
+    if (check.rows.length === 0) return res.status(403).json({ error: 'Barbero no encontrado o no autorizado' });
     await db.query('DELETE FROM barbers WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
