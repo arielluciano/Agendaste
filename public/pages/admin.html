@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
+    /* ── Componentes existentes (sin modificar) ─── */
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
     .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: left; }
     .stat-card-dark { background: var(--ink); border-color: var(--ink); color: var(--cream); }
@@ -29,51 +30,49 @@
     .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .service-row:last-child { border: none; }
     .price-input { width: 90px; padding: 6px 8px; text-align: right; border-radius: 6px; }
-    /* .toggle → definido en styles.css */
+    /* .toggle / .toggle-sm → definidos en styles.css */
     .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
     .login-box { text-align: center; padding: 3rem 1rem; }
-    .login-box h2 { margin-bottom:.75rem; }
-    .login-box p { color: var(--text-muted); font-size:14px; margin-bottom:1.5rem; }
+    .login-box h2 { margin-bottom: .75rem; }
+    .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; }
     .tabs { display: flex; gap: 4px; background: var(--bg-secondary); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
-    .tab { flex: 1; padding: 8px; border: none; background: transparent; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: var(--text-muted); }
+    .tab { flex: 1; padding: 8px; border: none; background: transparent; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: var(--text-muted); font-family: inherit; }
     .tab.active { background: var(--bg); color: var(--text); font-weight: 600; border: 1px solid var(--border); }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
-    .user-pill { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
-    .user-pill img { width:28px; height:28px; border-radius:50%; }
-    /* ── Panel de configuración ── */
-    .config-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
-    .config-overlay.open { opacity:1; pointer-events:auto; }
-    .config-panel { position:fixed; top:0; right:0; bottom:0; width:min(420px,100vw); background:var(--bg); border-left:1px solid var(--border); z-index:101; transform:translateX(100%); transition:transform .3s ease; overflow-y:auto; display:flex; flex-direction:column; box-shadow:-4px 0 24px rgba(0,0,0,.12); }
-    .config-panel.open { transform:translateX(0); }
-    .config-header { display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:1; }
-    .config-body { padding:1.5rem; flex:1; }
-    .config-close { background:none; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--text-muted); padding:2px 6px; border-radius:6px; transition:background .2s; }
-    .config-close:hover { background:var(--bg-secondary); }
-    .gear-btn { background:none; border:1px solid var(--border); border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:15px; display:inline-flex; align-items:center; justify-content:center; transition:background .2s; }
-    .gear-btn:hover { background:var(--bg-secondary); }
-    .schedule-day { padding:12px 0; border-bottom:1px solid var(--border); }
-    .schedule-day:last-child { border:none; }
-    .schedule-day-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-    .schedule-day-name { flex:1; font-size:13px; font-weight:600; color:var(--text); }
-    .schedule-split-toggle { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); cursor:pointer; user-select:none; }
-    .schedule-franjas { display:flex; flex-direction:column; gap:8px; padding-left:48px; }
-    .schedule-franja-row { display:flex; align-items:center; gap:8px; }
-    .schedule-franja-row.sched-franja-2 { display:none; }
-    .schedule-day.split .schedule-franja-row.sched-franja-2 { display:flex; }
-    .schedule-franja-num { display:none; width:20px; flex-shrink:0; font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
-    .schedule-day.split .schedule-franja-num { display:inline-block; }
-    .schedule-row input[type=time], .schedule-franja-row input[type=time] { flex:1; min-width:0; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); font-size:13px; }
-    .schedule-sep { font-size:12px; color:var(--text-muted); }
-    /* .toggle-sm → definido en styles.css */
-    @media (max-width:380px) {
-      .schedule-day-head { flex-wrap:wrap; }
-      .schedule-franjas { padding-left:0; }
+    .user-pill { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .user-pill img { width: 28px; height: 28px; border-radius: 50%; }
+    /* ── Panel de horarios (slide-in) ── */
+    .config-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .config-overlay.open { opacity: 1; pointer-events: auto; }
+    .config-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: var(--bg); border-left: 1px solid var(--border); z-index: 101; transform: translateX(100%); transition: transform .3s ease; overflow-y: auto; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,.12); }
+    .config-panel.open { transform: translateX(0); }
+    .config-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 1; }
+    .config-body { padding: 1.5rem; flex: 1; }
+    .config-close { background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 2px 6px; border-radius: 6px; transition: background .2s; }
+    .config-close:hover { background: var(--bg-secondary); }
+    .gear-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; transition: background .2s; }
+    .gear-btn:hover { background: var(--bg-secondary); }
+    .schedule-day { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .schedule-day:last-child { border: none; }
+    .schedule-day-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .schedule-day-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+    .schedule-split-toggle { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); cursor: pointer; user-select: none; }
+    .schedule-franjas { display: flex; flex-direction: column; gap: 8px; padding-left: 48px; }
+    .schedule-franja-row { display: flex; align-items: center; gap: 8px; }
+    .schedule-franja-row.sched-franja-2 { display: none; }
+    .schedule-day.split .schedule-franja-row.sched-franja-2 { display: flex; }
+    .schedule-franja-num { display: none; width: 20px; flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .schedule-day.split .schedule-franja-num { display: inline-block; }
+    .schedule-row input[type=time], .schedule-franja-row input[type=time] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 13px; }
+    .schedule-sep { font-size: 12px; color: var(--text-muted); }
+    @media (max-width: 380px) {
+      .schedule-day-head { flex-wrap: wrap; }
+      .schedule-franjas { padding-left: 0; }
     }
-    .trial-banner { display:none; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.25rem; margin-bottom:1.5rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); }
-    .trial-banner strong { font-size:14px; }
-    .trial-banner p { margin:2px 0 0; font-size:13px; color:var(--text-muted); }
-    /* ── Selector de día (pills) ── */
+    .trial-banner { display: none; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); }
+    .trial-banner strong { font-size: 14px; }
+    .trial-banner p { margin: 2px 0 0; font-size: 13px; color: var(--text-muted); }
     .day-pills { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: .5rem; -webkit-overflow-scrolling: touch; }
     .day-pill { flex: 0 0 auto; min-width: 60px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); text-align: center; cursor: pointer; transition: all .2s; }
     .day-pill:hover { background: var(--bg-secondary); }
@@ -81,52 +80,263 @@
     .day-pill-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
     .day-pill-num { font-family: var(--font-display); font-size: 20px; line-height: 1.1; margin-top: 2px; }
     .day-pill-count { font-size: 10px; margin-top: 2px; opacity: .7; }
-    /* ── Form inline "Agregar turno" ── */
     .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
     .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
     .slot:hover:not(.taken) { background: var(--bg-secondary); }
     .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
     .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
+
+    /* ══════════════════════════════════════════════
+       Layout admin — mobile base
+       ══════════════════════════════════════════════ */
+
+    /* Sidebar: en mobile es el navbar horizontal sticky */
+    .admin-sidebar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: .875rem 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .admin-sidebar-top { display: flex; align-items: center; }
+    .admin-sidebar-nav { display: none; } /* nav de desktop — oculto en mobile */
+
+    /* Contenido principal: container angosto en mobile */
+    .admin-main {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+
+    /* Rail derecho: oculto en mobile */
+    .admin-right-rail { display: none; }
+    .admin-appt-columns { display: block; }
+
+    /* ══════════════════════════════════════════════
+       Layout admin — desktop ≥ 960px
+       ══════════════════════════════════════════════ */
+    @media (min-width: 960px) {
+
+      /* Sidebar → panel fijo vertical */
+      .admin-sidebar {
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        width: 240px;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: space-between;
+        background: var(--ink);
+        border-bottom: none;
+        border-right: 1px solid rgba(248,247,244,.08);
+        padding: 1.75rem 1rem 1.5rem;
+        overflow-y: auto;
+      }
+
+      .admin-sidebar-top {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+        width: 100%;
+      }
+
+      /* Brand en fondo oscuro */
+      .admin-sidebar .navbar-brand { color: var(--cream); }
+      .admin-sidebar .navbar-brand span:not(.brand-mark) { color: var(--cream); }
+      .admin-sidebar .brand-mark {
+        background: rgba(248,247,244,.15);
+        color: var(--cream);
+      }
+
+      /* Nav de sidebar: visible y vertical */
+      .admin-sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+      }
+
+      /* Tabs reestilizados para sidebar oscuro */
+      .admin-sidebar-nav .tab {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: none;
+        color: rgba(248,247,244,.45);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        cursor: pointer;
+        transition: background .2s, color .2s;
+        text-align: left;
+      }
+      .admin-sidebar-nav .tab:hover {
+        background: rgba(248,247,244,.08);
+        color: var(--cream);
+      }
+      .admin-sidebar-nav .tab.active {
+        background: rgba(248,247,244,.13);
+        color: var(--cream);
+        border: none;
+      }
+
+      /* User area al pie del sidebar */
+      .admin-sidebar-user {
+        border-top: 1px solid rgba(248,247,244,.1);
+        padding-top: 1rem;
+        width: 100%;
+      }
+      .admin-sidebar-user .user-pill {
+        color: rgba(248,247,244,.6);
+        flex-wrap: wrap;
+        gap: 6px 8px;
+      }
+      .admin-sidebar-user .user-pill > span {
+        color: var(--cream);
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .admin-sidebar-user .gear-btn {
+        border-color: rgba(248,247,244,.2);
+        color: var(--cream);
+      }
+      .admin-sidebar-user .gear-btn:hover { background: rgba(248,247,244,.1); }
+      .admin-sidebar-user .btn.btn-outline {
+        border-color: rgba(248,247,244,.2);
+        color: rgba(248,247,244,.75);
+        background: transparent;
+        font-size: 11px;
+        padding: 5px 10px;
+        width: auto;
+      }
+      .admin-sidebar-user .btn.btn-outline:hover {
+        background: rgba(248,247,244,.08);
+        color: var(--cream);
+      }
+
+      /* Contenido principal: desplazado por el sidebar, sin max-width */
+      .admin-main {
+        margin-left: 240px;
+        max-width: none;
+        padding: 2rem 2.5rem;
+      }
+
+      /* Ocultar los tabs de mobile (el sidebar nav los reemplaza) */
+      .tabs { display: none; }
+
+      /* Stats: franja horizontal con divisores */
+      .stats-grid {
+        display: flex;
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        background: var(--bg);
+      }
+      .stat-card {
+        flex: 1;
+        border: none;
+        border-right: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.25rem 1.75rem;
+      }
+      .stat-card:last-child { border-right: none; }
+      .stat-num { font-size: 52px; }
+
+      /* Login y paywall: centrados con ancho máximo en desktop */
+      #login-view  { max-width: 480px; margin: 4rem auto; }
+      #paywall-screen { max-width: 560px; margin: 4rem auto; }
+
+      /* Dos columnas: turnos + rail */
+      .admin-appt-columns {
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        gap: 1.5rem;
+        align-items: start;
+      }
+      .admin-right-rail { display: block; }
+
+      /* Rail card */
+      .admin-rail-card { padding: 1.25rem; }
+      .admin-rail-card + .admin-rail-card { margin-top: .75rem; }
+    }
   </style>
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
-  <div class="nav-actions" id="user-area"></div>
-</nav>
+<!-- ── Sidebar (desktop) / Navbar (mobile) ─── -->
+<aside class="admin-sidebar">
+  <div class="admin-sidebar-top">
+    <a href="/" class="navbar-brand">
+      <span class="brand-mark">A</span> Agendaste
+    </a>
+    <!-- Nav de desktop — oculto en mobile, manejado por .tabs en mobile -->
+    <nav class="admin-sidebar-nav" aria-label="Panel de administración">
+      <button class="tab active" onclick="showTab('turnos')">
+        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v2l1 1"/><circle cx="12" cy="15" r="3"/></svg>
+        Turnos
+      </button>
+      <button class="tab" onclick="showTab('servicios')">
+        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        Servicios
+      </button>
+      <button class="tab" onclick="showTab('barberos')">
+        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Barberos
+      </button>
+    </nav>
+  </div>
+  <!-- User area: renderizado por JS. Mobile: derecha del navbar. Desktop: pie del sidebar. -->
+  <div id="user-area" class="admin-sidebar-user"></div>
+</aside>
 
-<div class="container">
+<!-- ── Contenido principal ────────────────────── -->
+<main class="admin-main">
 
   <!-- Estado: no logueado -->
   <div id="login-view" class="login-box" style="display:none">
     <div style="font-size:40px;margin-bottom:1rem">✂️</div>
     <h2>Panel del dueño</h2>
-    <p>Conectate con Google para ver tus turnos<br>y sincronizar con Google Calendar</p>
+    <p>Conectate con Google para ver tus turnos<br>y administrar tu negocio</p>
     <a href="/auth/google" class="btn btn-google">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
       Continuar con Google
     </a>
   </div>
 
-  <!-- Paywall Screen -->
-<div id="paywall-screen" style="display:none;text-align:center;padding:4rem 1rem">
-  <div style="font-size:56px;margin-bottom:1rem">🔒</div>
-  <h2 style="margin-bottom:.75rem">Tu período de prueba venció</h2>
-  <p style="color:var(--text-muted);font-size:15px;margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">
-    Suscribite para seguir usando <strong>Agendaste.com.ar</strong> y no perder tus datos
-  </p>
-  <button class="btn btn-primary" style="max-width:300px;margin:0 auto" onclick="suscribirse()">
-    💳 Suscribirme ahora
-  </button>
-  <p style="color:var(--text-muted);font-size:12px;margin-top:1rem">
-    🔒 Tus datos están guardados y seguros
-  </p>
-</div>
+  <!-- Paywall -->
+  <div id="paywall-screen" style="display:none;text-align:center;padding:4rem 1rem">
+    <div style="font-size:56px;margin-bottom:1rem">🔒</div>
+    <h2 style="margin-bottom:.75rem">Tu período de prueba venció</h2>
+    <p style="color:var(--text-muted);font-size:15px;margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">
+      Suscribite para seguir usando <strong>Agendaste.com.ar</strong> y no perder tus datos
+    </p>
+    <button class="btn btn-primary" style="max-width:300px;margin:0 auto" onclick="suscribirse()">
+      💳 Suscribirme ahora
+    </button>
+    <p style="color:var(--text-muted);font-size:12px;margin-top:1rem">
+      🔒 Tus datos están guardados y seguros
+    </p>
+  </div>
 
   <!-- Estado: logueado -->
   <div id="admin-view" style="display:none">
 
+    <!-- Banner de trial -->
     <div id="trial-banner" class="trial-banner">
       <div>
         <strong>🕓 Período de prueba</strong>
@@ -135,12 +345,14 @@
       <button class="btn btn-primary" style="white-space:nowrap" onclick="subscribe()">Suscribirme</button>
     </div>
 
+    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-lbl">Turnos hoy</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-lbl">Mañana</div></div>
       <div class="stat-card stat-card-dark"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos hoy</div></div>
     </div>
 
+    <!-- Tabs de mobile (ocultos en desktop — el sidebar nav los reemplaza) -->
     <div class="tabs">
       <button class="tab active" onclick="showTab('turnos')">Turnos</button>
       <button class="tab" onclick="showTab('servicios')">Servicios</button>
@@ -194,8 +406,21 @@
 
       <div class="day-pills" id="day-pills"></div>
 
-      <div id="appointments-list">
-        <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
+      <!-- Dos columnas en desktop: turnos a la izq, rail a la der -->
+      <div class="admin-appt-columns">
+        <div id="appointments-list">
+          <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
+        </div>
+
+        <aside class="admin-right-rail">
+          <div class="card admin-rail-card">
+            <p class="section-label" style="margin-top:0;margin-bottom:.75rem">Configuración</p>
+            <a href="/admin/settings" class="btn btn-outline" style="width:100%;margin-bottom:8px;font-size:11px">
+              <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              Configurar negocio
+            </a>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -211,16 +436,19 @@
       <div id="barbers-list"></div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /admin-view -->
+</main>
 
 <div id="toast"></div>
 
-<!-- Overlay + modal de horarios -->
+<!-- Overlay + panel de horarios por barbero -->
 <div id="schedule-overlay" class="config-overlay" onclick="closeSchedule()"></div>
 <div id="schedule-panel" class="config-panel">
   <div class="config-header">
-    <span style="font-size:15px;font-weight:600"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Horario — <span id="schedule-barber-name"></span></span>
+    <span style="font-size:15px;font-weight:600">
+      <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Horario — <span id="schedule-barber-name"></span>
+    </span>
     <button class="config-close" onclick="closeSchedule()">×</button>
   </div>
   <div class="config-body">
