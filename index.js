@@ -2,9 +2,15 @@
 // Agendaste — Servidor principal
 // ==============================
 require('dotenv').config();
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET no está configurada. Definila como variable de entorno antes de arrancar el server.');
+}
+
 const db = require('./config/database');
 const express = require('express');
 const session = require('express-session');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -15,19 +21,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middlewares ──────────────────────────────
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-secret-123',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
 }));
+
+const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
+const otpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
 
 // ── Rutas ────────────────────────────────────
 const { requireAuth, requireSession } = require('./middleware/auth');
+
+app.use('/api', generalLimiter);
+app.use('/api/otp', otpLimiter);
 
 app.use('/auth', authRoutes);
 app.use('/api/services', serviceRoutes);

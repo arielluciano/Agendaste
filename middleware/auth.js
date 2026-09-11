@@ -4,7 +4,10 @@
 const jwt = require('jsonwebtoken');
 const db  = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'agendaste-secret-jwt-2026';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET no está configurada. Definila como variable de entorno antes de arrancar el server.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Generar token
 function generateToken(user) {
@@ -35,8 +38,12 @@ function resolveAuth(req, res) {
     const token = authHeader.substring(7);
     try {
       const decoded  = jwt.verify(token, JWT_SECRET);
+      if (!decoded.business_id) {
+        res.status(401).json({ error: 'Token inválido: sin business_id' });
+        return false;
+      }
       req.user       = decoded;
-      req.businessId = decoded.business_id || 1;
+      req.businessId = decoded.business_id;
       return true;
     } catch (err) {
       res.status(401).json({ error: 'Token inválido o expirado' });
