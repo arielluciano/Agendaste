@@ -1,0 +1,30 @@
+name: Keep Agendaste Alive
+
+# Le pega a la URL cada 10 minutos para que Render no duerma la app
+# (el free tier de Render duerme la app tras ~15 min sin tráfico)
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {} # permite dispararlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping agendaste.com.ar
+        run: |
+          echo "Pinging https://agendaste.com.ar ..."
+          # -sS: silencioso pero muestra errores | -o /dev/null: descarta el body
+          # -w: imprime el status code | --max-time: timeout de 30s
+          # --retry 2: reintenta 2 veces si falla (útil si justo se está despertando)
+          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --max-time 30 --retry 2 --retry-delay 5 \
+            https://agendaste.com.ar)
+          echo "Status code: $status"
+          if [ "$status" -ge 200 ] && [ "$status" -lt 400 ]; then
+            echo "✅ App despierta y respondiendo"
+          else
+            echo "⚠️  Respuesta inesperada ($status) — puede que Render esté teniendo problemas"
+            exit 1
+          fi
