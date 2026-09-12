@@ -350,8 +350,8 @@ async function renderServices() {
         <p style="font-size:13px;font-weight:600;margin-bottom:8px">Agregar servicio</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input id="new-svc-name"  placeholder="Nombre"  style="flex:2;min-width:120px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
-          <input id="new-svc-dur"   placeholder="Min" type="number" style="width:70px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
-          <input id="new-svc-price" placeholder="Precio"  type="number" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-dur"   placeholder="Min" type="number" min="1" style="width:70px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-price" placeholder="Precio"  type="number" min="1" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
           <button class="btn btn-primary" style="padding:6px 14px" onclick="addService()">+ Agregar</button>
         </div>
       </div>
