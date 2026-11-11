@@ -12,6 +12,11 @@ const slug       = window.location.pathname.split('/').filter(Boolean)[0] || nul
 const isEmbed    = document.documentElement.classList.contains('embed');
 let businessId   = 1;
 
+// Preselección desde la URL (?service=ID&barber=ID, ej. "Volver a reservar" en Mis turnos)
+const urlParams    = new URLSearchParams(window.location.search);
+const preServiceId = parseInt(urlParams.get('service'), 10) || null;
+const preBarberId  = parseInt(urlParams.get('barber'), 10) || null;
+
 let services = [];
 let barbers  = [];
 let days     = [];      // próximos días hábiles del barbero elegido: [{ key, date }]
@@ -145,7 +150,7 @@ async function loadServices() {
   } catch {
     services = [];
   }
-  selService = services[0] || null;
+  selService = services.find(s => s.id === preServiceId) || services[0] || null;
   renderServices();
 }
 
@@ -174,7 +179,7 @@ async function loadBarbers() {
   } catch {
     barbers = [];
   }
-  selBarber = barbers[0] || null;
+  selBarber = barbers.find(b => b.id === preBarberId) || barbers[0] || null;
   renderBarbers();
 }
 

@@ -9,18 +9,23 @@
   <style>
     .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
     .appt-card { margin-bottom: 10px; }
+    .appt-card.is-cancelled { opacity: .6; }
     .appt-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
-    .appt-business { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 4px; }
+    .appt-business { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 6px; }
+    .appt-logo { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; flex-shrink: 0; }
     .appt-service { font-size: 15px; font-weight: 600; }
+    .appt-service span { font-weight: 400; color: var(--text-muted); }
     .appt-meta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
     .appt-meta-row { display: flex; align-items: center; gap: 6px; }
+    .appt-when { color: var(--text); font-weight: 500; }
+    .appt-meta a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
     .appt-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .btn-sm {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 12px; border-radius: 8px; cursor: pointer;
+      padding: 9px 12px; border-radius: 8px; cursor: pointer; min-height: 38px;
       border: 1px solid var(--border); background: var(--bg); color: var(--text);
       font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .05em;
+      text-transform: uppercase; letter-spacing: .05em; text-decoration: none;
       transition: all .2s;
     }
     .btn-sm:hover { background: var(--bg-secondary); }
@@ -28,7 +33,15 @@
     .btn-sm.cancel:hover { background: var(--danger-light); }
     .btn-sm.reschedule { border-color: var(--primary); color: var(--primary); }
     .btn-sm.reschedule:hover { background: var(--primary-light); }
+    .badge-done { background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border); }
     .empty-state { text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 13px; }
+    .empty-state .btn { width: auto; margin-top: 1rem; }
+    .more-wrap { text-align: center; margin-top: .5rem; }
+    .more-wrap .btn { width: auto; }
+    .nav-user { font-size: 13px; color: var(--text-muted); max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .navbar .nav-actions { gap: .75rem; min-width: 0; }
+    .navbar .nav-actions .btn { white-space: nowrap; }
+    @media (max-width: 480px) { .nav-user { max-width: 28vw; } }
   </style>
 </head>
 <body>
@@ -36,6 +49,7 @@
 <nav class="navbar">
   <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
   <div class="nav-actions">
+    <span class="nav-user" id="nav-user"></span>
     <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
   </div>
 </nav>
@@ -67,6 +81,7 @@
 
     <p class="section-title">Turnos pasados</p>
     <div id="past-list"></div>
+    <div class="more-wrap" id="past-more" style="display:none"><button class="btn btn-outline" onclick="showMorePast()">Ver más</button></div>
   </div>
 
 </div>

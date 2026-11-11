@@ -2,24 +2,55 @@
 // Agendaste — Mis turnos del cliente
 // ==============================
 
-const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS_CORTOS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const PAST_PAGE    = 5;
 
-function formatDate(dateStr) {
-  const [year, month, day] = String(dateStr).split('T')[0].split('-').map(Number);
-  return `${day} de ${MESES[month - 1]} de ${year}`;
-}
-
-function statusLabel(status) {
-  return status === 'confirmed' ? 'Confirmado' : status === 'pending' ? 'Pendiente' : 'Cancelado';
-}
+let upcomingAppts = [];
+let pastAppts     = [];
+let pastShown     = PAST_PAGE;
 
 const ICONS = {
-  calendarCheck: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>',
   calendarX: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m14 14-4 4"/><path d="m10 14 4 4"/></svg>',
+  calendarPlus: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 14v4"/><path d="M10 16h4"/></svg>',
   calendarSync: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 10v4h4"/><path d="m11 14 1.535-1.605a5 5 0 0 1 8 1.5"/><path d="M16 2v4"/><path d="m21 18-1.535 1.605a5 5 0 0 1-8-1.5"/><path d="M21 22v-4h-4"/><path d="M21 8.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4.3"/><path d="M3 10h4"/><path d="M8 2v4"/></svg>',
   mapPin: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>',
-  clock4: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+  clock4: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  whatsapp: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
+  rotate: '<svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>'
 };
+
+// ── Utilidades ────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function capitalize(s) { s = String(s || '').trim(); return s ? s[0].toLocaleUpperCase('es') + s.slice(1) : s; }
+function hhmm(t) { return t ? String(t).substring(0, 5) : ''; }
+function dateOnly(d) { return String(d).split('T')[0]; }
+
+// "Lun 22 jun"
+function shortDate(dateStr) {
+  const [y, m, d] = dateOnly(dateStr).split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return `${DIAS_CORTOS[dow]} ${d} ${MESES_CORTOS[m - 1]}`;
+}
+
+// Inicio del turno como instante real (Argentina es UTC-3 todo el año)
+function apptStart(a) { return new Date(`${dateOnly(a.date)}T${hhmm(a.time)}:00-03:00`); }
+
+// wa.me necesita el número con código de país: un celular argentino de 10 dígitos se completa con 549
+function waNumber(phone) {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('0')) digits = digits.replace(/^0+/, '');
+  if (digits.length === 10) digits = '549' + digits;
+  return digits.length >= 8 ? digits : null;
+}
+
+function statusOf(a, isUpcoming) {
+  if (a.status === 'cancelled') return { key: 'cancelled', label: 'Cancelado' };
+  return isUpcoming ? { key: 'confirmed', label: 'Confirmado' } : { key: 'done', label: 'Realizado' };
+}
 
 // ── Inicialización ────────────────────────────
 async function init() {
@@ -28,6 +59,7 @@ async function init() {
     const data = await res.json();
     if (data.loggedIn) {
       document.getElementById('btn-logout-client').style.display = '';
+      document.getElementById('nav-user').textContent = data.client?.name || data.client?.email || '';
       showTurnos();
       loadAppointments();
     } else {
@@ -50,34 +82,95 @@ function showTurnos() {
 
 // ── Render de turnos ──────────────────────────
 function renderCard(a, isUpcoming) {
-  const addressRow = a.business_address
-    ? `<div class="appt-meta-row">${ICONS.mapPin} ${a.business_address}</div>`
+  const st = statusOf(a, isUpcoming);
+  const active = st.key !== 'cancelled';
+
+  const logo = a.business_logo_url && /^https:\/\//i.test(a.business_logo_url)
+    ? `<img class="appt-logo" src="${esc(a.business_logo_url)}" alt="" referrerpolicy="no-referrer">`
     : '';
 
-  const actions = (isUpcoming && a.status !== 'cancelled')
-    ? `<div class="appt-actions">
-         <button class="btn-sm cancel" onclick="cancelAppointment(${a.id})">${ICONS.calendarX} Cancelar</button>
-         <button class="btn-sm reschedule" onclick="rescheduleAppointment(${a.id}, '${a.business_slug || ''}')">${ICONS.calendarSync} Reprogramar</button>
+  const price = a.price != null && a.price !== '' ? ` · $${Number(a.price).toLocaleString('es-AR')}` : '';
+
+  const addressRow = a.business_address
+    ? `<div class="appt-meta-row">${ICONS.mapPin}
+         <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.business_address)}" target="_blank" rel="noopener">${esc(a.business_address)}</a>
        </div>`
     : '';
 
+  let actions = '';
+  if (isUpcoming && active) {
+    const wa = waNumber(a.business_phone);
+    actions = `<div class="appt-actions">
+        <button class="btn-sm cancel" onclick="cancelAppointment(${Number(a.id)})">${ICONS.calendarX} Cancelar</button>
+        <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
+        ${wa ? `<a class="btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICONS.whatsapp} WhatsApp</a>` : ''}
+        <button class="btn-sm reschedule" onclick="rescheduleAppointment(${Number(a.id)})">${ICONS.calendarSync} Reprogramar</button>
+      </div>`;
+  } else if (!isUpcoming && a.business_slug) {
+    actions = `<div class="appt-actions">
+        <a class="btn-sm reschedule" href="${esc(rebookUrl(a))}">${ICONS.rotate} Volver a reservar</a>
+      </div>`;
+  }
+
   return `
-    <div class="card appt-card" id="appt-${a.id}">
+    <div class="card appt-card ${active ? '' : 'is-cancelled'}" id="appt-${Number(a.id)}">
       <div class="appt-header">
         <div>
-          <div class="appt-business">${a.business_name || 'Agendaste'}</div>
-          <div class="appt-service">${a.service_name || 'Servicio'}${a.barber_name ? ' con ' + a.barber_name : ''}</div>
+          <div class="appt-business">${logo}${esc(a.business_name || 'Agendaste')}</div>
+          <div class="appt-service">${esc(capitalize(a.service_name || 'Servicio'))}${a.barber_name ? ` <span>con ${esc(a.barber_name)}</span>` : ''}</div>
         </div>
-        <span class="badge badge-${a.status}">${statusLabel(a.status)}</span>
+        <span class="badge badge-${st.key}">${st.label}</span>
       </div>
       <div class="appt-meta">
-        <div class="appt-meta-row">${ICONS.calendarCheck} ${formatDate(a.date)}</div>
-        <div class="appt-meta-row">${ICONS.clock4} ${a.time ? a.time.substring(0,5) : '—'}</div>
+        <div class="appt-meta-row appt-when">${ICONS.clock4} ${shortDate(a.date)} · ${esc(hhmm(a.time))}${price}</div>
         ${addressRow}
       </div>
       ${actions}
     </div>
   `;
+}
+
+function rebookUrl(a) {
+  const q = new URLSearchParams();
+  if (a.service_id) q.set('service', a.service_id);
+  if (a.barber_id)  q.set('barber', a.barber_id);
+  const qs = q.toString();
+  return `/${encodeURIComponent(a.business_slug)}${qs ? '?' + qs : ''}`;
+}
+
+// Último negocio donde reservó (el turno creado más recientemente)
+function lastBusinessSlug() {
+  const all = [...upcomingAppts, ...pastAppts].filter(a => a.business_slug);
+  if (!all.length) return null;
+  const key = a => a.created_at ? new Date(a.created_at).getTime() : apptStart(a).getTime();
+  return all.reduce((best, a) => key(a) > key(best) ? a : best).business_slug;
+}
+
+function renderUpcoming() {
+  const list = document.getElementById('upcoming-list');
+  const hasActive = upcomingAppts.some(a => a.status !== 'cancelled');
+  let empty = '';
+  if (!hasActive) {
+    const slug = lastBusinessSlug();
+    empty = `<div class="empty-state">
+        <p>No tenés turnos próximos</p>
+        ${slug ? `<a class="btn btn-primary" href="/${encodeURIComponent(slug)}">Reservar turno</a>` : ''}
+      </div>`;
+  }
+  list.innerHTML = empty + upcomingAppts.map(a => renderCard(a, true)).join('');
+}
+
+function renderPast() {
+  const list = document.getElementById('past-list');
+  list.innerHTML = pastAppts.length
+    ? pastAppts.slice(0, pastShown).map(a => renderCard(a, false)).join('')
+    : '<p class="empty-state">No tenés turnos pasados</p>';
+  document.getElementById('past-more').style.display = pastAppts.length > pastShown ? '' : 'none';
+}
+
+function showMorePast() {
+  pastShown += PAST_PAGE;
+  renderPast();
 }
 
 async function loadAppointments() {
@@ -92,14 +185,12 @@ async function loadAppointments() {
     }
     const data = await res.json();
 
-    upcomingList.innerHTML = data.upcoming.length
-      ? data.upcoming.map(a => renderCard(a, true)).join('')
-      : '<p class="empty-state">No tenés turnos próximos</p>';
+    upcomingAppts = data.upcoming || [];
+    // Pasados: del más reciente al más viejo
+    pastAppts = (data.past || []).slice().sort((a, b) => apptStart(b) - apptStart(a));
 
-    pastList.innerHTML = data.past.length
-      ? data.past.map(a => renderCard(a, false)).join('')
-      : '<p class="empty-state">No tenés turnos pasados</p>';
-
+    renderUpcoming();
+    renderPast();
   } catch {
     upcomingList.innerHTML = '<p class="empty-state">Error cargando tus turnos</p>';
     pastList.innerHTML = '';
@@ -112,7 +203,7 @@ async function cancelAppointment(id) {
   try {
     const res = await fetch(`/api/appointments/${id}/cancel-mine`, { method: 'PATCH' });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       showToast('❌ ' + (err.error || 'Error al cancelar'));
       return;
     }
@@ -123,19 +214,63 @@ async function cancelAppointment(id) {
   }
 }
 
-async function rescheduleAppointment(id, slug) {
+async function rescheduleAppointment(id) {
+  const a = upcomingAppts.find(x => x.id === id);
   if (!confirm('Vamos a cancelar este turno para que elijas uno nuevo. ¿Continuamos?')) return;
   try {
     const res = await fetch(`/api/appointments/${id}/cancel-mine`, { method: 'PATCH' });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       showToast('❌ ' + (err.error || 'Error al reprogramar'));
       return;
     }
-    window.location.href = slug ? `/${slug}` : '/';
+    window.location.href = a?.business_slug ? rebookUrl(a) : '/';
   } catch {
     showToast('❌ Error de conexión');
   }
+}
+
+// ── Agregar al calendario (.ics generado en el navegador) ──
+function icsText(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+function icsDate(d) { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }
+
+function downloadIcs(id) {
+  const a = upcomingAppts.find(x => x.id === id);
+  if (!a) return;
+  const start = apptStart(a);
+  const end   = new Date(start.getTime() + (parseInt(a.service_duration, 10) || 30) * 60000);
+  const title = `${capitalize(a.service_name || 'Turno')} — ${a.business_name || 'Agendaste'}`;
+  const desc  = [a.barber_name ? `Con ${a.barber_name}` : '', 'Reservado con Agendaste'].filter(Boolean).join('\n');
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Agendaste//Mis turnos//ES',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:turno-${a.id}@agendaste.com.ar`,
+    `DTSTAMP:${icsDate(new Date())}`,
+    `DTSTART:${icsDate(start)}`,
+    `DTEND:${icsDate(end)}`,
+    `SUMMARY:${icsText(title)}`,
+    `DESCRIPTION:${icsText(desc)}`,
+    a.business_address ? `LOCATION:${icsText(a.business_address)}` : null,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].filter(Boolean);
+
+  const blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `turno-${dateOnly(a.date)}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ── Toast ─────────────────────────────────────

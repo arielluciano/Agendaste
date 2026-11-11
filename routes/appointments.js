@@ -93,8 +93,9 @@ router.get('/mine', async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT a.*, s.name as service_name, b.name as barber_name,
-              biz.name as business_name, biz.slug as business_slug, biz.address as business_address
+      `SELECT a.*, s.name as service_name, s.duration as service_duration, b.name as barber_name,
+              biz.name as business_name, biz.slug as business_slug, biz.address as business_address,
+              biz.phone as business_phone, biz.logo_url as business_logo_url
        FROM appointments a
        LEFT JOIN services s ON a.service_id = s.id
        LEFT JOIN barbers b ON a.barber_id = b.id
@@ -104,14 +105,16 @@ router.get('/mine', async (req, res) => {
       [clientEmail]
     );
 
-    const today = new Date().toISOString().split('T')[0];
+    // Próximo = fecha y hora todavía no pasaron (hora de Argentina)
+    const today = todayAR();
+    const nowMins = nowMinutesAR();
     const upcoming = [];
     const past = [];
 
     for (const appt of result.rows) {
       const apptDate = appt.date instanceof Date ? appt.date.toISOString().split('T')[0] : String(appt.date).split('T')[0];
       const normalized = { ...appt, date: apptDate };
-      if (apptDate >= today) {
+      if (apptDate > today || (apptDate === today && toMinutes(appt.time) > nowMins)) {
         upcoming.push(normalized);
       } else {
         past.push(normalized);
