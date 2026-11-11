@@ -280,6 +280,8 @@ function checkStep2() {
 // ── Resumen ──────────────────────────────────
 function fillSummary() {
   showBookingError('');
+  // Invitado (modo embed, sin login de Google): pedir email opcional
+  document.getElementById('group-email').style.display = loggedClient ? 'none' : '';
   const [y, m, d] = selDate.split('-');
   document.getElementById('sum-svc').textContent    = selService.name;
   document.getElementById('sum-barber').textContent = selBarber.name;
@@ -294,11 +296,27 @@ function showBookingError(msg) {
   box.classList.toggle('show', !!msg);
 }
 
+// Mismo criterio que EMAIL_RE en routes/appointments.js
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function guestEmail() {
+  if (loggedClient) return null; // con login de Google se usa el email de la sesión
+  return document.getElementById('inp-email').value.trim();
+}
+
 function checkStep3() {
   showBookingError('');
-  const name  = document.getElementById('inp-name').value.trim();
-  const phone = document.getElementById('inp-phone').value.trim();
-  document.getElementById('btn-confirm').disabled = !(name && phone);
+  const name    = document.getElementById('inp-name').value.trim();
+  const phone   = document.getElementById('inp-phone').value.trim();
+  const email   = guestEmail();
+  const emailOk = !email || EMAIL_RE.test(email);
+  document.getElementById('btn-confirm').disabled = !(name && phone && emailOk);
+}
+
+// El aviso de email inválido recién al salir del campo, no mientras escribe
+function checkEmailOnBlur() {
+  const email = guestEmail();
+  if (email && !EMAIL_RE.test(email)) showBookingError('❌ El email no es válido');
 }
 
 // ── Confirmar turno (llama a la API) ─────────
@@ -318,7 +336,7 @@ async function confirmBooking() {
       body: JSON.stringify({
         clientName:  name,
         clientPhone: phone,
-        clientEmail: loggedClient?.email || null,
+        clientEmail: loggedClient?.email || guestEmail() || null,
         service:     selService.name,
         barberId:    selBarber.id,
         barberName:  selBarber.name,
@@ -424,6 +442,7 @@ function resetBooking() {
   selService = null; selBarber = null; selDate = null; selSlot = null; step = 0;
   document.getElementById('inp-name').value  = '';
   document.getElementById('inp-phone').value = '';
+  document.getElementById('inp-email').value = '';
   document.getElementById('step4').classList.remove('active');
   document.getElementById('step0').classList.add('active');
   updateDots();

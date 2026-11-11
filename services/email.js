@@ -21,8 +21,19 @@ function formatDateEs(date) {
   return `${day} de ${MESES_ES[month - 1]} de ${year}`;
 }
 
-function buildConfirmationHtml({ clientName, businessName, service, barber, date, time, address }) {
-  const formattedDate = formatDateEs(date);
+// Los datos vienen del formulario público: escaparlos para que nadie meta HTML/links en un mail nuestro
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function buildConfirmationHtml(data) {
+  const clientName   = data.clientName   ? escapeHtml(data.clientName)   : '';
+  const businessName = data.businessName ? escapeHtml(data.businessName) : '';
+  const service      = data.service      ? escapeHtml(data.service)      : '';
+  const barber       = data.barber       ? escapeHtml(data.barber)       : '';
+  const time         = data.time         ? escapeHtml(data.time)         : '';
+  const address      = data.address      ? escapeHtml(data.address)      : '';
+  const formattedDate = formatDateEs(data.date);
 
   const rows = [
     ['Servicio', service],
