@@ -7,6 +7,7 @@ const DAYS   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
 
 // ── Contexto del negocio ─────────────────────
 const slug       = window.location.pathname.split('/').filter(Boolean)[0] || null;
+const isEmbed    = document.documentElement.classList.contains('embed');
 let businessId   = 1;
 
 let services = [];
@@ -44,6 +45,7 @@ async function initBusiness() {
     const biz = await res.json();
     if (biz.id != null) {
       businessId = biz.id;
+      applyBusinessBrand(biz);
       console.log(`[initBusiness] negocio "${biz.name}" → business_id=${businessId}`);
     } else {
       console.error('[initBusiness] respuesta sin id:', biz);
@@ -53,18 +55,57 @@ async function initBusiness() {
   }
 }
 
+// ── Marca del negocio ────────────────────────
+function applyBusinessBrand(biz) {
+  if (window.AgendasteBrand) AgendasteBrand.applyBrand(document.documentElement, biz);
+
+  // Logo en el header (solo https; el backend ya lo valida al guardar)
+  if (biz.logo_url && /^https:\/\//i.test(biz.logo_url)) {
+    const brand = document.getElementById('navbar-brand');
+    const img   = document.createElement('img');
+    img.className      = 'biz-logo';
+    img.src            = biz.logo_url;
+    img.alt            = biz.name || '';
+    img.referrerPolicy = 'no-referrer';
+    brand.replaceChildren(img);
+    brand.href = `/${encodeURIComponent(slug)}`;
+  }
+}
+
+// ── Modo embed: avisar la altura al sitio que nos embebe ──
+function initEmbedHeight() {
+  if (!isEmbed || window.parent === window) return;
+  let last = 0;
+  const send = () => {
+    const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (height === last) return;
+    last = height;
+    window.parent.postMessage({ type: 'agendaste:height', height }, '*');
+  };
+  new ResizeObserver(send).observe(document.body);
+  send();
+}
+
+// Pasar del paso de login al de servicios
+function startBooking() {
+  document.getElementById('step-login').classList.remove('active');
+  document.getElementById('step0').classList.add('active');
+  document.getElementById('dot-login').classList.add('done');
+  document.getElementById('dot0').classList.add('active');
+  loadServices();
+}
+
 // ── Login con Google ─────────────────────────
 async function checkClientLogin() {
+  // En un iframe de terceros el login de Google no funciona (Google no se deja embeber
+  // y la cookie de sesión no viaja): se reserva como invitado con nombre y teléfono.
+  if (isEmbed) { startBooking(); return; }
   try {
     const res  = await fetch('/auth/client/me');
     const data = await res.json();
     if (data.loggedIn) {
       loggedClient = data.client;
-      document.getElementById('step-login').classList.remove('active');
-      document.getElementById('step0').classList.add('active');
-      document.getElementById('dot-login').classList.add('done');
-      document.getElementById('dot0').classList.add('active');
-      loadServices();
+      startBooking();
     }
   } catch {}
 }
@@ -385,6 +426,7 @@ function showToast(msg) {
 
 // ── Init ──────────────────────────────────────
 (async () => {
+  initEmbedHeight();
   await initBusiness();
 
   // Apuntar el botón de login a la URL actual para volver al slug correcto tras OAuth

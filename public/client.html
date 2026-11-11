@@ -6,7 +6,26 @@
   <title>Agendaste — Reservá tu turno</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/styles.css">
+  <script>
+    // Modo embed: se marca antes del primer render para que no aparezca el header de Agendaste
+    if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.classList.add('embed');
+  </script>
   <style>
+    /* ── Marca del negocio (variables seteadas por js/brand.js; sin marca = fallbacks de Agendaste) ── */
+    body { background: var(--brand-bg, var(--bg-secondary)); }
+    h1, h2, h3, .section-title { font-family: var(--font, var(--font-display)); }
+    .btn-primary { background: var(--brand, var(--ink)); color: var(--brand-contrast, var(--cream)); }
+    .btn-primary:hover { background: var(--brand-hover, #000); }
+    .biz-logo { height: 32px; width: auto; max-width: 160px; object-fit: contain; display: block; }
+    .embed-credit { display: none; }
+
+    /* ── Modo embed (?embed=1) ── */
+    html.embed .navbar, html.embed footer, html.embed #dot-login { display: none !important; }
+    html.embed body { min-height: 0; background: var(--brand-bg, transparent); }
+    html.embed .container { max-width: none; margin: 0; padding: 0; }
+    html.embed .embed-credit { display: block; text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 1rem; padding-bottom: 2px; }
+    html.embed .embed-credit a { color: inherit; }
+
     .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
     .service-card { cursor: pointer; text-align: left; }
     .service-card:hover { border-color: var(--primary); }
@@ -25,12 +44,12 @@
     .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .2s; }
     .day-cell:hover:not(.disabled):not(.empty) { background: var(--bg-secondary); }
     .day-cell.disabled { color: var(--text-muted); opacity: .4; cursor: default; }
-    .day-cell.selected { background: var(--primary); color: var(--cream); font-weight: 600; }
+    .day-cell.selected { background: var(--primary); color: var(--brand-contrast, var(--cream)); font-weight: 600; }
     .day-cell.today { border: 1px solid var(--border); font-weight: 600; }
     .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.5rem; }
     .slot { padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 13px; cursor: pointer; transition: all .2s; }
     .slot:hover:not(.taken) { background: var(--bg-secondary); }
-    .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
+    .slot.selected { background: var(--primary); color: var(--brand-contrast, var(--cream)); border-color: var(--primary); }
     .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
     @media (max-width: 480px) {
       .slots-grid { grid-template-columns: repeat(3, 1fr); padding-bottom: 1rem; }
@@ -51,7 +70,7 @@
 <body>
 
 <nav class="navbar">
-  <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
+  <a href="/" class="navbar-brand" id="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
   <div class="nav-actions">
     <a href="/mis-turnos" id="link-mis-turnos" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Mis turnos</a>
     <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
@@ -172,6 +191,8 @@ l-32 32 -108 0 c-91 0 -116 -4 -153 -22z"/>
     </button>
     <button class="btn btn-primary mt-1" onclick="resetBooking()">Hacer otro turno</button>
   </div>
+
+  <p class="embed-credit">Turnos con <a href="https://agendaste.com.ar" target="_blank" rel="noopener">Agendaste</a></p>
 </div>
 
 <div id="toast"></div>
@@ -191,6 +212,7 @@ l-32 32 -108 0 c-91 0 -116 -4 -153 -22z"/>
     goStep(n - 1);
   }
 </script>
+<script src="/js/brand.js"></script>
 <script src="/js/client.js"></script>
 </body>
 </html>

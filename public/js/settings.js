@@ -47,7 +47,10 @@ async function loadBusiness() {
       const link = `${window.location.origin}/${data.slug}`;
       document.getElementById('business-link').value = link;
       document.getElementById('business-link-container').style.display = 'block';
+      document.getElementById('embed-snippet').value =
+        `<div data-agendaste="${data.slug}"></div>\n<script src="${window.location.origin}/embed.js" async></script>`;
     }
+    fillBrandForm(data);
   } catch {
     showToast('❌ Error cargando configuración');
   }
@@ -86,6 +89,103 @@ async function saveBusiness() {
   } catch {
     showToast('❌ Error guardando configuración');
   }
+}
+
+// ── Personalización (marca) ────────────────────
+const BRAND_DEFAULTS = { brand_primary: '#9A3412', brand_bg: '#F8F7F4', brand_text: '#1A1A17' };
+const BRAND_COLOR_IDS = { brand_primary: 'brand-primary', brand_bg: 'brand-bg', brand_text: 'brand-text' };
+let brandBizName = '';
+
+function toPickerHex(hex) {
+  // <input type=color> solo acepta #RRGGBB
+  if (/^#[0-9a-fA-F]{3}$/.test(hex)) return '#' + hex.slice(1).split('').map(c => c + c).join('');
+  return hex;
+}
+
+function fillBrandForm(data) {
+  brandBizName = data.name || '';
+  const fontSel = document.getElementById('brand-font');
+  if (fontSel.options.length === 1) {
+    AgendasteBrand.FONTS.forEach(f => fontSel.add(new Option(f, f)));
+  }
+
+  Object.entries(BRAND_COLOR_IDS).forEach(([key, id]) => {
+    const color = document.getElementById(id + '-color');
+    const text  = document.getElementById(id + '-text');
+    text.value  = data[key] || '';
+    color.value = toPickerHex(data[key] || BRAND_DEFAULTS[key]);
+    color.oninput = () => { text.value = color.value.toUpperCase(); onBrandInput(); };
+    text.oninput  = () => {
+      const v = text.value.trim();
+      if (AgendasteBrand.isHex(v)) color.value = toPickerHex(v);
+      onBrandInput();
+    };
+  });
+  fontSel.value = data.brand_font || '';
+  document.getElementById('brand-logo').value = data.logo_url || '';
+  onBrandInput();
+}
+
+function readBrandForm() {
+  const val = id => document.getElementById(id).value.trim();
+  return {
+    brand_primary: val('brand-primary-text') || null,
+    brand_bg:      val('brand-bg-text')      || null,
+    brand_text:    val('brand-text-text')    || null,
+    brand_font:    val('brand-font')         || null,
+    logo_url:      val('brand-logo')         || null
+  };
+}
+
+function resetBrandColor(key) {
+  const id = BRAND_COLOR_IDS[key];
+  document.getElementById(id + '-text').value  = '';
+  document.getElementById(id + '-color').value = BRAND_DEFAULTS[key];
+  onBrandInput();
+}
+
+// Preview en vivo: aplica la marca sobre el contenedor de la preview
+function onBrandInput() {
+  const brand   = readBrandForm();
+  const preview = document.getElementById('brand-preview');
+  AgendasteBrand.applyBrand(preview, brand);
+
+  const head = document.getElementById('brand-preview-head');
+  head.replaceChildren();
+  if (brand.logo_url && /^https:\/\//i.test(brand.logo_url)) {
+    const img = document.createElement('img');
+    img.src = brand.logo_url;
+    img.alt = '';
+    img.referrerPolicy = 'no-referrer';
+    img.onerror = () => img.remove();
+    head.appendChild(img);
+  }
+  head.appendChild(document.createTextNode(brandBizName || 'Tu negocio'));
+}
+
+async function saveBrand() {
+  const brand = readBrandForm();
+  for (const key of Object.keys(BRAND_COLOR_IDS)) {
+    if (brand[key] && !AgendasteBrand.isHex(brand[key])) { showToast('❌ Los colores tienen que ser hex, ej: #9A3412'); return; }
+  }
+  if (brand.logo_url && !/^https:\/\//i.test(brand.logo_url)) { showToast('❌ La URL del logo tiene que empezar con https://'); return; }
+
+  try {
+    const res = await fetch('/api/business/brand', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(brand)
+    });
+    if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
+    showToast('✅ Personalización guardada');
+  } catch {
+    showToast('❌ Error guardando la personalización');
+  }
+}
+
+function copyEmbedSnippet() {
+  navigator.clipboard.writeText(document.getElementById('embed-snippet').value);
+  showToast('✅ Código copiado!');
 }
 
 // ── Horario del local ──────────────────────────

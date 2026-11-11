@@ -58,7 +58,30 @@
     .confirm-modal-actions { display:flex; gap:10px; }
     .confirm-modal-actions .btn { flex:1; width:100%; }
 
+    /* ── Personalización ── */
+    .brand-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start; }
+    .color-row { display:flex; gap:8px; align-items:center; }
+    .color-row input[type=color] { width:44px; height:40px; padding:2px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); cursor:pointer; flex:none; }
+    .color-row input[type=text] { flex:1; min-width:0; font-family:var(--font-mono); text-transform:uppercase; }
+    .color-row .btn { width:auto; padding:7px 10px; font-size:11px; flex:none; }
+    .brand-preview { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--brand-bg, var(--bg-secondary)); color:var(--text); position:sticky; top:90px; }
+    .brand-preview-head { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; background:var(--bg); border-bottom:1px solid var(--border); font-weight:600; font-size:14px; }
+    .brand-preview-head img { height:28px; width:auto; max-width:120px; object-fit:contain; }
+    .brand-preview-body { padding:1rem; }
+    .brand-preview-title { font-family:var(--font, var(--font-display)); font-size:22px; text-transform:uppercase; margin-bottom:.75rem; color:var(--text); }
+    .brand-preview-card { background:var(--bg); border:2px solid var(--primary); border-radius:var(--radius-sm); padding:.75rem; margin-bottom:.75rem; }
+    .brand-preview-card strong { color:var(--text); }
+    .brand-preview-price { color:var(--primary); font-weight:600; font-size:18px; }
+    .brand-preview-muted { color:var(--text-muted); font-size:12px; }
+    .brand-preview-slots { display:flex; gap:6px; margin-bottom:.75rem; }
+    .brand-preview-slots span { flex:1; text-align:center; padding:6px; border:1px solid var(--border); border-radius:8px; font-size:12px; }
+    .brand-preview-slots span.sel { background:var(--primary); border-color:var(--primary); color:var(--brand-contrast, var(--cream)); }
+    .brand-preview .btn-primary { background:var(--brand, var(--ink)); color:var(--brand-contrast, var(--cream)); box-shadow:none; }
+    .embed-snippet { width:100%; font-family:var(--font-mono); font-size:12px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-secondary); color:var(--text); resize:none; }
+
     @media (max-width:760px) {
+      .brand-grid { grid-template-columns:1fr; }
+      .brand-preview { position:static; }
       .settings-layout { flex-direction:column; }
       .settings-menu { width:100%; flex-direction:row; position:static; overflow-x:auto; padding-bottom:2px; }
       .settings-menu-item { white-space:nowrap; flex:none; }
@@ -81,6 +104,7 @@
     <nav class="settings-menu" id="settings-menu">
       <button class="settings-menu-item active" data-section="negocio" onclick="showSection('negocio')">🏪 Mi negocio</button>
       <button class="settings-menu-item" data-section="horario" onclick="showSection('horario')"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Horario del local</button>
+      <button class="settings-menu-item" data-section="personalizacion" onclick="showSection('personalizacion')">🎨 Personalización</button>
       <button class="settings-menu-item" data-section="suscripcion" onclick="showSection('suscripcion')">💳 Suscripción</button>
     </nav>
 
@@ -139,6 +163,76 @@
         </div>
       </section>
 
+      <!-- Personalización -->
+      <section class="settings-section" id="section-personalizacion">
+        <p class="section-title">Personalización</p>
+        <div class="card" style="padding:1.5rem">
+          <p class="text-muted" style="font-size:13px;margin-bottom:1.25rem">Así se ve tu página de reservas. Si dejás un campo vacío se usa el diseño de Agendaste.</p>
+          <div class="brand-grid">
+            <div>
+              <div class="form-group">
+                <label for="brand-primary-text">Color principal (botones y selección)</label>
+                <div class="color-row">
+                  <input type="color" id="brand-primary-color" data-key="brand_primary" aria-label="Elegir color principal">
+                  <input type="text" id="brand-primary-text" data-key="brand_primary" placeholder="#9A3412" maxlength="7">
+                  <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_primary')">Por defecto</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="brand-bg-text">Color de fondo</label>
+                <div class="color-row">
+                  <input type="color" id="brand-bg-color" data-key="brand_bg" aria-label="Elegir color de fondo">
+                  <input type="text" id="brand-bg-text" data-key="brand_bg" placeholder="#F8F7F4" maxlength="7">
+                  <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_bg')">Por defecto</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="brand-text-text">Color del texto</label>
+                <div class="color-row">
+                  <input type="color" id="brand-text-color" data-key="brand_text" aria-label="Elegir color del texto">
+                  <input type="text" id="brand-text-text" data-key="brand_text" placeholder="#1A1A17" maxlength="7">
+                  <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_text')">Por defecto</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="brand-font">Fuente de los títulos</label>
+                <select id="brand-font" onchange="onBrandInput()">
+                  <option value="">Por defecto (Agendaste)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="brand-logo">URL del logo (https)</label>
+                <input type="url" id="brand-logo" placeholder="https://tusitio.com/logo.png" oninput="onBrandInput()">
+              </div>
+              <button class="btn btn-primary" onclick="saveBrand()">Guardar personalización</button>
+            </div>
+
+            <div>
+              <label style="display:block;margin-bottom:6px">Vista previa</label>
+              <div class="brand-preview" id="brand-preview">
+                <div class="brand-preview-head" id="brand-preview-head"></div>
+                <div class="brand-preview-body">
+                  <p class="brand-preview-title">¿Qué servicio querés?</p>
+                  <div class="brand-preview-card">
+                    <strong>Corte de pelo</strong>
+                    <div class="brand-preview-price">$8.000</div>
+                    <div class="brand-preview-muted">30 min</div>
+                  </div>
+                  <div class="brand-preview-slots"><span>10:00</span><span class="sel">10:30</span><span>11:00</span></div>
+                  <button type="button" class="btn btn-primary" tabindex="-1">Continuar →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <label for="embed-snippet">Insertá las reservas en tu web</label>
+          <p class="text-muted" style="font-size:13px;margin:4px 0 8px">Pegá este código en tu sitio donde quieras que aparezca el turnero.</p>
+          <textarea id="embed-snippet" class="embed-snippet" rows="3" readonly onclick="this.select()"></textarea>
+          <button class="btn btn-outline" style="margin-top:8px;width:auto" onclick="copyEmbedSnippet()">Copiar código</button>
+        </div>
+      </section>
+
       <!-- Suscripción -->
       <section class="settings-section" id="section-suscripcion">
         <p class="section-title">Suscripción</p>
@@ -165,6 +259,7 @@
   </div>
 </div>
 
+<script src="/js/brand.js"></script>
 <script src="/js/settings.js"></script>
 </body>
 </html>

@@ -22,6 +22,15 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middlewares ──────────────────────────────
 app.set('trust proxy', 1);
+
+// Anti-clickjacking: nada de la app se puede embeber, salvo la página pública
+// de reservas con ?embed=1 (ver allowEmbed en la ruta /:slug).
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  res.setHeader('X-Frame-Options', 'DENY');
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -89,6 +98,13 @@ app.get('/terminos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'terminos.html'));
 });
 
+// Página de reservas en modo embed: se puede meter en un iframe desde cualquier sitio
+function allowEmbed(req, res) {
+  if (req.query.embed !== '1') return;
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+}
+
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
   try {
@@ -113,9 +129,11 @@ app.get('/:slug', async (req, res) => {
         </html>
       `);
     }
+    allowEmbed(req, res);
     res.sendFile(path.join(__dirname, 'public', 'client.html'));
   } catch (err) {
     console.error('Error verificando slug:', err.message);
+    allowEmbed(req, res);
     res.sendFile(path.join(__dirname, 'public', 'client.html'));
   }
 });
