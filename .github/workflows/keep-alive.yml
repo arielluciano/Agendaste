@@ -28,3 +28,26 @@ jobs:
             echo "⚠️  Respuesta inesperada ($status) — puede que Render esté teniendo problemas"
             exit 1
           fi
+
+      # Manda los recordatorios de turnos pendientes (POST /api/cron/reminders).
+      # El secret se configura en GitHub → Settings → Secrets and variables → Actions → CRON_SECRET
+      # y tiene que ser igual a la env var CRON_SECRET de Render.
+      - name: Recordatorios por mail
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "⚠️  Falta el secret CRON_SECRET en GitHub: no se mandan recordatorios"
+            exit 0
+          fi
+          # Reintentar es seguro: el endpoint marca cada turno antes de mandarlo, nunca sale dos veces
+          status=$(curl -sS -o response.json -w "%{http_code}" \
+            --max-time 120 --retry 1 --retry-delay 10 \
+            -X POST -H "x-cron-secret: $CRON_SECRET" \
+            https://agendaste.com.ar/api/cron/reminders)
+          echo "Status code: $status"
+          cat response.json; echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "⚠️  Falló el envío de recordatorios ($status)"
+            exit 1
+          fi

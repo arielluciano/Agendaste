@@ -62,6 +62,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/business', require('./routes/business'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/otp', require('./routes/otp'));
+app.use('/api/cron', require('./routes/cron'));
 app.use(require('./routes/register'));
 
 // Ruta raíz → landing de Agendaste
