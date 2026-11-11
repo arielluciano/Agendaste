@@ -1,9 +1,11 @@
 // ==============================
-// Agendaste — Lógica del cliente
+// Agendaste — Lógica del cliente (reserva en una pantalla)
 // ==============================
 
-const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS   = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
+const MONTHS    = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DOW_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DAYS_SHOWN = 6;
+const PENDING_KEY = 'agendaste:pending-booking';
 
 // ── Contexto del negocio ─────────────────────
 const slug       = window.location.pathname.split('/').filter(Boolean)[0] || null;
@@ -12,14 +14,13 @@ let businessId   = 1;
 
 let services = [];
 let barbers  = [];
+let days     = [];      // próximos días hábiles del barbero elegido: [{ key, date }]
 
 let selService = null;
 let selBarber  = null;
 let selDate    = null;
 let selSlot    = null;
-let curYear    = new Date().getFullYear();
-let curMonth   = new Date().getMonth();
-let step       = 0;
+let slotsReq   = 0;     // para descartar respuestas viejas de /slots
 
 // ── Datos del turno confirmado (para WhatsApp/Calendar) ──
 let confBusinessName = '';
@@ -29,9 +30,26 @@ let confService  = '';
 let confBarber   = '';
 let confAddress  = '';
 let confPhone    = '';
+let confDate     = '';
+let confPrice    = 0;
 
 // ── Cliente logueado con Google ──────────────
 let loggedClient = null;
+
+// ── Utilidades ───────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function $(id) { return document.getElementById(id); }
+function money(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function parseKey(key) { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); }
+function longDay(key) {
+  const d = parseKey(key);
+  return `${DOW_SHORT[d.getDay()]} ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+}
 
 // ── Resolver negocio desde slug ──────────────
 async function initBusiness() {
@@ -45,8 +63,9 @@ async function initBusiness() {
     const biz = await res.json();
     if (biz.id != null) {
       businessId = biz.id;
+      confBusinessName = biz.name || '';
+      confAddress      = biz.address || '';
       applyBusinessBrand(biz);
-      console.log(`[initBusiness] negocio "${biz.name}" → business_id=${businessId}`);
     } else {
       console.error('[initBusiness] respuesta sin id:', biz);
     }
@@ -61,7 +80,7 @@ function applyBusinessBrand(biz) {
 
   // Logo en el header (solo https; el backend ya lo valida al guardar)
   if (biz.logo_url && /^https:\/\//i.test(biz.logo_url)) {
-    const brand = document.getElementById('navbar-brand');
+    const brand = $('navbar-brand');
     const img   = document.createElement('img');
     img.className      = 'biz-logo';
     img.src            = biz.logo_url;
@@ -86,61 +105,64 @@ function initEmbedHeight() {
   send();
 }
 
-// Pasar del paso de login al de servicios
-function startBooking() {
-  document.getElementById('step-login').classList.remove('active');
-  document.getElementById('step0').classList.add('active');
-  document.getElementById('dot-login').classList.add('done');
-  document.getElementById('dot0').classList.add('active');
-  loadServices();
-}
-
-// ── Login con Google ─────────────────────────
+// ── Sesión del cliente ───────────────────────
+// En un iframe de terceros el login de Google no funciona (Google no se deja embeber
+// y la cookie de sesión no viaja): en embed se reserva como invitado.
 async function checkClientLogin() {
-  // En un iframe de terceros el login de Google no funciona (Google no se deja embeber
-  // y la cookie de sesión no viaja): se reserva como invitado con nombre y teléfono.
-  if (isEmbed) { startBooking(); return; }
+  if (isEmbed) return;
   try {
-    const res  = await fetch('/auth/client/me');
-    const data = await res.json();
+    const data = await (await fetch('/auth/client/me')).json();
     if (data.loggedIn) {
       loggedClient = data.client;
-      startBooking();
+      $('btn-logout-client').style.display = '';
+      $('link-mis-turnos').style.display = '';
     }
   } catch {}
 }
 
-// ── Servicios ────────────────────────────────
-async function loadServices() {
-  const grid = document.getElementById('services-grid');
-  grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Cargando servicios...</p>';
-
-  try {
-    const res  = await fetch(`/api/services?business_id=${businessId}`);
-    const data = await res.json();
-    services   = data.map(s => ({ ...s, dur: `${s.duration} min` }));
-    renderServices();
-  } catch {
-    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">Error cargando servicios</p>';
+// Datos del formulario según el modo: invitado (embed), logueado, o sin loguear (se pide Google al confirmar)
+function renderClientFields() {
+  const guest = isEmbed;
+  $('group-name').style.display  = guest ? '' : 'none';
+  $('group-email').style.display = guest ? '' : 'none';
+  $('login-hint').style.display  = !guest && !loggedClient ? '' : 'none';
+  const who = $('who');
+  if (loggedClient) {
+    who.innerHTML = `Reservás como <strong>${esc(loggedClient.name || loggedClient.email)}</strong>` +
+      (loggedClient.name && loggedClient.email ? ` · ${esc(loggedClient.email)}` : '');
+    who.style.display = '';
+  } else {
+    who.style.display = 'none';
   }
 }
 
+// ── Servicios ────────────────────────────────
+async function loadServices() {
+  try {
+    const res = await fetch(`/api/services?business_id=${businessId}`);
+    services  = await res.json();
+    if (!Array.isArray(services)) services = [];
+  } catch {
+    services = [];
+  }
+  selService = services[0] || null;
+  renderServices();
+}
+
 function renderServices() {
-  const grid = document.getElementById('services-grid');
-  grid.innerHTML = services.map(s => `
-    <div class="card service-card ${selService?.id === s.id ? 'selected' : ''}"
-         onclick="selectService(${s.id})">
-      <strong>${s.name}</strong>
-      <div class="service-price">$${s.price.toLocaleString('es-AR')}</div>
-      <div class="service-dur">${s.dur}</div>
-    </div>
-  `).join('');
+  const el = $('services');
+  if (services.length === 0) { el.innerHTML = '<p class="block-empty">No hay servicios disponibles</p>'; return; }
+  el.innerHTML = services.map(s => `
+    <button type="button" class="pill ${selService?.id === s.id ? 'selected' : ''}" aria-pressed="${selService?.id === s.id}"
+            onclick="selectService(${Number(s.id)})">
+      ${esc(s.name)} <small>${money(s.price)}</small>
+    </button>`).join('');
 }
 
 function selectService(id) {
-  selService = services.find(s => s.id === id);
+  selService = services.find(s => s.id === id) || null;
   renderServices();
-  setTimeout(() => goStep(1), 250);
+  loadSlots();
 }
 
 // ── Barberos ─────────────────────────────────
@@ -148,150 +170,150 @@ async function loadBarbers() {
   try {
     const res = await fetch(`/api/barbers?business_id=${businessId}`);
     barbers   = await res.json();
+    if (!Array.isArray(barbers)) barbers = [];
   } catch {
     barbers = [];
   }
+  selBarber = barbers[0] || null;
+  renderBarbers();
 }
 
 function renderBarbers() {
-  const grid = document.getElementById('barbers-grid');
-  if (barbers.length === 0) {
-    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem">No hay barberos disponibles</p>';
+  const el = $('barbers');
+  if (barbers.length === 0) { el.innerHTML = '<p class="block-empty">No hay barberos disponibles</p>'; return; }
+  el.innerHTML = barbers.map(b => `
+    <button type="button" class="pill ${selBarber?.id === b.id ? 'selected' : ''}" aria-pressed="${selBarber?.id === b.id}"
+            onclick="selectBarber(${Number(b.id)})">${esc(b.name)}</button>`).join('');
+}
+
+async function selectBarber(id) {
+  selBarber = barbers.find(b => b.id === id) || null;
+  renderBarbers();
+  await loadDays();
+  await pickFirstAvailableDay();
+}
+
+// ── Días: los próximos 6 en que atiende el barbero ──
+async function loadDays() {
+  days = [];
+  if (!selBarber) { renderDays(); return; }
+  let open = [];
+  try {
+    const sched = await (await fetch(`/api/barbers/${selBarber.id}/schedule`)).json();
+    open = (Array.isArray(sched) ? sched : []).filter(r => r.is_open).map(r => Number(r.day_of_week));
+  } catch {}
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 60 && days.length < DAYS_SHOWN && open.length; i++) {
+    if (open.includes(d.getDay())) days.push({ key: dateKey(d), date: new Date(d) });
+    d.setDate(d.getDate() + 1);
+  }
+  renderDays();
+}
+
+function renderDays() {
+  const el = $('days');
+  if (days.length === 0) {
+    el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">No hay días con atención próximamente</p>';
     return;
   }
-  grid.innerHTML = barbers.map(b => `
-    <div class="card barber-card ${selBarber?.id === b.id ? 'selected' : ''}"
-         onclick="selectBarber(${b.id})">
-      <div class="barber-avatar">✂️</div>
-      <strong>${b.name}</strong>
-      <div class="barber-role">${b.role}</div>
-    </div>
-  `).join('');
+  const todayKey = dateKey(new Date());
+  el.innerHTML = days.map(d => {
+    const sel = d.key === selDate;
+    const dow = d.key === todayKey ? 'Hoy' : DOW_SHORT[d.date.getDay()];
+    return `<button type="button" class="day ${sel ? 'selected' : ''}" aria-pressed="${sel}"
+                    aria-label="${esc(longDay(d.key))}" onclick="selectDay('${d.key}')">
+              <span class="dow">${dow}</span><span class="num">${d.date.getDate()}</span>
+            </button>`;
+  }).join('');
 }
-
-function selectBarber(id) {
-  selBarber = barbers.find(b => b.id === id);
-  renderBarbers();
-  setTimeout(() => goStep(2), 250);
-}
-
-// ── Navegación entre pasos ───────────────────
-function goStep(n) {
-  document.getElementById('step' + step).classList.remove('active');
-  step = n;
-  document.getElementById('step' + step).classList.add('active');
-  updateDots();
-  if (n === 1) renderBarbers();
-  if (n === 2) renderCalendar();
-  if (n === 3) fillSummary();
-}
-
-function updateDots() {
-  for (let i = 0; i < 4; i++) {
-    const d = document.getElementById('dot' + i);
-    d.className = 'dot' + (i === step ? ' active' : i < step ? ' done' : '');
-  }
-}
-
-// ── Calendario ───────────────────────────────
-function renderCalendar() {
-  document.getElementById('cal-title').textContent = MONTHS[curMonth] + ' ' + curYear;
-  const today = new Date();
-  const firstDay    = new Date(curYear, curMonth, 1).getDay();
-  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-
-  let html = DAYS.map(d => `<div class="day-label">${d}</div>`).join('');
-  for (let i = 0; i < firstDay; i++) html += `<div class="day-cell empty"></div>`;
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date    = new Date(curYear, curMonth, d);
-    const isPast  = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const isSun   = date.getDay() === 0;
-    const isToday = date.toDateString() === today.toDateString();
-    const key     = `${curYear}-${String(curMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isSel   = selDate === key;
-
-    const classes = ['day-cell', isPast || isSun ? 'disabled' : '', isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
-    const click   = !isPast && !isSun ? `onclick="selectDay('${key}')"` : '';
-    html += `<div class="${classes}" ${click}>${d}</div>`;
-  }
-
-  document.getElementById('cal-grid').innerHTML = html;
-  loadSlots();
-}
-
-function prevMonth() { if (curMonth === 0) { curMonth = 11; curYear--; } else curMonth--; renderCalendar(); }
-function nextMonth() { if (curMonth === 11) { curMonth = 0; curYear++; } else curMonth++; renderCalendar(); }
 
 function selectDay(key) {
   selDate = key;
-  selSlot = null;
-  renderCalendar();
+  renderDays();
   loadSlots();
-  checkStep2();
+}
+
+// Elige el primer día (de los 6) que tenga algún horario libre; si ninguno, el primero
+async function pickFirstAvailableDay() {
+  selDate = null; selSlot = null;
+  for (const d of days) {
+    const slots = await fetchSlots(d.key);
+    if (slots.some(s => s.available)) { selDate = d.key; break; }
+  }
+  if (!selDate && days.length) selDate = days[0].key;
+  renderDays();
+  await loadSlots();
 }
 
 // ── Horarios disponibles (desde la API) ──────
+async function fetchSlots(key) {
+  if (!selBarber) return [];
+  const res   = await fetch(`/api/appointments/slots/${key}?barber_id=${selBarber.id}&business_id=${businessId}`);
+  const slots = await res.json();
+  if (!Array.isArray(slots)) return [];
+  // Hoy: no mostrar los horarios que ya pasaron
+  if (key !== dateKey(new Date())) return slots;
+  const now = new Date();
+  return slots.filter(s => {
+    const [h, m] = s.time.split(':').map(Number);
+    const t = new Date(); t.setHours(h, m, 0, 0);
+    return t > now;
+  });
+}
+
 async function loadSlots() {
-  const grid = document.getElementById('slots-grid');
-  if (!selDate) {
-    grid.innerHTML = `<p class="text-muted" style="grid-column:1/-1;font-size:13px">Seleccioná un día primero</p>`;
+  selSlot = null;
+  updateSummary();
+  const el  = $('slots');
+  const req = ++slotsReq;
+  if (!selDate) { el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Elegí un día</p>'; return; }
+  el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Cargando horarios...</p>';
+  try {
+    const slots = await fetchSlots(selDate);
+    if (req !== slotsReq) return;
+    renderSlots(slots);
+  } catch {
+    if (req === slotsReq) el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Error cargando horarios</p>';
+  }
+}
+
+let currentSlots = [];
+function renderSlots(slots) {
+  currentSlots = slots || currentSlots;
+  const el = $('slots');
+  if (currentSlots.length === 0) {
+    el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">No hay horarios para este día</p>';
     return;
   }
-
-  try {
-    const res   = await fetch(`/api/appointments/slots/${selDate}?barber_id=${selBarber?.id || 1}&business_id=${businessId}`);
-    const slots = await res.json();
-
-    const now      = new Date();
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const isToday  = selDate === todayKey;
-
-    const filteredSlots = slots.filter(s => {
-      if (!isToday) return true;
-      const [h, m] = s.time.split(':').map(Number);
-      const slotTime = new Date();
-      slotTime.setHours(h, m, 0, 0);
-      return slotTime > now;
-    });
-
-    if (filteredSlots.length === 0) {
-      grid.innerHTML = `<p class="text-muted" style="grid-column:1/-1;font-size:13px">No hay horarios disponibles para hoy</p>`;
-      return;
-    }
-
-    grid.innerHTML = filteredSlots.map(s => `
-      <div class="slot ${s.time === selSlot ? 'selected' : ''} ${!s.available ? 'taken' : ''}"
-           onclick="${s.available ? `selectSlot('${s.time}')` : ''}">
-        ${s.time}${!s.available ? '<br><small>Ocupado</small>' : ''}
-      </div>
-    `).join('');
-  } catch {
-    grid.innerHTML = `<p class="text-muted" style="grid-column:1/-1">Error cargando horarios</p>`;
-  }
+  el.innerHTML = currentSlots.map(s => {
+    if (!s.available) return `<button type="button" class="slot" disabled aria-label="${esc(s.time)} ocupado">${esc(s.time)}</button>`;
+    const sel = s.time === selSlot;
+    return `<button type="button" class="slot ${sel ? 'selected' : ''}" aria-pressed="${sel}" onclick="selectSlot('${esc(s.time)}')">${esc(s.time)}</button>`;
+  }).join('');
 }
 
-function selectSlot(time) { selSlot = time; loadSlots(); checkStep2(); }
-
-function checkStep2() {
-  document.getElementById('btn-to-step3').disabled = !(selDate && selSlot);
+function selectSlot(time) {
+  selSlot = time;
+  renderSlots();
+  updateSummary();
 }
 
-// ── Resumen ──────────────────────────────────
-function fillSummary() {
-  showBookingError('');
-  // Invitado (modo embed, sin login de Google): pedir email opcional
-  document.getElementById('group-email').style.display = loggedClient ? 'none' : '';
-  const [y, m, d] = selDate.split('-');
-  document.getElementById('sum-svc').textContent    = selService.name;
-  document.getElementById('sum-barber').textContent = selBarber.name;
-  document.getElementById('sum-day').textContent    = `${d} de ${MONTHS[parseInt(m) - 1]} ${y}`;
-  document.getElementById('sum-time').textContent   = selSlot;
-  document.getElementById('sum-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
+// ── Tarjeta "Tu turno" ───────────────────────
+function updateSummary() {
+  $('sum-svc').textContent    = selService?.name || '—';
+  $('sum-barber').textContent = selBarber?.name || '—';
+  $('sum-day').textContent    = selDate ? longDay(selDate) : '—';
+  const t = $('sum-time');
+  t.textContent = selSlot || 'Elegí un horario';
+  t.classList.toggle('pending', !selSlot);
+  const total = selService ? money(selService.price) : '—';
+  $('sum-price').textContent = total;
+  $('mb-total').textContent  = total;
+  validate();
 }
 
 function showBookingError(msg) {
-  const box = document.getElementById('booking-error');
+  const box = $('booking-error');
   box.textContent = msg || '';
   box.classList.toggle('show', !!msg);
 }
@@ -300,30 +322,99 @@ function showBookingError(msg) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function guestEmail() {
-  if (loggedClient) return null; // con login de Google se usa el email de la sesión
-  return document.getElementById('inp-email').value.trim();
+  if (!isEmbed) return null; // fuera del embed el email sale de la sesión de Google
+  return $('inp-email').value.trim();
 }
 
-function checkStep3() {
-  showBookingError('');
-  const name    = document.getElementById('inp-name').value.trim();
-  const phone   = document.getElementById('inp-phone').value.trim();
-  const email   = guestEmail();
-  const emailOk = !email || EMAIL_RE.test(email);
-  document.getElementById('btn-confirm').disabled = !(name && phone && emailOk);
+function clientName() {
+  if (isEmbed) return $('inp-name').value.trim();
+  return String(loggedClient?.name || loggedClient?.email?.split('@')[0] || '').trim().slice(0, 60);
+}
+
+// Mismas reglas que el backend: nombre 2-60, teléfono 8-15 dígitos, email opcional válido
+function formValid() {
+  const phoneDigits = $('inp-phone').value.replace(/\D/g, '');
+  if (phoneDigits.length < 8 || phoneDigits.length > 15) return false;
+  if (isEmbed) {
+    const name = clientName();
+    if (name.length < 2 || name.length > 60) return false;
+    const email = guestEmail();
+    if (email && !EMAIL_RE.test(email)) return false;
+  }
+  return true;
+}
+
+function validate() {
+  $('btn-confirm').disabled = !(selService && selBarber && selDate && selSlot && formValid());
 }
 
 // El aviso de email inválido recién al salir del campo, no mientras escribe
 function checkEmailOnBlur() {
   const email = guestEmail();
   if (email && !EMAIL_RE.test(email)) showBookingError('❌ El email no es válido');
+  else showBookingError('');
+}
+
+// Barra de abajo en el celular → llevar a la tarjeta
+function goToTicket() {
+  $('ticket').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const first = !selSlot ? null : ['inp-name', 'inp-phone', 'inp-email']
+    .map($).find(i => i.offsetParent !== null && !i.value.trim());
+  if (first) setTimeout(() => first.focus({ preventScroll: true }), 400);
+}
+
+// ── Login con Google al confirmar (fuera del embed) ──
+function savePendingAndLogin() {
+  try {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+      slug, serviceId: selService.id, barberId: selBarber.id, date: selDate, time: selSlot,
+      phone: $('inp-phone').value.trim(), at: Date.now()
+    }));
+  } catch {}
+  const next = window.location.pathname + window.location.search;
+  window.location.href = `/auth/client/google?next=${encodeURIComponent(next)}`;
+}
+
+function takePending() {
+  let p = null;
+  try {
+    p = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {}
+  if (!p || p.slug !== slug || Date.now() - p.at > 30 * 60 * 1000) return null;
+  return p;
+}
+
+// Vuelta del login: restaurar lo elegido y completar la reserva
+async function resumePending(p) {
+  const svc = services.find(s => s.id === p.serviceId);
+  const brb = barbers.find(b => b.id === p.barberId);
+  if (svc) { selService = svc; renderServices(); }
+  if (brb && brb !== selBarber) { selBarber = brb; renderBarbers(); await loadDays(); }
+  $('inp-phone').value = p.phone || '';
+  if (days.some(d => d.key === p.date)) {
+    selDate = p.date; renderDays();
+    await loadSlots();
+  } else {
+    await pickFirstAvailableDay();
+  }
+  if (selDate === p.date && currentSlots.some(s => s.time === p.time && s.available)) {
+    selectSlot(p.time);
+    if (!$('btn-confirm').disabled) { confirmBooking(); return; }
+  } else {
+    showBookingError('❌ Ese horario ya no está disponible. Elegí otro.');
+  }
+  goToTicket();
 }
 
 // ── Confirmar turno (llama a la API) ─────────
 async function confirmBooking() {
-  const name  = document.getElementById('inp-name').value.trim();
-  const phone = document.getElementById('inp-phone').value.trim();
-  const btn   = document.getElementById('btn-confirm');
+  if (!(selService && selBarber && selDate && selSlot && formValid())) return;
+  if (!isEmbed && !loggedClient) { savePendingAndLogin(); return; }
+
+  const name  = clientName();
+  const phone = $('inp-phone').value.trim();
+  const btn   = $('btn-confirm');
 
   btn.disabled = true;
   btn.textContent = 'Confirmando...';
@@ -344,71 +435,63 @@ async function confirmBooking() {
         time:        selSlot,
         price:       selService.price,
         businessId,
-        website:     document.getElementById('inp-website').value
+        website:     $('inp-website').value
       })
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      const msg = err.error || 'No se pudo confirmar el turno. Probá de nuevo.';
-      // En el formulario (se ve también en modo embed, donde el toast puede quedar fuera de vista)
-      showBookingError('❌ ' + msg);
-      showToast('❌ ' + msg);
-      btn.disabled = false;
+      showBookingError('❌ ' + (err.error || 'No se pudo confirmar el turno. Probá de nuevo.'));
       btn.textContent = 'Confirmar turno';
+      validate();
+      // Si el horario se ocupó mientras tanto, refrescar la grilla
+      if (res.status === 409) { const keep = selSlot; await loadSlots(); if (currentSlots.some(s => s.time === keep && s.available)) selectSlot(keep); }
       return;
     }
 
-    const [y, m, d] = selDate.split('-');
-    confDay     = `${d} de ${MONTHS[parseInt(m) - 1]}`;
+    confDate    = selDate;
+    confDay     = longDay(selDate);
     confTime    = selSlot;
     confService = selService.name;
     confBarber  = selBarber.name;
     confPhone   = phone;
+    confPrice   = selService.price;
 
-    document.getElementById('conf-day').textContent    = confDay;
-    document.getElementById('conf-time').textContent   = confTime;
-    document.getElementById('conf-svc').textContent    = confService;
-    document.getElementById('conf-barber').textContent = confBarber;
-    document.getElementById('conf-name').textContent   = name;
-    document.getElementById('conf-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
+    $('conf-day').textContent     = confDay;
+    $('conf-time').textContent    = confTime;
+    $('conf-svc').textContent     = confService;
+    $('conf-barber').textContent  = confBarber;
+    $('conf-name').textContent    = name;
+    $('conf-price').textContent   = money(confPrice);
+    $('conf-address').textContent = confAddress || '—';
 
-    // Cargar nombre y dirección del negocio
-    try {
-      const bizRes = await fetch(`/api/business?business_id=${businessId}`);
-      const biz = await bizRes.json();
-      confBusinessName = biz.name || 'Agendaste';
-      confAddress = biz.address || 'Buenos Aires, Argentina';
-    } catch {
-      confBusinessName = 'Agendaste';
-      confAddress = 'Buenos Aires, Argentina';
-    }
-    document.getElementById('conf-address').textContent = confAddress;
-
-    goStep(4);
-
+    $('booking').style.display = 'none';
+    $('done').style.display    = '';
+    document.body.classList.remove('has-bar');
+    $('mobile-bar').style.display = 'none';
+    window.scrollTo({ top: 0 });
+    btn.textContent = 'Confirmar turno';
   } catch {
     showBookingError('❌ Error de conexión');
-    showToast('❌ Error de conexión');
-    btn.disabled = false;
     btn.textContent = 'Confirmar turno';
+    validate();
   }
 }
 
 // ── Google Calendar (link directo) ───────────
 function addToGCal() {
-  const [y, m, d] = selDate.split('-').map(Number);
-  const [h, min]  = selSlot.split(':').map(Number);
+  const [y, m, d] = confDate.split('-').map(Number);
+  const [h, min]  = confTime.split(':').map(Number);
   const start = new Date(y, m - 1, d, h, min);
   const end   = new Date(start.getTime() + 30 * 60000);
   const fmt   = dt => dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
 
-  const title       = encodeURIComponent(`✂️ Turno — ${selService.name}`);
+  const title       = encodeURIComponent(`✂️ Turno — ${confService}`);
   const addressLine = confAddress ? `Dirección: ${confAddress}\n` : '';
   const details     = encodeURIComponent(
-    `Servicio: ${selService.name}\n` +
-    `Barbero: ${selBarber.name}\n` +
-    `Precio: $${selService.price.toLocaleString('es-AR')}\n` +
+    `Servicio: ${confService}\n` +
+    `Barbero: ${confBarber}\n` +
+    `Precio: ${money(confPrice)}\n` +
     addressLine +
     `\nReservado via Agendaste`
   );
@@ -424,13 +507,13 @@ function addToGCal() {
 // ── Compartir por WhatsApp ───────────────────
 function shareWhatsApp() {
   const message =
-    `✂️ ¡Turno confirmado en ${confBusinessName}!\n` +
+    `✂️ ¡Turno confirmado en ${confBusinessName || 'Agendaste'}!\n` +
     `📅 Fecha: ${confDay}\n` +
     `⏰ Hora: ${confTime}\n` +
     `💈 Servicio: ${confService}\n` +
     `👤 Profesional: ${confBarber}\n` +
-    `📍 Dirección: ${confAddress}\n\n` +
-    `Reservado via Agendaste`;
+    (confAddress ? `📍 Dirección: ${confAddress}\n` : '') +
+    `\nReservado via Agendaste`;
 
   const phoneDigits = confPhone.replace(/\D/g, '');
   const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(message)}`;
@@ -438,36 +521,30 @@ function shareWhatsApp() {
   window.open(url, '_blank');
 }
 
-function resetBooking() {
-  selService = null; selBarber = null; selDate = null; selSlot = null; step = 0;
-  document.getElementById('inp-name').value  = '';
-  document.getElementById('inp-phone').value = '';
-  document.getElementById('inp-email').value = '';
-  document.getElementById('step4').classList.remove('active');
-  document.getElementById('step0').classList.add('active');
-  updateDots();
+async function resetBooking() {
+  $('done').style.display    = 'none';
+  $('booking').style.display = '';
+  $('mobile-bar').style.display = '';
+  if (!isEmbed) document.body.classList.add('has-bar');
+  showBookingError('');
+  // El horario recién reservado ya no está libre: volver a elegir el primer día con lugar
+  selService = services[0] || null;
   renderServices();
-}
-
-// ── Toast ─────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  await pickFirstAvailableDay();
 }
 
 // ── Init ──────────────────────────────────────
 (async () => {
   initEmbedHeight();
+  if (!isEmbed) document.body.classList.add('has-bar');
+  updateSummary();
   await initBusiness();
+  await checkClientLogin();
+  renderClientFields();
+  await Promise.all([loadServices(), loadBarbers()]);
+  await loadDays();
 
-  // Apuntar el botón de login a la URL actual para volver al slug correcto tras OAuth
-  if (window.location.pathname !== '/') {
-    const loginLink = document.getElementById('btn-google-login');
-    if (loginLink) loginLink.href = `/auth/client/google?next=${encodeURIComponent(window.location.pathname)}`;
-  }
-
-  checkClientLogin();
-  loadBarbers();
+  const pending = !isEmbed && loggedClient ? takePending() : null;
+  if (pending) await resumePending(pending);
+  else await pickFirstAvailableDay();
 })();

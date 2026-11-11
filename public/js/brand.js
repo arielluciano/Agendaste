@@ -18,7 +18,8 @@
 
   // Variables que applyBrand puede setear (para poder limpiarlas en la preview)
   const VARS = ['--brand', '--brand-contrast', '--brand-hover', '--primary', '--primary-dark', '--primary-light',
-                '--brand-bg', '--bg-secondary', '--bg', '--border', '--text', '--text-muted', '--font'];
+                '--brand-bg', '--bg-secondary', '--bg', '--border', '--text', '--text-muted', '--font',
+                '--surface', '--muted', '--accent-text'];
 
   function isHex(v) { return typeof v === 'string' && HEX_RE.test(v); }
 
@@ -47,6 +48,28 @@
   }
 
   function isDark(hex) { return contrastText(hex) === '#FFFFFF'; }
+
+  // Relación de contraste WCAG entre dos colores (1 a 21)
+  function contrastRatio(a, b) {
+    const la = luminance(a), lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  // Mezcla en sRGB, igual que color-mix(in srgb, a p%, b): p = peso de `a` (0 a 1)
+  function mix(a, b, p) {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    return '#' + A.map((c, i) => Math.round(c * p + B[i] * (1 - p)).toString(16).padStart(2, '0')).join('');
+  }
+
+  // El color de acento, oscurecido/aclarado lo justo para leerse (4.5:1) sobre `surface`
+  function readableOn(color, surface) {
+    const target = isDark(surface) ? '#FFFFFF' : '#000000';
+    for (let p = 1; p > 0; p -= 0.05) {
+      const c = mix(color, target, p);
+      if (contrastRatio(c, surface) >= 4.5) return c;
+    }
+    return target;
+  }
 
   // Carga la fuente de Google Fonts solo si está en la lista blanca
   function loadFont(name) {
@@ -84,6 +107,10 @@
       set('--primary-light', `color-mix(in srgb, ${primary} 12%, ${bg || '#FFFFFF'})`);
     }
 
+    // Fondo y superficie de referencia (sin marca: crema y blanco de Agendaste)
+    const pageBg  = bg || '#F8F7F4';
+    const surface = bg ? (isDark(bg) ? mix(bg, '#FFFFFF', 0.95) : mix(bg, '#000000', 0.95)) : '#FFFFFF';
+
     if (bg) {
       const ink = text || '#1A1A17';
       set('--brand-bg', bg);
@@ -91,11 +118,18 @@
       // Superficie de tarjetas: un poco más clara que el fondo
       set('--bg', isDark(bg) ? `color-mix(in srgb, ${bg} 88%, #FFFFFF)` : `color-mix(in srgb, ${bg} 35%, #FFFFFF)`);
       set('--border', `color-mix(in srgb, ${ink} 16%, ${bg})`);
+      // Superficie de la tarjeta de reserva: 5% más clara (fondo oscuro) o más oscura (fondo claro)
+      set('--surface', surface);
     }
+
+    if (primary) set('--border', mix(primary, pageBg, 0.35));
+    // Texto de acento sobre --surface: siempre 4.5:1 (con el naranja de Agendaste si no hay primario)
+    if (primary || bg) set('--accent-text', readableOn(primary || '#9A3412', surface));
 
     if (text) {
       set('--text', text);
       set('--text-muted', `color-mix(in srgb, ${text} 62%, ${bg || '#FFFFFF'})`);
+      set('--muted', mix(text, pageBg, 0.65));
     }
 
     if (biz.brand_font && FONTS[biz.brand_font]) {
@@ -104,5 +138,5 @@
     }
   }
 
-  window.AgendasteBrand = { FONTS: Object.keys(FONTS), isHex, contrastText, loadFont, applyBrand };
+  window.AgendasteBrand = { FONTS: Object.keys(FONTS), isHex, contrastText, contrastRatio, loadFont, applyBrand };
 })();
