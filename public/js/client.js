@@ -149,17 +149,23 @@ function renderClientFields() {
 // Modo reprogramar: buscar el turno original entre los próximos del cliente
 async function initReschedule() {
   if (!rescheduleId || !loggedClient) return;
+  let a = null;
   try {
     const data = await (await fetch('/api/appointments/mine')).json();
-    const a = (data.upcoming || []).find(x => x.id === rescheduleId && x.status !== 'cancelled');
-    if (!a) return;
-    rescheduleAppt = a;
-    const banner = $('resched-banner');
-    banner.innerHTML = `Estás cambiando tu turno del <strong>${esc(longDay(String(a.date).split('T')[0]))} ${esc(String(a.time).substring(0, 5))}</strong>`;
-    banner.style.display = '';
-    $('btn-confirm').textContent = confirmLabel();
-    if (a.client_phone && !$('inp-phone').value) $('inp-phone').value = a.client_phone;
+    a = (data.upcoming || []).find(x => x.id === rescheduleId && x.status !== 'cancelled') || null;
   } catch {}
+
+  const banner = $('resched-banner');
+  banner.style.display = '';
+  rescheduleAppt = a;
+  $('btn-confirm').textContent = confirmLabel();
+  if (!a) {
+    // No es del cliente, ya pasó o está cancelado: se reserva como turno nuevo
+    banner.textContent = 'No encontramos el turno a cambiar. Esta reserva va a ser un turno nuevo.';
+    return;
+  }
+  banner.innerHTML = `Estás cambiando tu turno del <strong>${esc(longDay(String(a.date).split('T')[0]))} ${esc(String(a.time).substring(0, 5))}</strong>`;
+  if (a.client_phone && !$('inp-phone').value) $('inp-phone').value = a.client_phone;
 }
 
 function endReschedule() {
@@ -504,7 +510,7 @@ async function confirmBooking() {
     $('conf-address').textContent = confAddress || '—';
 
     $('done-title').textContent = rescheduling ? '¡Turno reprogramado!' : '¡Turno confirmado!';
-    if (rescheduling) endReschedule();
+    if (rescheduleId) endReschedule();
     $('booking').style.display = 'none';
     $('done').style.display    = '';
     document.body.classList.remove('has-bar');
