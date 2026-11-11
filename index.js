@@ -59,6 +59,7 @@ app.use('/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/barbers', require('./routes/barbers'));
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/availability', require('./routes/availability'));
 app.use('/api/business', require('./routes/business'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/otp', require('./routes/otp'));

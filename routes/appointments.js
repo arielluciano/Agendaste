@@ -8,30 +8,7 @@ const { requireAuth } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 const { sendConfirmationEmail, sendOwnerNoticeEmail } = require('../services/email');
 
-const TZ_AR = 'America/Argentina/Buenos_Aires';
-
-// Fecha de hoy (YYYY-MM-DD) en horario de Argentina, no UTC —
-// el server corre en UTC y eso corría el corte de "hoy" varias horas.
-function todayAR() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ_AR }).format(new Date());
-}
-
-// Hora actual en Argentina, en minutos desde las 00:00 (mismo criterio que todayAR)
-function nowMinutesAR() {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: TZ_AR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date());
-  const get = type => parseInt(parts.find(p => p.type === type).value, 10);
-  return get('hour') * 60 + get('minute');
-}
-
-function toMinutes(t) {
-  const [h, m] = String(t).split(':').map(Number);
-  return h * 60 + m;
-}
-
-function toTimeStr(mins) {
-  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-}
+const { todayAR, nowMinutesAR, toMinutes, toTimeStr, getAvailableSlots } = require('../services/availability');
 
 // ── Anti-spam de reservas ─────────────────────
 const MAX_FUTURE_PER_PHONE = 2;
@@ -165,37 +142,13 @@ function validateBookingInput({ clientName, clientPhone, clientEmail, service_id
 // Chequea disponibilidad e inserta el turno. `q` TIENE que ser el cliente de una transacción abierta:
 // el advisory lock dura hasta el COMMIT/ROLLBACK.
 // Devuelve { status, error } si no se puede, o { appointment, service }.
-async function insertAppointment(q, { name, clientPhone, phoneDigits, email, serviceId, barberId, businessId, date, time, startMins, isOwner, today }) {
-  // Servicio por id: tiene que ser del negocio y estar activo. Precio y duración salen de acá, nunca del cliente.
-  const svc = (await q.query(
-    'SELECT id, name, price, duration FROM services WHERE id = $1 AND business_id = $2 AND active = true',
-    [serviceId, businessId]
-  )).rows[0];
-  if (!svc) return { status: 400, error: 'Servicio inválido' };
-
+async function insertAppointment(q, { name, clientPhone, phoneDigits, email, serviceId, barberId, businessId, date, time, isOwner, today }) {
   // El barbero tiene que ser del negocio del turno
   const barberCheck = await q.query('SELECT id FROM barbers WHERE id = $1 AND business_id = $2', [barberId, businessId]);
   if (barberCheck.rows.length === 0) {
     return isOwner
       ? { status: 403, error: 'El barbero no pertenece a tu negocio' }
       : { status: 400, error: 'Profesional inválido' };
-  }
-
-  // Dentro del horario de atención (el mismo que usa /slots para ofrecer turnos)
-  const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-  const sched = (await q.query(
-    'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
-    [barberId, dayOfWeek]
-  )).rows[0];
-  const ranges = [];
-  if (sched && sched.is_open) {
-    ranges.push([toMinutes(sched.open_time), toMinutes(sched.close_time)]);
-    if (sched.has_split && sched.open_time_2 && sched.close_time_2) {
-      ranges.push([toMinutes(sched.open_time_2), toMinutes(sched.close_time_2)]);
-    }
-  }
-  if (!ranges.some(([open, close]) => startMins >= open && startMins < close)) {
-    return { status: 400, error: 'Ese horario está fuera del horario de atención' };
   }
 
   // Límite por teléfono: máximo 2 turnos futuros no cancelados en este negocio (el dueño queda exento)
@@ -217,23 +170,22 @@ async function insertAppointment(q, { name, clientPhone, phoneDigits, email, ser
   // (el lock se libera solo al terminar la transacción)
   await q.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${barberId}:${date}`]);
 
-  // No superponerse con otro turno del mismo profesional (según la duración de cada servicio; 30 min si no se conoce)
-  const duration = parseInt(svc.duration) || 30;
-  const conflict = await q.query(
-    `SELECT a.id FROM appointments a
-       LEFT JOIN services s ON a.service_id = s.id
-      WHERE a.date = $1 AND a.barber_id = $2 AND a.status != 'cancelled'
-        AND a.time < ($3::time + make_interval(mins => $4))
-        AND $3::time < (a.time + make_interval(mins => COALESCE(NULLIF(s.duration, 0), 30)))`,
-    [date, barberId, toTimeStr(startMins), duration]
-  );
-  if (conflict.rows.length > 0) return { status: 409, error: 'Ese horario ya está ocupado' };
+  // Misma función que arma la grilla: horario de atención, que el servicio entre en el tramo,
+  // superposición con la duración real de cada turno y horarios ya pasados (hora de Argentina).
+  // El servicio se valida ahí (del negocio y activo); precio y duración salen de la base, nunca del cliente.
+  const avail = await getAvailableSlots(barberId, businessId, serviceId, date, q);
+  if (avail.error) return { status: avail.status, error: avail.error };
+  const hhmm = String(time).substring(0, 5);
+  if (!avail.slots.some(s => s.time === hhmm && s.available)) {
+    return { status: 409, error: 'Ese horario ya no está disponible. Elegí otro.' };
+  }
+  const svc = avail.service;
 
   const result = await q.query(
     `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [businessId, barberId, name, clientPhone, email, svc.id, date, time, svc.price, 'confirmed']
+    [businessId, barberId, name, clientPhone, email, svc.id, date, hhmm, svc.price, 'confirmed']
   );
   return { appointment: result.rows[0], service: svc };
 }
@@ -518,66 +470,21 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/appointments/slots/:date → horarios disponibles
+// GET /api/appointments/slots/:date?barber_id=&business_id=&service_id= → horarios del día
+// (compatibilidad: la página de reservas usa /api/availability; mismo motor)
 router.get('/slots/:date', async (req, res) => {
-  const bizId2 = parseInt(req.query.business_id) || req.session?.business_id || 1;
-  const barberId2 = parseInt(req.query.barber_id);
-  if (!Number.isInteger(barberId2) || barberId2 <= 0) return res.status(400).json({ error: 'Falta barber_id' });
-
-  function toMinutes(t) {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-  }
-
-  function toTimeStr(mins) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  }
-
-  // Genera horarios cada 30 minutos entre openMins y closeMins (sin incluir el cierre)
-  function generateSlots(openMins, closeMins) {
-    const slots = [];
-    for (let m = openMins; m < closeMins; m += 30) {
-      slots.push(toTimeStr(m));
-    }
-    return slots;
-  }
+  const bizId    = parseInt(req.query.business_id) || req.session?.business_id;
+  const barberId = parseInt(req.query.barber_id);
+  const serviceId = req.query.service_id ? parseInt(req.query.service_id) : null;
+  if (!Number.isInteger(barberId) || barberId <= 0) return res.status(400).json({ error: 'Falta barber_id' });
+  if (!bizId) return res.status(400).json({ error: 'Falta business_id' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(req.params.date)) return res.status(400).json({ error: 'Fecha inválida' });
+  if (req.query.service_id && !serviceId) return res.status(400).json({ error: 'service_id inválido' });
 
   try {
-    const dayOfWeek = new Date(req.params.date + 'T12:00:00').getDay();
-    const schedResult = await db.query(
-      'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
-      [barberId2, dayOfWeek]
-    );
-
-    if (schedResult.rows.length === 0 || !schedResult.rows[0].is_open) {
-      return res.json([]);
-    }
-
-    const { open_time, close_time, has_split, open_time_2, close_time_2 } = schedResult.rows[0];
-    const openMins  = toMinutes(open_time.substring(0, 5));
-    const closeMins = toMinutes(close_time.substring(0, 5));
-
-    let allSlots = generateSlots(openMins, closeMins);
-
-    if (has_split && open_time_2 && close_time_2) {
-      const open2Mins  = toMinutes(open_time_2.substring(0, 5));
-      const close2Mins = toMinutes(close_time_2.substring(0, 5));
-      allSlots = allSlots.concat(generateSlots(open2Mins, close2Mins));
-    }
-
-    const result = await db.query(
-      "SELECT time FROM appointments WHERE date = $1 AND status != 'cancelled' AND business_id = $2 AND barber_id = $3",
-      [req.params.date, bizId2, barberId2]
-    );
-    const taken = result.rows.map(r => r.time.substring(0, 5));
-
-    const slots = allSlots.map(s => ({
-      time: s,
-      available: !taken.includes(s)
-    }));
-    res.json(slots);
+    const r = await getAvailableSlots(barberId, bizId, serviceId, req.params.date);
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    res.json(r.slots);
   } catch (err) {
     console.error('Error GET /api/appointments/slots/:date:', err.message);
     res.status(500).json({ error: 'Error obteniendo slots' });

@@ -275,34 +275,59 @@ function renderBizSchedule(schedule) {
   (schedule || []).forEach(s => byDay[s.day_of_week] = s);
 
   document.getElementById('biz-schedule-days').innerHTML = DAYS_ORDER.map(dow => {
-    const d     = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
-    const open  = (d.open_time  || '09:00').substring(0, 5);
-    const close = (d.close_time || '18:00').substring(0, 5);
+    const d      = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
+    const open   = (d.open_time    || '09:00').substring(0, 5);
+    const close  = (d.close_time   || '18:00').substring(0, 5);
+    const open2  = (d.open_time_2  || '16:00').substring(0, 5);
+    const close2 = (d.close_time_2 || '20:00').substring(0, 5);
+    const split  = !!d.has_split;
     return `
-      <div class="schedule-day" data-dow="${dow}">
+      <div class="schedule-day ${split ? 'split' : ''}" data-dow="${dow}">
         <div class="schedule-day-head">
-          <button class="toggle ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
+          <button class="toggle biz-sched-open-day ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
           <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
+          <label class="schedule-split-toggle">
+            <button type="button" class="toggle toggle-sm biz-sched-split ${split ? 'on' : ''}" onclick="toggleBizSplit(this)" title="Horario partido"></button>
+            Partido
+          </label>
         </div>
         <div class="schedule-franjas">
           <div class="schedule-franja-row">
+            <span class="schedule-franja-num">1</span>
             <input type="time" class="biz-sched-open"  value="${open}">
             <span class="schedule-sep">a</span>
             <input type="time" class="biz-sched-close" value="${close}">
+          </div>
+          <div class="schedule-franja-row sched-franja-2">
+            <span class="schedule-franja-num">2</span>
+            <input type="time" class="biz-sched-open-2"  value="${open2}">
+            <span class="schedule-sep">a</span>
+            <input type="time" class="biz-sched-close-2" value="${close2}">
           </div>
         </div>
       </div>`;
   }).join('');
 }
 
+function toggleBizSplit(btn) {
+  btn.classList.toggle('on');
+  btn.closest('.schedule-day').classList.toggle('split', btn.classList.contains('on'));
+}
+
 function readBizSchedule() {
   const days = document.querySelectorAll('#biz-schedule-days .schedule-day');
-  return Array.from(days).map(day => ({
-    day_of_week: Number(day.dataset.dow),
-    is_open:     day.querySelector('.toggle').classList.contains('on'),
-    open_time:   day.querySelector('.biz-sched-open').value,
-    close_time:  day.querySelector('.biz-sched-close').value
-  }));
+  return Array.from(days).map(day => {
+    const split = day.querySelector('.biz-sched-split').classList.contains('on');
+    return {
+      day_of_week:  Number(day.dataset.dow),
+      is_open:      day.querySelector('.biz-sched-open-day').classList.contains('on'),
+      open_time:    day.querySelector('.biz-sched-open').value,
+      close_time:   day.querySelector('.biz-sched-close').value,
+      has_split:    split,
+      open_time_2:  split ? day.querySelector('.biz-sched-open-2').value  : null,
+      close_time_2: split ? day.querySelector('.biz-sched-close-2').value : null
+    };
+  });
 }
 
 async function applyScheduleToBarbers() {

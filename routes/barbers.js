@@ -110,12 +110,15 @@ router.post('/apply-schedule', requireAuth, async (req, res) => {
     const barbersResult = await db.query('SELECT id FROM barbers WHERE business_id = $1', [bizId]);
     for (const barber of barbersResult.rows) {
       for (const day of schedule) {
+        // Copia también el turno partido (solo si vienen las dos horas del segundo tramo)
+        const hasSplit = !!(day.has_split && day.open_time_2 && day.close_time_2);
         await db.query(
           `INSERT INTO barber_schedules (barber_id, day_of_week, is_open, open_time, close_time, has_split, open_time_2, close_time_2)
-           VALUES ($1, $2, $3, $4, $5, false, NULL, NULL)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (barber_id, day_of_week)
-           DO UPDATE SET is_open = $3, open_time = $4, close_time = $5, has_split = false, open_time_2 = NULL, close_time_2 = NULL`,
-          [barber.id, day.day_of_week, day.is_open, day.open_time, day.close_time]
+           DO UPDATE SET is_open = $3, open_time = $4, close_time = $5, has_split = $6, open_time_2 = $7, close_time_2 = $8`,
+          [barber.id, day.day_of_week, day.is_open, day.open_time, day.close_time,
+           hasSplit, hasSplit ? day.open_time_2 : null, hasSplit ? day.close_time_2 : null]
         );
       }
     }

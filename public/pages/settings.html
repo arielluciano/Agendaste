@@ -37,6 +37,11 @@
     .schedule-day-name { flex:1; font-size:13px; font-weight:600; color:var(--text); }
     .schedule-franjas { display:flex; flex-direction:column; gap:8px; padding-left:48px; }
     .schedule-franja-row { display:flex; align-items:center; gap:8px; }
+    .schedule-split-toggle { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); cursor:pointer; user-select:none; margin:0; }
+    .schedule-franja-row.sched-franja-2 { display:none; }
+    .schedule-day.split .schedule-franja-row.sched-franja-2 { display:flex; }
+    .schedule-franja-num { display:none; width:20px; flex-shrink:0; font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
+    .schedule-day.split .schedule-franja-num { display:inline-block; }
     .schedule-franja-row input[type=time] { flex:1; min-width:0; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); font-size:13px; }
     .schedule-sep { font-size:12px; color:var(--text-muted); }
     /* .toggle → definido en styles.css */

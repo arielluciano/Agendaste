@@ -226,22 +226,25 @@ async function loadManualFormOptions() {
 }
 
 async function loadManualSlots() {
-  const barberId = document.getElementById('new-appt-barber').value;
+  const barberId  = document.getElementById('new-appt-barber').value;
+  const serviceId = document.getElementById('new-appt-service').value;
   const date      = document.getElementById('new-appt-date').value;
   const grid      = document.getElementById('new-appt-slots');
   manualSelectedSlot = null;
   checkManualForm();
 
-  if (!barberId || !date) {
-    grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Elegí barbero y fecha</p>';
+  // La grilla depende de la duración del servicio (misma lógica que valida el alta)
+  if (!barberId || !serviceId || !date) {
+    grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Elegí barbero, servicio y fecha</p>';
     return;
   }
 
   grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Cargando horarios...</p>';
 
   try {
-    const res   = await fetch(`/api/appointments/slots/${date}?barber_id=${barberId}`);
+    const res   = await fetch(`/api/appointments/slots/${date}?barber_id=${barberId}&service_id=${serviceId}`);
     const slots = await res.json();
+    if (!res.ok || !Array.isArray(slots)) throw new Error();
 
     if (slots.length === 0) {
       grid.innerHTML = '<p class="text-muted" style="grid-column:1/-1;font-size:13px">Sin horarios disponibles ese día</p>';

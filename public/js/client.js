@@ -24,7 +24,8 @@ function confirmLabel() { return rescheduleAppt ? 'Confirmar cambio' : 'Confirma
 
 let services = [];
 let barbers  = [];
-let days     = [];      // próximos días hábiles del barbero elegido: [{ key, date }]
+let days     = [];      // próximos días en que atiende el barbero: [{ key, date, slots }]
+let serverToday = null; // "hoy" según el server (hora de Argentina)
 
 let selService = null;
 let selBarber  = null;
@@ -52,9 +53,6 @@ function esc(s) {
 }
 function $(id) { return document.getElementById(id); }
 function money(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
-function dateKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 function parseKey(key) { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); }
 function longDay(key) {
   const d = parseKey(key);
@@ -205,7 +203,8 @@ function renderServices() {
 function selectService(id) {
   selService = services.find(s => s.id === id) || null;
   renderServices();
-  loadSlots();
+  // La duración cambia la grilla: recargar manteniendo el día elegido
+  loadAvailability(selDate);
 }
 
 // ── Barberos ─────────────────────────────────
@@ -229,28 +228,46 @@ function renderBarbers() {
             onclick="selectBarber(${Number(b.id)})">${esc(b.name)}</button>`).join('');
 }
 
-async function selectBarber(id) {
+function selectBarber(id) {
   selBarber = barbers.find(b => b.id === id) || null;
   renderBarbers();
-  await loadDays();
-  await pickFirstAvailableDay();
+  return loadAvailability(null);
 }
 
-// ── Días: los próximos 6 en que atiende el barbero ──
-async function loadDays() {
-  days = [];
-  if (!selBarber) { renderDays(); return; }
-  let open = [];
-  try {
-    const sched = await (await fetch(`/api/barbers/${selBarber.id}/schedule?business_id=${businessId}`)).json();
-    open = (Array.isArray(sched) ? sched : []).filter(r => r.is_open).map(r => Number(r.day_of_week));
-  } catch {}
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 60 && days.length < DAYS_SHOWN && open.length; i++) {
-    if (open.includes(d.getDay())) days.push({ key: dateKey(d), date: new Date(d) });
-    d.setDate(d.getDate() + 1);
+// ── Disponibilidad: próximos 6 días en que atiende el barbero, con sus horarios (una sola llamada) ──
+// El backend calcula todo (duración del servicio, turno partido, superposiciones y lo que ya pasó
+// en hora de Argentina) con la misma función que valida la reserva.
+async function loadAvailability(keepDate) {
+  selSlot = null;
+  updateSummary();
+  const req = ++slotsReq;
+  if (!selBarber || !selService) {
+    days = []; selDate = null;
+    renderDays(); renderSlots([]);
+    return;
   }
+  $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Cargando horarios...</p>';
+  try {
+    const res  = await fetch(`/api/availability?business_id=${businessId}&barber_id=${selBarber.id}&service_id=${selService.id}&days=${DAYS_SHOWN}`);
+    const data = await res.json();
+    if (req !== slotsReq) return;
+    if (!res.ok) throw new Error(data.error);
+    serverToday = data.today || null;
+    days = (data.days || []).map(d => ({ key: d.date, date: parseKey(d.date), slots: d.slots || [] }));
+  } catch {
+    if (req !== slotsReq) return;
+    days = []; selDate = null;
+    renderDays();
+    $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Error cargando horarios</p>';
+    return;
+  }
+  // Día: el pedido (si sigue en la lista) o el primero con algún horario libre
+  selDate = keepDate && days.some(d => d.key === keepDate)
+    ? keepDate
+    : (days.find(d => d.slots.some(s => s.available)) || days[0])?.key || null;
   renderDays();
+  showDaySlots();
+  updateSummary();
 }
 
 function renderDays() {
@@ -259,10 +276,9 @@ function renderDays() {
     el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">No hay días con atención próximamente</p>';
     return;
   }
-  const todayKey = dateKey(new Date());
   el.innerHTML = days.map(d => {
     const sel = d.key === selDate;
-    const dow = d.key === todayKey ? 'Hoy' : DOW_SHORT[d.date.getDay()];
+    const dow = d.key === serverToday ? 'Hoy' : DOW_SHORT[d.date.getDay()];
     return `<button type="button" class="day ${sel ? 'selected' : ''}" aria-pressed="${sel}"
                     aria-label="${esc(longDay(d.key))}" onclick="selectDay('${d.key}')">
               <span class="dow">${dow}</span><span class="num">${d.date.getDate()}</span>
@@ -273,51 +289,13 @@ function renderDays() {
 function selectDay(key) {
   selDate = key;
   renderDays();
-  loadSlots();
+  // Recargar para tener la ocupación al día
+  loadAvailability(key);
 }
 
-// Elige el primer día (de los 6) que tenga algún horario libre; si ninguno, el primero
-async function pickFirstAvailableDay() {
-  selDate = null; selSlot = null;
-  for (const d of days) {
-    const slots = await fetchSlots(d.key);
-    if (slots.some(s => s.available)) { selDate = d.key; break; }
-  }
-  if (!selDate && days.length) selDate = days[0].key;
-  renderDays();
-  await loadSlots();
-}
-
-// ── Horarios disponibles (desde la API) ──────
-async function fetchSlots(key) {
-  if (!selBarber) return [];
-  const res   = await fetch(`/api/appointments/slots/${key}?barber_id=${selBarber.id}&business_id=${businessId}`);
-  const slots = await res.json();
-  if (!Array.isArray(slots)) return [];
-  // Hoy: no mostrar los horarios que ya pasaron
-  if (key !== dateKey(new Date())) return slots;
-  const now = new Date();
-  return slots.filter(s => {
-    const [h, m] = s.time.split(':').map(Number);
-    const t = new Date(); t.setHours(h, m, 0, 0);
-    return t > now;
-  });
-}
-
-async function loadSlots() {
-  selSlot = null;
-  updateSummary();
-  const el  = $('slots');
-  const req = ++slotsReq;
-  if (!selDate) { el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Elegí un día</p>'; return; }
-  el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Cargando horarios...</p>';
-  try {
-    const slots = await fetchSlots(selDate);
-    if (req !== slotsReq) return;
-    renderSlots(slots);
-  } catch {
-    if (req === slotsReq) el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">Error cargando horarios</p>';
-  }
+function showDaySlots() {
+  if (!selDate) { $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Elegí un día</p>'; currentSlots = []; return; }
+  renderSlots(days.find(d => d.key === selDate)?.slots || []);
 }
 
 let currentSlots = [];
@@ -433,14 +411,9 @@ async function resumePending(p) {
   const svc = services.find(s => s.id === p.serviceId);
   const brb = barbers.find(b => b.id === p.barberId);
   if (svc) { selService = svc; renderServices(); }
-  if (brb && brb !== selBarber) { selBarber = brb; renderBarbers(); await loadDays(); }
+  if (brb) { selBarber = brb; renderBarbers(); }
   $('inp-phone').value = p.phone || '';
-  if (days.some(d => d.key === p.date)) {
-    selDate = p.date; renderDays();
-    await loadSlots();
-  } else {
-    await pickFirstAvailableDay();
-  }
+  await loadAvailability(p.date);
   if (selDate === p.date && currentSlots.some(s => s.time === p.time && s.available)) {
     selectSlot(p.time);
     if (!$('btn-confirm').disabled) { confirmBooking(); return; }
@@ -487,7 +460,7 @@ async function confirmBooking() {
       btn.textContent = confirmLabel();
       validate();
       // Si el horario se ocupó mientras tanto, refrescar la grilla
-      if (res.status === 409) { const keep = selSlot; await loadSlots(); if (currentSlots.some(s => s.time === keep && s.available)) selectSlot(keep); }
+      if (res.status === 409) { const keep = selSlot; await loadAvailability(selDate); if (currentSlots.some(s => s.time === keep && s.available)) selectSlot(keep); }
       return;
     }
 
@@ -574,7 +547,7 @@ async function resetBooking() {
   // El horario recién reservado ya no está libre: volver a elegir el primer día con lugar
   selService = services[0] || null;
   renderServices();
-  await pickFirstAvailableDay();
+  await loadAvailability(null);
 }
 
 // ── Init ──────────────────────────────────────
@@ -595,9 +568,7 @@ async function resetBooking() {
     $('no-hours').style.display = '';
     return;
   }
-  await loadDays();
-
   const pending = !isEmbed && loggedClient ? takePending() : null;
   if (pending) await resumePending(pending);
-  else await pickFirstAvailableDay();
+  else await loadAvailability(null);
 })();
