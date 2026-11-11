@@ -195,7 +195,7 @@
     <button class="btn btn-outline" style="width:100%" onclick="addToGCal()">
       <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Agregar a Google Calendar
     </button>
-    <button class="btn btn-whatsapp mt-1" onclick="shareWhatsApp()">
+    <button class="btn btn-whatsapp mt-1" id="btn-wa-business" onclick="shareWhatsApp()">
       <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor" stroke="none">
 <path d="M2290 4945 c-1101 -136 -1967 -1020 -2081 -2124 -17 -163 -7 -473 21
 -630 43 -247 115 -465 227 -688 l56 -112 -167 -611 c-92 -337 -166 -613 -164
@@ -216,7 +216,7 @@
 249 -535 440 -81 104 -154 222 -154 250 0 11 38 70 84 130 90 117 116 161 116
 194 0 11 -20 66 -43 123 -24 56 -72 172 -107 257 -44 106 -74 165 -96 188
 l-32 32 -108 0 c-91 0 -116 -4 -153 -22z"/>
-</g></svg> Compartir por WhatsApp
+</g></svg> Escribile al negocio por WhatsApp
     </button>
     <button class="btn btn-primary mt-1" onclick="resetBooking()">Reservar otro</button>
   </div>
@@ -230,6 +230,7 @@ l-32 32 -108 0 c-91 0 -116 -4 -153 -22z"/>
 </div>
 
 <script src="/js/brand.js"></script>
+<script src="/js/wa.js"></script>
 <script src="/js/client.js"></script>
 </body>
 </html>

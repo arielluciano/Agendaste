@@ -6,8 +6,9 @@ const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct
 const DIAS_CORTOS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const PAST_PAGE    = 5;
 
-let upcomingAppts = [];
-let pastAppts     = [];
+let upcomingAppts  = [];   // futuros vigentes
+let cancelledAppts = [];   // futuros cancelados
+let pastAppts      = [];
 let pastShown     = PAST_PAGE;
 
 const ICONS = {
@@ -37,15 +38,6 @@ function shortDate(dateStr) {
 
 // Inicio del turno como instante real (Argentina es UTC-3 todo el año)
 function apptStart(a) { return new Date(`${dateOnly(a.date)}T${hhmm(a.time)}:00-03:00`); }
-
-// wa.me necesita el número con código de país: un celular argentino de 10 dígitos se completa con 549
-function waNumber(phone) {
-  let digits = String(phone || '').replace(/\D/g, '');
-  if (!digits) return null;
-  if (digits.startsWith('0')) digits = digits.replace(/^0+/, '');
-  if (digits.length === 10) digits = '549' + digits;
-  return digits.length >= 8 ? digits : null;
-}
 
 function statusOf(a, isUpcoming) {
   if (a.status === 'cancelled') return { key: 'cancelled', label: 'Cancelado' };
@@ -99,19 +91,20 @@ function renderCard(a, isUpcoming) {
 
   let actions = '';
   if (isUpcoming && active) {
-    const wa = waNumber(a.business_phone);
-    const waLink = wa ? `<a class="btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICONS.whatsapp} WhatsApp</a>` : '';
+    // El cliente le escribe al NEGOCIO (businesses.phone)
+    const wa = waLink(a.business_phone, `Hola, te escribo por mi turno del ${shortDate(a.date)} a las ${hhmm(a.time)}`);
+    const waBtn = wa ? `<a class="btn-sm" href="${esc(wa)}" target="_blank" rel="noopener">${ICONS.whatsapp} WhatsApp</a>` : '';
     actions = canChange(a)
       ? `<div class="appt-actions">
           <button class="btn-sm cancel" onclick="cancelAppointment(${Number(a.id)})">${ICONS.calendarX} Cancelar</button>
           <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
-          ${waLink}
+          ${waBtn}
           ${a.business_slug ? `<a class="btn-sm reschedule" href="${esc(rebookUrl(a, { reschedule: a.id }))}">${ICONS.calendarSync} Reprogramar</a>` : ''}
         </div>`
       : `<p class="appt-locked">Para cambios, escribile al negocio${wa ? '' : '.'}</p>
          <div class="appt-actions">
           <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
-          ${waLink}
+          ${waBtn}
         </div>`;
   } else if (!isUpcoming && a.business_slug) {
     actions = `<div class="appt-actions">
@@ -155,24 +148,32 @@ function rebookUrl(a, extra = {}) {
 
 // Último negocio donde reservó (el turno creado más recientemente)
 function lastBusinessSlug() {
-  const all = [...upcomingAppts, ...pastAppts].filter(a => a.business_slug);
+  const all = [...upcomingAppts, ...cancelledAppts, ...pastAppts].filter(a => a.business_slug);
   if (!all.length) return null;
   const key = a => a.created_at ? new Date(a.created_at).getTime() : apptStart(a).getTime();
   return all.reduce((best, a) => key(a) > key(best) ? a : best).business_slug;
 }
 
+// Próximos: solo los vigentes
 function renderUpcoming() {
   const list = document.getElementById('upcoming-list');
-  const hasActive = upcomingAppts.some(a => a.status !== 'cancelled');
-  let empty = '';
-  if (!hasActive) {
+  if (upcomingAppts.length === 0) {
     const slug = lastBusinessSlug();
-    empty = `<div class="empty-state">
+    list.innerHTML = `<div class="empty-state">
         <p>No tenés turnos próximos</p>
         ${slug ? `<a class="btn btn-primary" href="/${encodeURIComponent(slug)}">Reservar turno</a>` : ''}
       </div>`;
+    return;
   }
-  list.innerHTML = empty + upcomingAppts.map(a => renderCard(a, true)).join('');
+  list.innerHTML = upcomingAppts.map(a => renderCard(a, true)).join('');
+}
+
+// Cancelados con fecha futura: en una sección aparte, colapsada
+function renderCancelled() {
+  const wrap = document.getElementById('cancelled-wrap');
+  wrap.style.display = cancelledAppts.length ? '' : 'none';
+  document.getElementById('cancelled-count').textContent = cancelledAppts.length;
+  document.getElementById('cancelled-list').innerHTML = cancelledAppts.map(a => renderCard(a, true)).join('');
 }
 
 function renderPast() {
@@ -200,11 +201,14 @@ async function loadAppointments() {
     }
     const data = await res.json();
 
-    upcomingAppts = data.upcoming || [];
+    const future   = data.upcoming || [];
+    upcomingAppts  = future.filter(a => a.status !== 'cancelled');
+    cancelledAppts = future.filter(a => a.status === 'cancelled');
     // Pasados: del más reciente al más viejo
     pastAppts = (data.past || []).slice().sort((a, b) => apptStart(b) - apptStart(a));
 
     renderUpcoming();
+    renderCancelled();
     renderPast();
   } catch {
     upcomingList.innerHTML = '<p class="empty-state">Error cargando tus turnos</p>';

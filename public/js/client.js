@@ -40,7 +40,8 @@ let confTime     = '';
 let confService  = '';
 let confBarber   = '';
 let confAddress  = '';
-let confPhone    = '';
+let confName     = '';
+let bizPhone     = '';   // businesses.phone: el cliente le escribe al negocio
 let confDate     = '';
 let confPrice    = 0;
 
@@ -73,6 +74,7 @@ async function initBusiness() {
       businessId = biz.id;
       confBusinessName = biz.name || '';
       confAddress      = biz.address || '';
+      bizPhone         = biz.phone || '';
       applyBusinessBrand(biz);
     } else {
       console.error('[initBusiness] respuesta sin id:', biz);
@@ -487,7 +489,7 @@ async function confirmBooking() {
     confTime    = selSlot;
     confService = selService.name;
     confBarber  = selBarber.name;
-    confPhone   = phone;
+    confName    = name;
     confPrice   = selService.price;
 
     $('conf-day').textContent     = confDay;
@@ -497,6 +499,7 @@ async function confirmBooking() {
     $('conf-name').textContent    = name;
     $('conf-price').textContent   = money(confPrice);
     $('conf-address').textContent = confAddress || '—';
+    $('btn-wa-business').style.display = waLink(bizPhone) ? '' : 'none';
 
     $('done-title').textContent = rescheduling ? '¡Turno reprogramado!' : '¡Turno confirmado!';
     if (rescheduleId) endReschedule();
@@ -539,21 +542,16 @@ function addToGCal() {
   window.open(url, '_blank');
 }
 
-// ── Compartir por WhatsApp ───────────────────
+// ── WhatsApp al negocio ──────────────────────
+// El cliente le escribe al NEGOCIO (businesses.phone) con los datos del turno que acaba de reservar.
 function shareWhatsApp() {
   const message =
-    `✂️ ¡Turno confirmado en ${confBusinessName || 'Agendaste'}!\n` +
-    `📅 Fecha: ${confDay}\n` +
-    `⏰ Hora: ${confTime}\n` +
-    `💈 Servicio: ${confService}\n` +
-    `👤 Profesional: ${confBarber}\n` +
-    (confAddress ? `📍 Dirección: ${confAddress}\n` : '') +
-    `\nReservado via Agendaste`;
-
-  const phoneDigits = confPhone.replace(/\D/g, '');
-  const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(message)}`;
-
-  window.open(url, '_blank');
+    `Hola${confBusinessName ? ' ' + confBusinessName : ''}! Reservé un turno por Agendaste ✂️\n` +
+    `👤 ${confName}\n` +
+    `📅 ${confDay} a las ${confTime}\n` +
+    `💈 ${confService} con ${confBarber}`;
+  const url = waLink(bizPhone, message);
+  if (url) window.open(url, '_blank', 'noopener');
 }
 
 async function resetBooking() {

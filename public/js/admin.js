@@ -59,6 +59,14 @@ function apptDateKey(a) {
 
 let allAppointments = [];
 let selectedDateKey = null;
+let panelBizName    = '';   // para el mensaje de WhatsApp al cliente
+
+// Los turnos cancelados no cuentan en contadores ni ingresos
+const isActive = a => a.status !== 'cancelled';
+
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 // ── Cargar próximos turnos (un solo fetch) ───
 async function loadAppointments() {
@@ -69,13 +77,17 @@ async function loadAppointments() {
     if (res.status === 402) { showPaywall(); return; }
     allAppointments = await res.json();
 
+    if (!panelBizName) {
+      try { panelBizName = (await (await fetch('/api/business')).json()).name || ''; } catch {}
+    }
+
     const todayKey    = arDateKey();
     const tomorrowKey = arDateKey(new Date(Date.now() + 86400000));
-    const todayAppts  = allAppointments.filter(a => apptDateKey(a) === todayKey);
+    const todayAppts  = allAppointments.filter(a => apptDateKey(a) === todayKey && isActive(a));
 
     document.getElementById('stat-today').textContent   = todayAppts.length;
-    document.getElementById('stat-pending').textContent  = allAppointments.filter(a => apptDateKey(a) === tomorrowKey).length;
-    document.getElementById('stat-revenue').textContent  = '$' + todayAppts.filter(a => a.status === 'confirmed').reduce((sum, a) => sum + (a.price || 0), 0).toLocaleString('es-AR');
+    document.getElementById('stat-pending').textContent  = allAppointments.filter(a => apptDateKey(a) === tomorrowKey && isActive(a)).length;
+    document.getElementById('stat-revenue').textContent  = '$' + todayAppts.reduce((sum, a) => sum + (a.price || 0), 0).toLocaleString('es-AR');
 
     if (!selectedDateKey) selectedDateKey = todayKey;
 
@@ -98,7 +110,7 @@ function renderDayPills() {
     const dow   = new Date(key + 'T12:00:00').getDay();
     const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : DAY_ABBR_SHORT[dow];
     const dayNum  = Number(key.split('-')[2]);
-    const count   = allAppointments.filter(a => apptDateKey(a) === key).length;
+    const count   = allAppointments.filter(a => apptDateKey(a) === key && isActive(a)).length;
     const selected = key === selectedDateKey;
 
     pillsHtml.push(`
@@ -136,10 +148,10 @@ function renderAppointmentsForSelectedDay() {
   const summaryBar = `<div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:8px 0 12px;border-bottom:1px solid var(--border);margin-bottom:12px">CONFIRMADOS: ${confirmed} · CANCELADOS: ${cancelled} · TOTAL: $${total.toLocaleString('es-AR')}</div>`;
 
   list.innerHTML = summaryBar + appts.map(a => `
-    <div class="card appt-card" id="appt-${a.id}">
+    <div class="card appt-card" id="appt-${Number(a.id)}">
       <div>
-        <div class="appt-name">${a.client_name || a.clientName || '—'}</div>
-        <div class="appt-detail">${a.service_name || a.service || 'Servicio'} · ${a.client_phone || a.clientPhone || 'Sin teléfono'}</div>
+        <div class="appt-name">${escHtml(a.client_name || a.clientName || '—')}</div>
+        <div class="appt-detail">${escHtml(a.service_name || a.service || 'Servicio')} · ${clientPhoneHtml(a)}</div>
             <div class="appt-actions">
               <button class="btn-sm cancel" onclick="updateStatus(${a.id}, 'cancelled')">✕ Cancelar</button>
             </div>
@@ -151,6 +163,21 @@ function renderAppointmentsForSelectedDay() {
           </div>
         </div>
       `).join('');
+}
+
+// Teléfono del cliente como link de WhatsApp: desde el panel, el dueño le escribe al CLIENTE
+function clientPhoneHtml(a) {
+  const phone = a.client_phone || a.clientPhone;
+  if (!phone) return 'Sin teléfono';
+  const name = String(a.client_name || '').trim();
+  const key  = apptDateKey(a);
+  const [y, m, d] = key.split('-').map(Number);
+  const dia  = `${DAY_NAMES[new Date(y, m - 1, d).getDay()].toLowerCase()} ${d}/${m}`;
+  const hora = a.time ? String(a.time).substring(0, 5) : '';
+  const url  = waLink(phone, `Hola ${name}, te escribo de ${panelBizName || 'la barbería'} por tu turno del ${dia} ${hora}`.replace(/\s+/g, ' ').trim());
+  return url
+    ? `<a href="${escHtml(url)}" target="_blank" rel="noopener" class="appt-wa" title="Escribirle por WhatsApp">${escHtml(phone)}</a>`
+    : escHtml(phone);
 }
 
 // ── Confirmar / cancelar turno ───────────────
