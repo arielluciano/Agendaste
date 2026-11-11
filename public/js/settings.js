@@ -95,6 +95,7 @@ async function saveBusiness() {
 const BRAND_DEFAULTS = { brand_primary: '#9A3412', brand_bg: '#F8F7F4', brand_text: '#1A1A17' };
 const BRAND_COLOR_IDS = { brand_primary: 'brand-primary', brand_bg: 'brand-bg', brand_text: 'brand-text' };
 let brandBizName = '';
+let brandLogoUrl = null; // lo manejan /api/business/logo (subir/quitar), no el form
 
 function toPickerHex(hex) {
   // <input type=color> solo acepta #RRGGBB
@@ -122,8 +123,7 @@ function fillBrandForm(data) {
     };
   });
   fontSel.value = data.brand_font || '';
-  document.getElementById('brand-logo').value = data.logo_url || '';
-  onBrandInput();
+  setLogo(data.logo_url || null);
 }
 
 function readBrandForm() {
@@ -132,9 +132,84 @@ function readBrandForm() {
     brand_primary: val('brand-primary-text') || null,
     brand_bg:      val('brand-bg-text')      || null,
     brand_text:    val('brand-text-text')    || null,
-    brand_font:    val('brand-font')         || null,
-    logo_url:      val('brand-logo')         || null
+    brand_font:    val('brand-font')         || null
   };
+}
+
+// ── Logo ──────────────────────────────────────
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+const LOGO_TYPES     = ['image/png', 'image/jpeg', 'image/webp'];
+
+function setLogo(url) {
+  brandLogoUrl = url;
+  const img   = document.getElementById('logo-thumb-img');
+  const empty = document.getElementById('logo-thumb-empty');
+  if (url) img.src = url; else img.removeAttribute('src');
+  img.hidden   = !url;
+  empty.hidden = !!url;
+  document.getElementById('btn-remove-logo').hidden = !url;
+  onBrandInput(); // la vista previa usa brandLogoUrl
+}
+
+function setLogoStatus(msg, isError = false) {
+  const el = document.getElementById('logo-status');
+  el.textContent = msg || '';
+  el.classList.toggle('error', isError);
+}
+
+function setLogoBusy(busy) {
+  document.getElementById('logo-file').disabled = busy;
+  document.getElementById('btn-upload-logo').setAttribute('aria-disabled', busy ? 'true' : 'false');
+  document.getElementById('btn-remove-logo').disabled = busy;
+}
+
+async function uploadLogo(input) {
+  const file = input.files && input.files[0];
+  input.value = ''; // permite volver a elegir el mismo archivo
+  if (!file) return;
+
+  // Chequeos rápidos en el navegador (el servidor igual valida el contenido real)
+  if (file.size > LOGO_MAX_BYTES) {
+    setLogoStatus(`❌ El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. El máximo es 5 MB.`, true);
+    return;
+  }
+  // Algunos celulares no informan el tipo: en ese caso decide el servidor por el contenido
+  if (file.type && !LOGO_TYPES.includes(file.type)) {
+    setLogoStatus('❌ Formato no permitido. Subí un PNG, JPG o WebP.', true);
+    return;
+  }
+
+  const form = new FormData();
+  form.append('logo', file);
+  setLogoBusy(true);
+  setLogoStatus('Subiendo…');
+  try {
+    const res  = await fetch('/api/business/logo', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { setLogoStatus('❌ ' + (data.error || 'No se pudo subir el logo'), true); return; }
+    setLogo(data.logo_url);
+    setLogoStatus('✅ Logo actualizado');
+  } catch {
+    setLogoStatus('❌ Error de conexión. Probá de nuevo.', true);
+  } finally {
+    setLogoBusy(false);
+  }
+}
+
+async function removeLogo() {
+  setLogoBusy(true);
+  setLogoStatus('Quitando…');
+  try {
+    const res  = await fetch('/api/business/logo', { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { setLogoStatus('❌ ' + (data.error || 'No se pudo quitar el logo'), true); return; }
+    setLogo(null);
+    setLogoStatus('Logo quitado');
+  } catch {
+    setLogoStatus('❌ Error de conexión. Probá de nuevo.', true);
+  } finally {
+    setLogoBusy(false);
+  }
 }
 
 function resetBrandColor(key) {
@@ -146,7 +221,7 @@ function resetBrandColor(key) {
 
 // Preview en vivo: aplica la marca sobre el contenedor de la preview
 function onBrandInput() {
-  const brand   = readBrandForm();
+  const brand   = { ...readBrandForm(), logo_url: brandLogoUrl };
   const preview = document.getElementById('brand-preview');
   AgendasteBrand.applyBrand(preview, brand);
 
@@ -168,7 +243,6 @@ async function saveBrand() {
   for (const key of Object.keys(BRAND_COLOR_IDS)) {
     if (brand[key] && !AgendasteBrand.isHex(brand[key])) { showToast('❌ Los colores tienen que ser hex, ej: #9A3412'); return; }
   }
-  if (brand.logo_url && !/^https:\/\//i.test(brand.logo_url)) { showToast('❌ La URL del logo tiene que empezar con https://'); return; }
 
   try {
     const res = await fetch('/api/business/brand', {
