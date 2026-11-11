@@ -40,7 +40,6 @@ let confTime     = '';
 let confService  = '';
 let confBarber   = '';
 let confAddress  = '';
-let confName     = '';
 let bizPhone     = '';   // businesses.phone: el cliente le escribe al negocio
 let confDate     = '';
 let confPrice    = 0;
@@ -489,7 +488,6 @@ async function confirmBooking() {
     confTime    = selSlot;
     confService = selService.name;
     confBarber  = selBarber.name;
-    confName    = name;
     confPrice   = selService.price;
 
     $('conf-day').textContent     = confDay;
@@ -545,11 +543,10 @@ function addToGCal() {
 // ── WhatsApp al negocio ──────────────────────
 // El cliente le escribe al NEGOCIO (businesses.phone) con los datos del turno que acaba de reservar.
 function shareWhatsApp() {
-  const message =
-    `Hola${confBusinessName ? ' ' + confBusinessName : ''}! Reservé un turno por Agendaste ✂️\n` +
-    `👤 ${confName}\n` +
-    `📅 ${confDay} a las ${confTime}\n` +
-    `💈 ${confService} con ${confBarber}`;
+  const message = bookingConfirmedText({
+    business: confBusinessName, day: confDay, time: confTime,
+    service: confService, barber: confBarber, address: confAddress
+  });
   const url = waLink(bizPhone, message);
   if (url) window.open(url, '_blank', 'noopener');
 }
