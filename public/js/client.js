@@ -279,6 +279,7 @@ function checkStep2() {
 
 // ── Resumen ──────────────────────────────────
 function fillSummary() {
+  showBookingError('');
   const [y, m, d] = selDate.split('-');
   document.getElementById('sum-svc').textContent    = selService.name;
   document.getElementById('sum-barber').textContent = selBarber.name;
@@ -287,7 +288,14 @@ function fillSummary() {
   document.getElementById('sum-price').textContent  = `$${selService.price.toLocaleString('es-AR')}`;
 }
 
+function showBookingError(msg) {
+  const box = document.getElementById('booking-error');
+  box.textContent = msg || '';
+  box.classList.toggle('show', !!msg);
+}
+
 function checkStep3() {
+  showBookingError('');
   const name  = document.getElementById('inp-name').value.trim();
   const phone = document.getElementById('inp-phone').value.trim();
   document.getElementById('btn-confirm').disabled = !(name && phone);
@@ -301,6 +309,7 @@ async function confirmBooking() {
 
   btn.disabled = true;
   btn.textContent = 'Confirmando...';
+  showBookingError('');
 
   try {
     const res = await fetch('/api/appointments', {
@@ -316,13 +325,17 @@ async function confirmBooking() {
         date:        selDate,
         time:        selSlot,
         price:       selService.price,
-        businessId
+        businessId,
+        website:     document.getElementById('inp-website').value
       })
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      showToast('❌ ' + err.error);
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error || 'No se pudo confirmar el turno. Probá de nuevo.';
+      // En el formulario (se ve también en modo embed, donde el toast puede quedar fuera de vista)
+      showBookingError('❌ ' + msg);
+      showToast('❌ ' + msg);
       btn.disabled = false;
       btn.textContent = 'Confirmar turno';
       return;
@@ -357,6 +370,7 @@ async function confirmBooking() {
     goStep(4);
 
   } catch {
+    showBookingError('❌ Error de conexión');
     showToast('❌ Error de conexión');
     btn.disabled = false;
     btn.textContent = 'Confirmar turno';

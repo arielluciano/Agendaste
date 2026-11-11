@@ -18,6 +18,10 @@
     .btn-primary:hover { background: var(--brand-hover, #000); }
     .biz-logo { height: 32px; width: auto; max-width: 160px; object-fit: contain; display: block; }
     .embed-credit { display: none; }
+    /* Honeypot anti-bots: fuera de pantalla, no display:none (algunos bots lo detectan) */
+    .hp-field { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+    .booking-error { display: none; background: var(--danger-light); color: #991B1B; border: 1px solid var(--danger); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 1rem; }
+    .booking-error.show { display: block; }
 
     /* ── Modo embed (?embed=1) ── */
     html.embed .navbar, html.embed footer, html.embed #dot-login { display: none !important; }
@@ -139,6 +143,10 @@
       <label>Teléfono</label>
       <input type="tel" id="inp-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkStep3()">
     </div>
+    <div class="hp-field" aria-hidden="true">
+      <label for="inp-website">Sitio web</label>
+      <input type="text" id="inp-website" name="website" tabindex="-1" autocomplete="off">
+    </div>
     <div class="divider"></div>
     <p class="eyebrow" style="margin-bottom:.75rem">Resumen</p>
     <div class="summary-box">
@@ -148,6 +156,7 @@
       <div class="summary-row"><span>Hora</span><span id="sum-time">—</span></div>
       <div class="summary-row"><span style="font-weight:600;color:var(--text)">Total</span><span id="sum-price" style="font-weight:600;color:var(--green)">—</span></div>
     </div>
+    <div class="booking-error" id="booking-error" role="alert"></div>
     <button class="btn btn-primary" id="btn-confirm" disabled onclick="confirmBooking()">Confirmar turno</button>
   </div>
 

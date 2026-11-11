@@ -5,13 +5,49 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
 const { sendConfirmationEmail } = require('../services/email');
+
+const TZ_AR = 'America/Argentina/Buenos_Aires';
 
 // Fecha de hoy (YYYY-MM-DD) en horario de Argentina, no UTC —
 // el server corre en UTC y eso corría el corte de "hoy" varias horas.
 function todayAR() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ_AR }).format(new Date());
 }
+
+// Hora actual en Argentina, en minutos desde las 00:00 (mismo criterio que todayAR)
+function nowMinutesAR() {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: TZ_AR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date());
+  const get = type => parseInt(parts.find(p => p.type === type).value, 10);
+  return get('hour') * 60 + get('minute');
+}
+
+function toMinutes(t) {
+  const [h, m] = String(t).split(':').map(Number);
+  return h * 60 + m;
+}
+
+function toTimeStr(mins) {
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+}
+
+// ── Anti-spam de reservas ─────────────────────
+const MAX_FUTURE_PER_PHONE = 2;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// 5 reservas por IP cada 15 min. Solo cuentan las exitosas (un error de tipeo no penaliza)
+// y no aplica a las altas manuales del dueño desde el panel.
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  skipFailedRequests: true,
+  skip: req => !!req.session?.business_id,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Hiciste muchas reservas seguidas. Probá de nuevo en unos minutos.' }
+});
 
 // GET /api/appointments → todos los turnos
 router.get('/', requireAuth, async (req, res) => {
@@ -89,35 +125,115 @@ router.get('/mine', async (req, res) => {
 });
 
 // POST /api/appointments → crear nuevo turno
-router.post('/', async (req, res) => {
-  const { clientName, clientPhone, clientEmail, service, barberId, date, time, price, businessId } = req.body;
+router.post('/', bookingLimiter, async (req, res) => {
+  const { clientName, clientPhone, clientEmail, service, barberId, date, time, price, businessId, website } = req.body;
+  const isOwner = !!req.session?.business_id;
+
+  // Honeypot: un humano nunca ve ni completa "website". Éxito falso, sin crear el turno.
+  if (typeof website === 'string' && website.trim() !== '') {
+    console.log('🍯 Honeypot: reserva descartada');
+    return res.status(200).json({
+      id: 0, clientName, clientPhone, service, date, time, price, status: 'confirmed'
+    });
+  }
 
   if (!clientName || !service || !date || !time) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
+  // ── Validaciones de datos ──
+  const name = String(clientName).trim();
+  if (name.length < 2 || name.length > 60) {
+    return res.status(400).json({ error: 'El nombre tiene que tener entre 2 y 60 caracteres' });
+  }
+
+  // Solo para comparar/validar; se guarda tal cual lo mandó el cliente
+  const phoneDigits = String(clientPhone || '').replace(/\D/g, '');
+  if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+    return res.status(400).json({ error: 'El teléfono tiene que tener entre 8 y 15 dígitos' });
+  }
+
+  if (clientEmail && (typeof clientEmail !== 'string' || clientEmail.length > 254 || !EMAIL_RE.test(clientEmail.trim()))) {
+    return res.status(400).json({ error: 'El email no es válido' });
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T12:00:00').getTime())) {
+    return res.status(400).json({ error: 'Fecha inválida' });
+  }
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(time)) {
+    return res.status(400).json({ error: 'Hora inválida' });
+  }
+  const startMins = toMinutes(time);
+
+  // Tiene que ser en el futuro (hora de Argentina)
+  const today = todayAR();
+  if (date < today || (date === today && startMins <= nowMinutesAR())) {
+    return res.status(400).json({ error: 'Ese horario ya pasó' });
+  }
+
   // El email del cliente logueado con Google es la fuente más confiable
-  const resolvedClientEmail = req.session?.client?.email || clientEmail || null;
+  const resolvedClientEmail = req.session?.client?.email || (clientEmail ? clientEmail.trim() : null);
   // Si hay sesión de dueño (alta manual desde el admin), el negocio es el de su sesión, no el del body
   const resolvedBusinessId = req.session?.business_id || parseInt(businessId) || 1;
   const resolvedBarberId = parseInt(barberId) || 1;
 
   try {
-    // Si el turno lo crea el dueño desde el admin, el barbero debe ser de su propio negocio
-    if (req.session?.business_id) {
-      const barberCheck = await db.query(
-        'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
-        [resolvedBarberId, resolvedBusinessId]
+    // El barbero tiene que ser del negocio del turno
+    const barberCheck = await db.query(
+      'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
+      [resolvedBarberId, resolvedBusinessId]
+    );
+    if (barberCheck.rows.length === 0) {
+      return isOwner
+        ? res.status(403).json({ error: 'El barbero no pertenece a tu negocio' })
+        : res.status(400).json({ error: 'Profesional inválido' });
+    }
+
+    // Dentro del horario de atención (el mismo que usa /slots para ofrecer turnos)
+    const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+    const sched = (await db.query(
+      'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
+      [resolvedBarberId, dayOfWeek]
+    )).rows[0];
+    const ranges = [];
+    if (sched && sched.is_open) {
+      ranges.push([toMinutes(sched.open_time), toMinutes(sched.close_time)]);
+      if (sched.has_split && sched.open_time_2 && sched.close_time_2) {
+        ranges.push([toMinutes(sched.open_time_2), toMinutes(sched.close_time_2)]);
+      }
+    }
+    if (!ranges.some(([open, close]) => startMins >= open && startMins < close)) {
+      return res.status(400).json({ error: 'Ese horario está fuera del horario de atención' });
+    }
+
+    // Límite por teléfono: máximo 2 turnos futuros no cancelados en este negocio (el dueño queda exento)
+    if (!isOwner) {
+      const phoneCount = await db.query(
+        `SELECT COUNT(*)::int AS n FROM appointments
+          WHERE business_id = $1
+            AND status != 'cancelled'
+            AND regexp_replace(COALESCE(client_phone, ''), '[^0-9]', '', 'g') = $2
+            AND (date > $3 OR (date = $3 AND time > $4))`,
+        [resolvedBusinessId, phoneDigits, today, toTimeStr(nowMinutesAR())]
       );
-      if (barberCheck.rows.length === 0) {
-        return res.status(403).json({ error: 'El barbero no pertenece a tu negocio' });
+      if (phoneCount.rows[0].n >= MAX_FUTURE_PER_PHONE) {
+        return res.status(409).json({ error: 'Ya tenés turnos reservados. Si necesitás otro, comunicate con el negocio.' });
       }
     }
 
-    // Verificar que el horario no esté ocupado
+    // No superponerse con otro turno del mismo profesional (según la duración de cada servicio; 30 min si no se conoce)
+    const svc = await db.query(
+      'SELECT duration FROM services WHERE name = $1 AND business_id = $2 LIMIT 1',
+      [service, resolvedBusinessId]
+    );
+    const duration = parseInt(svc.rows[0]?.duration) || 30;
     const conflict = await db.query(
-      'SELECT id FROM appointments WHERE date = $1 AND time = $2 AND barber_id = $3 AND status != $4',
-      [date, time, resolvedBarberId, 'cancelled']
+      `SELECT a.id FROM appointments a
+         LEFT JOIN services s ON a.service_id = s.id
+        WHERE a.date = $1 AND a.barber_id = $2 AND a.status != 'cancelled'
+          AND a.time < ($3::time + make_interval(mins => $4))
+          AND $3::time < (a.time + make_interval(mins => COALESCE(NULLIF(s.duration, 0), 30)))`,
+      [date, resolvedBarberId, toTimeStr(startMins), duration]
     );
 
     if (conflict.rows.length > 0) {
@@ -128,11 +244,11 @@ router.post('/', async (req, res) => {
       `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
  VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
  RETURNING *`,
-[resolvedBusinessId, resolvedBarberId, clientName, clientPhone, resolvedClientEmail, service, resolvedBusinessId, date, time, price, 'confirmed']
+[resolvedBusinessId, resolvedBarberId, name, clientPhone, resolvedClientEmail, service, resolvedBusinessId, date, time, price, 'confirmed']
     );
 
     const newAppointment = result.rows[0];
-    console.log(`📋 Nuevo turno: ${clientName} — ${service} el ${date} a las ${time}`);
+    console.log(`📋 Nuevo turno: ${name} — ${service} el ${date} a las ${time}`);
 
     // Enviar email de confirmación al cliente (no debe bloquear la creación del turno)
     if (newAppointment.client_email) {
@@ -144,7 +260,7 @@ router.post('/', async (req, res) => {
 
         await sendConfirmationEmail({
           to: newAppointment.client_email,
-          clientName,
+          clientName: name,
           businessName: businessResult.rows[0]?.name,
           service,
           barber: barberResult.rows[0]?.name,
