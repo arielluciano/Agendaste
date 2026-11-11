@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   const onlyWithSchedule = req.query.with_schedule === '1';
   try {
     const result = await db.query(
-      `SELECT * FROM barbers b WHERE b.active = true AND b.business_id = $1
+      `SELECT b.id, b.name, b.role, b.active FROM barbers b WHERE b.active = true AND b.business_id = $1
        ${onlyWithSchedule ? 'AND EXISTS (SELECT 1 FROM barber_schedules s WHERE s.barber_id = b.id AND s.is_open)' : ''}
        ORDER BY b.id`,
       [bizId]
@@ -25,11 +25,12 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/barbers/all → todos incluyendo inactivos
-router.get('/all', async (req, res) => {
-  const bizId = req.session?.business_id || 1;
+// (antes no pedía sesión: sin sesión devolvía los del negocio 1)
+router.get('/all', requireAuth, async (req, res) => {
+  const bizId = req.businessId;
   try {
     const result = await db.query(
-      'SELECT * FROM barbers WHERE business_id = $1 ORDER BY id',
+      'SELECT id, name, role, active FROM barbers WHERE business_id = $1 ORDER BY id',
       [bizId]
     );
     res.json(result.rows);
@@ -53,12 +54,20 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/barbers/:id/schedule → horarios del barbero
+// GET /api/barbers/:id/schedule?business_id= → horarios del barbero
+// Exige el negocio (query, o la sesión del dueño en el panel) y que el barbero sea de ese negocio.
 router.get('/:id/schedule', async (req, res) => {
+  const bizId    = parseInt(req.query.business_id) || req.session?.business_id;
+  const barberId = parseInt(req.params.id);
+  if (!bizId)    return res.status(400).json({ error: 'Falta business_id' });
+  if (!barberId) return res.status(400).json({ error: 'Barbero inválido' });
   try {
+    const own = await db.query('SELECT 1 FROM barbers WHERE id = $1 AND business_id = $2', [barberId, bizId]);
+    if (own.rows.length === 0) return res.status(404).json({ error: 'Barbero no encontrado' });
     const result = await db.query(
-      'SELECT * FROM barber_schedules WHERE barber_id = $1 ORDER BY day_of_week',
-      [req.params.id]
+      `SELECT barber_id, day_of_week, is_open, open_time, close_time, has_split, open_time_2, close_time_2
+         FROM barber_schedules WHERE barber_id = $1 ORDER BY day_of_week`,
+      [barberId]
     );
     res.json(result.rows);
   } catch (err) {

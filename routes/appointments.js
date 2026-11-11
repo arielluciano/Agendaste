@@ -132,8 +132,13 @@ router.get('/mine', async (req, res) => {
 // ── Alta de turnos (compartido por la reserva y la reprogramación) ──
 
 // Valida los datos del formulario. Devuelve { error } o los valores normalizados.
-function validateBookingInput({ clientName, clientPhone, clientEmail, service, date, time }) {
-  if (!clientName || !service || !date || !time) return { error: 'Faltan campos obligatorios' };
+function validateBookingInput({ clientName, clientPhone, clientEmail, service_id, barberId, date, time }) {
+  if (!clientName || !date || !time) return { error: 'Faltan campos obligatorios' };
+
+  const serviceId = parseInt(service_id, 10);
+  if (!Number.isInteger(serviceId) || serviceId <= 0) return { error: 'Elegí un servicio' };
+  const barber = parseInt(barberId, 10);
+  if (!Number.isInteger(barber) || barber <= 0) return { error: 'Elegí un profesional' };
 
   const name = String(clientName).trim();
   if (name.length < 2 || name.length > 60) return { error: 'El nombre tiene que tener entre 2 y 60 caracteres' };
@@ -154,12 +159,20 @@ function validateBookingInput({ clientName, clientPhone, clientEmail, service, d
   const today = todayAR();
   if (date < today || (date === today && startMins <= nowMinutesAR())) return { error: 'Ese horario ya pasó' };
 
-  return { name, phoneDigits, startMins, today };
+  return { name, phoneDigits, startMins, today, serviceId, barberId: barber };
 }
 
-// Chequea disponibilidad e inserta el turno usando `q` (el pool o el cliente de una transacción).
-// Devuelve { status, error } si no se puede, o { appointment }.
-async function insertAppointment(q, { name, clientPhone, phoneDigits, email, service, barberId, businessId, date, time, startMins, price, isOwner, today }) {
+// Chequea disponibilidad e inserta el turno. `q` TIENE que ser el cliente de una transacción abierta:
+// el advisory lock dura hasta el COMMIT/ROLLBACK.
+// Devuelve { status, error } si no se puede, o { appointment, service }.
+async function insertAppointment(q, { name, clientPhone, phoneDigits, email, serviceId, barberId, businessId, date, time, startMins, isOwner, today }) {
+  // Servicio por id: tiene que ser del negocio y estar activo. Precio y duración salen de acá, nunca del cliente.
+  const svc = (await q.query(
+    'SELECT id, name, price, duration FROM services WHERE id = $1 AND business_id = $2 AND active = true',
+    [serviceId, businessId]
+  )).rows[0];
+  if (!svc) return { status: 400, error: 'Servicio inválido' };
+
   // El barbero tiene que ser del negocio del turno
   const barberCheck = await q.query('SELECT id FROM barbers WHERE id = $1 AND business_id = $2', [barberId, businessId]);
   if (barberCheck.rows.length === 0) {
@@ -200,9 +213,12 @@ async function insertAppointment(q, { name, clientPhone, phoneDigits, email, ser
     }
   }
 
+  // Reservas simultáneas: los pedidos para el mismo barbero y día se procesan de a uno
+  // (el lock se libera solo al terminar la transacción)
+  await q.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${barberId}:${date}`]);
+
   // No superponerse con otro turno del mismo profesional (según la duración de cada servicio; 30 min si no se conoce)
-  const svc = await q.query('SELECT duration FROM services WHERE name = $1 AND business_id = $2 LIMIT 1', [service, businessId]);
-  const duration = parseInt(svc.rows[0]?.duration) || 30;
+  const duration = parseInt(svc.duration) || 30;
   const conflict = await q.query(
     `SELECT a.id FROM appointments a
        LEFT JOIN services s ON a.service_id = s.id
@@ -215,11 +231,11 @@ async function insertAppointment(q, { name, clientPhone, phoneDigits, email, ser
 
   const result = await q.query(
     `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
-     VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [businessId, barberId, name, clientPhone, email, service, businessId, date, time, price, 'confirmed']
+    [businessId, barberId, name, clientPhone, email, svc.id, date, time, svc.price, 'confirmed']
   );
-  return { appointment: result.rows[0] };
+  return { appointment: result.rows[0], service: svc };
 }
 
 // Mail de confirmación al cliente (no bloquea ni hace fallar la reserva)
@@ -263,15 +279,16 @@ async function sendBookingEmail(appt, { name, service, time, isVerified, resched
 }
 
 // POST /api/appointments → crear nuevo turno
+// Body: clientName, clientPhone, clientEmail?, service_id, barberId, date, time, businessId (el precio lo pone el server)
 router.post('/', bookingLimiter, async (req, res) => {
-  const { clientName, clientPhone, clientEmail, service, barberId, date, time, price, businessId, website } = req.body;
+  const { clientName, clientPhone, clientEmail, service_id, date, time, businessId, website } = req.body;
   const isOwner = !!req.session?.business_id;
 
   // Honeypot: un humano nunca ve ni completa "website". Éxito falso, sin crear el turno.
   if (typeof website === 'string' && website.trim() !== '') {
     console.log('🍯 Honeypot: reserva descartada');
     return res.status(200).json({
-      id: 0, clientName, clientPhone, service, date, time, price, status: 'confirmed'
+      id: 0, clientName, clientPhone, service_id, date, time, status: 'confirmed'
     });
   }
 
@@ -282,35 +299,41 @@ router.post('/', bookingLimiter, async (req, res) => {
   const resolvedClientEmail = req.session?.client?.email || (clientEmail ? clientEmail.trim() : null);
   // Si hay sesión de dueño (alta manual desde el admin), el negocio es el de su sesión, no el del body
   const resolvedBusinessId = req.session?.business_id || parseInt(businessId) || 1;
-  const resolvedBarberId = parseInt(barberId) || 1;
 
+  const client = await db.connect();
+  let r;
   try {
-    const r = await insertAppointment(db, {
-      ...v, clientPhone, email: resolvedClientEmail, service, barberId: resolvedBarberId,
-      businessId: resolvedBusinessId, date, time, price, isOwner
+    await client.query('BEGIN');
+    r = await insertAppointment(client, {
+      ...v, clientPhone, email: resolvedClientEmail, businessId: resolvedBusinessId, date, time, isOwner
     });
-    if (r.error) return res.status(r.status).json({ error: r.error });
-
-    const newAppointment = r.appointment;
-    console.log(`📋 Nuevo turno: ${v.name} — ${service} el ${date} a las ${time}`);
-
-    await sendBookingEmail(newAppointment, { name: v.name, service, time, isVerified: !!req.session?.client?.email });
-
-    res.status(201).json({
-      id: newAppointment.id,
-      clientName: newAppointment.client_name,
-      clientPhone: newAppointment.client_phone,
-      service,
-      date: newAppointment.date,
-      time: newAppointment.time,
-      price: newAppointment.price,
-      status: newAppointment.status
-    });
-
+    await client.query(r.error ? 'ROLLBACK' : 'COMMIT');
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error(err);
-    res.status(500).json({ error: 'Error creando el turno' });
+    return res.status(500).json({ error: 'Error creando el turno' });
+  } finally {
+    client.release();
   }
+  if (r.error) return res.status(r.status).json({ error: r.error });
+
+  const newAppointment = r.appointment;
+  const service = r.service.name;
+  console.log(`📋 Nuevo turno: ${v.name} — ${service} el ${date} a las ${time}`);
+
+  await sendBookingEmail(newAppointment, { name: v.name, service, time, isVerified: !!req.session?.client?.email });
+
+  res.status(201).json({
+    id: newAppointment.id,
+    clientName: newAppointment.client_name,
+    clientPhone: newAppointment.client_phone,
+    service,
+    service_id: newAppointment.service_id,
+    date: newAppointment.date,
+    time: newAppointment.time,
+    price: newAppointment.price,
+    status: newAppointment.status
+  });
 });
 
 // ── Cambios del cliente (cancelar / reprogramar) ──
@@ -371,12 +394,12 @@ router.patch('/:id/reschedule', bookingLimiter, async (req, res) => {
   const clientEmail = req.session?.client?.email;
   if (!clientEmail) return res.status(401).json({ error: 'Iniciá sesión para cambiar tu turno' });
 
-  const { clientName, clientPhone, service, barberId, date, time, price } = req.body;
-  const v = validateBookingInput({ clientName, clientPhone, service, date, time });
+  const { clientName, clientPhone, service_id, barberId, date, time } = req.body;
+  const v = validateBookingInput({ clientName, clientPhone, service_id, barberId, date, time });
   if (v.error) return res.status(400).json({ error: v.error });
 
   const client = await db.connect();
-  let original, created;
+  let original, created, newService;
   try {
     await client.query('BEGIN');
 
@@ -390,11 +413,11 @@ router.patch('/:id/reschedule', bookingLimiter, async (req, res) => {
 
     // El turno nuevo es siempre del mismo negocio que el original
     const r = await insertAppointment(client, {
-      ...v, clientPhone, email: clientEmail, service, barberId: parseInt(barberId) || 0,
-      businessId: original.business_id, date, time, price, isOwner: false
+      ...v, clientPhone, email: clientEmail, businessId: original.business_id, date, time, isOwner: false
     });
     if (r.error) { await client.query('ROLLBACK'); return res.status(r.status).json({ error: r.error }); }
     created = r.appointment;
+    newService = r.service.name;
 
     await client.query('COMMIT');
   } catch (err) {
@@ -406,7 +429,7 @@ router.patch('/:id/reschedule', bookingLimiter, async (req, res) => {
   }
 
   console.log(`🔁 Turno ${original.id} reprogramado → ${created.id} (${date} ${time})`);
-  await sendBookingEmail(created, { name: v.name, service, time, isVerified: true, rescheduled: true });
+  await sendBookingEmail(created, { name: v.name, service: newService, time, isVerified: true, rescheduled: true });
 
   try {
     const ctx = await ownerNoticeContext(original);
@@ -415,7 +438,7 @@ router.patch('/:id/reschedule', bookingLimiter, async (req, res) => {
       to: ctx.owner_email, kind: 'rescheduled', businessName: ctx.business_name,
       clientName: original.client_name, clientPhone: original.client_phone,
       service: ctx.service_name, barber: ctx.barber_name, date: dateStr(original.date), time: String(original.time).substring(0, 5),
-      newService: service, newBarber, newDate: date, newTime: time
+      newService, newBarber, newDate: date, newTime: time
     });
   } catch (err) {
     console.log(`⚠️ No se pudo avisar al negocio: ${err.message}`);
@@ -498,7 +521,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // GET /api/appointments/slots/:date → horarios disponibles
 router.get('/slots/:date', async (req, res) => {
   const bizId2 = parseInt(req.query.business_id) || req.session?.business_id || 1;
-  const barberId2 = parseInt(req.query.barber_id) || 1;
+  const barberId2 = parseInt(req.query.barber_id);
+  if (!Number.isInteger(barberId2) || barberId2 <= 0) return res.status(400).json({ error: 'Falta barber_id' });
 
   function toMinutes(t) {
     const [h, m] = t.split(':').map(Number);

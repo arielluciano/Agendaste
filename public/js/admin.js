@@ -283,7 +283,6 @@ async function saveManualAppointment() {
   const date      = document.getElementById('new-appt-date').value;
   const name      = document.getElementById('new-appt-name').value.trim();
   const phone     = document.getElementById('new-appt-phone').value.trim();
-  const service   = manualServices.find(s => String(s.id) === serviceId);
 
   const btn = document.getElementById('btn-save-manual-appt');
   btn.disabled = true;
@@ -296,11 +295,10 @@ async function saveManualAppointment() {
       body: JSON.stringify({
         clientName:  name,
         clientPhone: phone,
-        service:     service?.name,
+        service_id:  Number(serviceId),   // el precio lo pone el servidor
         barberId:    Number(barberId),
         date,
-        time:        manualSelectedSlot,
-        price:       service?.price
+        time:        manualSelectedSlot
       })
     });
 

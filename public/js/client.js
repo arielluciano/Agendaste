@@ -242,7 +242,7 @@ async function loadDays() {
   if (!selBarber) { renderDays(); return; }
   let open = [];
   try {
-    const sched = await (await fetch(`/api/barbers/${selBarber.id}/schedule`)).json();
+    const sched = await (await fetch(`/api/barbers/${selBarber.id}/schedule?business_id=${businessId}`)).json();
     open = (Array.isArray(sched) ? sched : []).filter(r => r.is_open).map(r => Number(r.day_of_week));
   } catch {}
   const d = new Date(); d.setHours(0, 0, 0, 0);
@@ -472,12 +472,10 @@ async function confirmBooking() {
         clientName:  name,
         clientPhone: phone,
         clientEmail: loggedClient?.email || guestEmail() || null,
-        service:     selService.name,
+        service_id:  selService.id,   // el precio lo pone el servidor
         barberId:    selBarber.id,
-        barberName:  selBarber.name,
         date:        selDate,
         time:        selSlot,
-        price:       selService.price,
         businessId,
         website:     $('inp-website').value
       })

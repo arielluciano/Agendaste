@@ -12,16 +12,24 @@ const { publicPrefix } = storage;
 
 // GET /api/business → datos del negocio
 // Acepta ?slug=xxx (público) o usa session.business_id (admin)
+// Campos que puede ver cualquiera (página de reservas). Nunca owner_email ni datos internos.
+const PUBLIC_BUSINESS_COLS = `id, name, slug, address, phone, description,
+  brand_primary, brand_bg, brand_text, brand_font, logo_url`;
+
 router.get('/', async (req, res) => {
   try {
     let result;
     if (req.query.slug) {
-      result = await db.query('SELECT * FROM businesses WHERE slug = $1', [req.query.slug]);
+      result = await db.query(`SELECT ${PUBLIC_BUSINESS_COLS} FROM businesses WHERE slug = $1`, [req.query.slug]);
       if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+    } else if (req.session?.business_id) {
+      // Dueño logueado (panel / configuración): su propio negocio completo
+      result = await db.query('SELECT * FROM businesses WHERE id = $1', [req.session.business_id]);
+      if (result.rows.length === 0) return res.json({ id: req.session.business_id, name: '', address: '', phone: '', description: '', schedule: null });
     } else {
-      const bizId = req.session?.business_id || parseInt(req.query.business_id) || 1;
-      result = await db.query('SELECT * FROM businesses WHERE id = $1', [bizId]);
-      if (result.rows.length === 0) return res.json({ id: bizId, name: '', address: '', phone: '', description: '', schedule: null });
+      const bizId = parseInt(req.query.business_id) || 1;
+      result = await db.query(`SELECT ${PUBLIC_BUSINESS_COLS} FROM businesses WHERE id = $1`, [bizId]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
     }
     res.json(result.rows[0]);
   } catch (err) {

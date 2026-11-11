@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
   const bizId = parseInt(req.query.business_id) || req.session?.business_id || 1;
   try {
     const result = await db.query(
-      'SELECT * FROM services WHERE active = true AND business_id = $1 ORDER BY id',
+      'SELECT id, name, price, duration, active FROM services WHERE active = true AND business_id = $1 ORDER BY id',
       [bizId]
     );
     res.json(result.rows);
@@ -21,11 +21,12 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/services/all → todos incluyendo inactivos (para el admin)
-router.get('/all', async (req, res) => {
-  const bizId = req.session?.business_id || 1;
+// (antes no pedía sesión: sin sesión devolvía los del negocio 1)
+router.get('/all', requireAuth, async (req, res) => {
+  const bizId = req.businessId;
   try {
     const result = await db.query(
-      'SELECT * FROM services WHERE business_id = $1 ORDER BY id',
+      'SELECT id, name, price, duration, active FROM services WHERE business_id = $1 ORDER BY id',
       [bizId]
     );
     res.json(result.rows);
