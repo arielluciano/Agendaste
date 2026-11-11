@@ -158,26 +158,29 @@ function buildConfirmationHtml(data) {
     ['Dirección', address]
   ].filter(([, value]) => value);
 
+  const title = data.rescheduled ? 'Turno reprogramado' : 'Turno confirmado';
   return buildEmailHtml({
-    title: 'Turno confirmado',
-    eyebrow: 'Turno confirmado',
+    title,
+    eyebrow: title,
     businessName,
     clientName,
-    intro: 'Tu turno fue reservado con éxito. Estos son los detalles:',
+    intro: data.rescheduled
+      ? 'Tu turno fue cambiado con éxito. Estos son los nuevos detalles:'
+      : 'Tu turno fue reservado con éxito. Estos son los detalles:',
     rows,
     outro: `Si necesitás cambiar o cancelar tu turno, comunicate directamente con ${businessName || 'el negocio'}.`
   });
 }
 
-async function sendConfirmationEmail({ to, clientName, businessName, service, barber, date, time, address }) {
+async function sendConfirmationEmail({ to, clientName, businessName, service, barber, date, time, address, rescheduled = false }) {
   if (!to) return;
 
   try {
     await getClient().emails.send({
       from: process.env.EMAIL_FROM,
       to,
-      subject: `Turno confirmado en ${businessName || 'Agendaste'}`,
-      html: buildConfirmationHtml({ clientName, businessName, service, barber, date, time, address })
+      subject: `${rescheduled ? 'Turno reprogramado' : 'Turno confirmado'} en ${businessName || 'Agendaste'}`,
+      html: buildConfirmationHtml({ clientName, businessName, service, barber, date, time, address, rescheduled })
     });
     console.log(`📧 Email de confirmación enviado a ${to}`);
   } catch (err) {
@@ -230,4 +233,49 @@ async function sendReminderEmail({ to, clientName, business, service, barber, da
   if (error) throw new Error(error.message || 'Resend devolvió un error');
 }
 
-module.exports = { sendConfirmationEmail, sendReminderEmail };
+// ── Aviso al dueño: un cliente canceló o reprogramó ──
+// kind: 'cancelled' | 'rescheduled'. Los new* solo aplican a 'rescheduled'.
+function buildOwnerNoticeHtml(d) {
+  const e = v => (v ? escapeHtml(v) : '');
+  const businessName = e(d.businessName);
+  const isResched = d.kind === 'rescheduled';
+  const title = isResched ? 'Turno reprogramado' : 'Turno cancelado';
+
+  const rows = [
+    ['Cliente', e(d.clientName)],
+    ['Teléfono', e(d.clientPhone)],
+    [isResched ? 'Antes' : 'Servicio', isResched
+      ? `${formatDayEs(d.date)} · ${e(d.time)}<br>${e(d.service)}${d.barber ? ' con ' + e(d.barber) : ''}`
+      : e(d.service)],
+    ...(isResched
+      ? [['Ahora', `${formatDayEs(d.newDate)} · ${e(d.newTime)}<br>${e(d.newService)}${d.newBarber ? ' con ' + e(d.newBarber) : ''}`]]
+      : [['Profesional', e(d.barber)], ['Día', formatDayEs(d.date)], ['Hora', e(d.time)]])
+  ].filter(([, value]) => value);
+
+  return buildEmailHtml({
+    title,
+    eyebrow: title,
+    businessName,
+    clientName: '',
+    intro: isResched
+      ? `${e(d.clientName) || 'Un cliente'} cambió su turno desde Agendaste. El horario anterior quedó libre.`
+      : `${e(d.clientName) || 'Un cliente'} canceló su turno desde Agendaste. El horario quedó libre.`,
+    rows,
+    outro: 'Podés ver tu agenda actualizada en el panel de Agendaste.'
+  });
+}
+
+async function sendOwnerNoticeEmail(data) {
+  if (!data.to) return;
+  const title = data.kind === 'rescheduled' ? 'Turno reprogramado' : 'Turno cancelado';
+  const { error } = await getClient().emails.send({
+    from: process.env.EMAIL_FROM,
+    to: data.to,
+    subject: `${title}: ${data.clientName || 'cliente'} (${formatDayEs(data.date)} ${data.time || ''})`.trim(),
+    html: buildOwnerNoticeHtml(data)
+  });
+  if (error) throw new Error(error.message || 'Resend devolvió un error');
+  console.log(`📧 Aviso de ${title.toLowerCase()} enviado al negocio`);
+}
+
+module.exports = { sendConfirmationEmail, sendReminderEmail, sendOwnerNoticeEmail };

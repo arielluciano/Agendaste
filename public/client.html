@@ -70,6 +70,9 @@
     .success-icon { width: 56px; height: 56px; background: var(--primary); color: var(--brand-contrast, var(--cream)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
 
     .mobile-bar { display: none; }
+    .resched-banner { background: var(--surface-c); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 4px; padding: 12px 14px; font-size: 14px; margin-bottom: 1.5rem; }
+    .resched-banner strong { color: var(--accent-c); }
+    .no-hours { text-align: center; color: var(--muted-c); font-size: 15px; padding: 3rem 1rem; }
 
     @media (max-width: 899px) {
       .booking { grid-template-columns: 1fr; gap: 0; }
@@ -101,6 +104,9 @@
 </nav>
 
 <div class="container booking-wrap">
+
+  <div class="resched-banner" id="resched-banner" style="display:none"></div>
+  <p class="no-hours" id="no-hours" style="display:none">Este negocio todavía no tiene horarios disponibles</p>
 
   <div class="booking" id="booking">
     <div class="booking-steps">
@@ -159,7 +165,7 @@
   <!-- Turno confirmado (reemplaza el bloque de reserva) -->
   <div class="done" id="done" style="display:none">
     <div class="success-icon">✓</div>
-    <h2 style="margin-bottom:.5rem">¡Turno confirmado!</h2>
+    <h2 style="margin-bottom:.5rem" id="done-title">¡Turno confirmado!</h2>
     <p style="color:var(--muted, var(--text-muted));font-size:14px">Te esperamos el <strong id="conf-day"></strong> a las <strong id="conf-time"></strong></p>
     <div class="ticket">
       <div class="ticket-row"><span>Servicio</span><span id="conf-svc"></span></div>

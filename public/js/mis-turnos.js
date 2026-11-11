@@ -100,12 +100,19 @@ function renderCard(a, isUpcoming) {
   let actions = '';
   if (isUpcoming && active) {
     const wa = waNumber(a.business_phone);
-    actions = `<div class="appt-actions">
-        <button class="btn-sm cancel" onclick="cancelAppointment(${Number(a.id)})">${ICONS.calendarX} Cancelar</button>
-        <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
-        ${wa ? `<a class="btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICONS.whatsapp} WhatsApp</a>` : ''}
-        <button class="btn-sm reschedule" onclick="rescheduleAppointment(${Number(a.id)})">${ICONS.calendarSync} Reprogramar</button>
-      </div>`;
+    const waLink = wa ? `<a class="btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICONS.whatsapp} WhatsApp</a>` : '';
+    actions = canChange(a)
+      ? `<div class="appt-actions">
+          <button class="btn-sm cancel" onclick="cancelAppointment(${Number(a.id)})">${ICONS.calendarX} Cancelar</button>
+          <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
+          ${waLink}
+          ${a.business_slug ? `<a class="btn-sm reschedule" href="${esc(rebookUrl(a, { reschedule: a.id }))}">${ICONS.calendarSync} Reprogramar</a>` : ''}
+        </div>`
+      : `<p class="appt-locked">Para cambios, escribile al negocio${wa ? '' : '.'}</p>
+         <div class="appt-actions">
+          <button class="btn-sm" onclick="downloadIcs(${Number(a.id)})">${ICONS.calendarPlus} Agregar al calendario</button>
+          ${waLink}
+        </div>`;
   } else if (!isUpcoming && a.business_slug) {
     actions = `<div class="appt-actions">
         <a class="btn-sm reschedule" href="${esc(rebookUrl(a))}">${ICONS.rotate} Volver a reservar</a>
@@ -130,10 +137,18 @@ function renderCard(a, isUpcoming) {
   `;
 }
 
-function rebookUrl(a) {
+// ¿Todavía está dentro de la anticipación mínima del negocio? (0 = sin límite; mismo criterio que el backend)
+function canChange(a) {
+  const minHours = parseInt(a.cancel_min_hours, 10) || 0;
+  const hoursLeft = (apptStart(a).getTime() - Date.now()) / 3600000;
+  return hoursLeft > 0 && (minHours === 0 || hoursLeft >= minHours);
+}
+
+function rebookUrl(a, extra = {}) {
   const q = new URLSearchParams();
   if (a.service_id) q.set('service', a.service_id);
   if (a.barber_id)  q.set('barber', a.barber_id);
+  if (extra.reschedule) q.set('reschedule', extra.reschedule);
   const qs = q.toString();
   return `/${encodeURIComponent(a.business_slug)}${qs ? '?' + qs : ''}`;
 }
@@ -209,22 +224,6 @@ async function cancelAppointment(id) {
     }
     showToast('✅ Turno cancelado');
     loadAppointments();
-  } catch {
-    showToast('❌ Error de conexión');
-  }
-}
-
-async function rescheduleAppointment(id) {
-  const a = upcomingAppts.find(x => x.id === id);
-  if (!confirm('Vamos a cancelar este turno para que elijas uno nuevo. ¿Continuamos?')) return;
-  try {
-    const res = await fetch(`/api/appointments/${id}/cancel-mine`, { method: 'PATCH' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast('❌ ' + (err.error || 'Error al reprogramar'));
-      return;
-    }
-    window.location.href = a?.business_slug ? rebookUrl(a) : '/';
   } catch {
     showToast('❌ Error de conexión');
   }

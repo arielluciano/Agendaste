@@ -40,6 +40,7 @@ async function loadBusiness() {
     document.getElementById('biz-address').value     = data.address     || '';
     document.getElementById('biz-phone').value       = data.phone       || '';
     document.getElementById('biz-description').value = data.description || '';
+    document.getElementById('biz-cancel-hours').value = data.cancel_min_hours ?? 2;
     if (data.address) showMapPreview(data.address);
     renderBizSchedule(data.schedule);
 
@@ -76,12 +77,18 @@ async function saveBusiness() {
   const phone       = document.getElementById('biz-phone').value.trim();
   const description = document.getElementById('biz-description').value.trim();
   const schedule    = readBizSchedule();
+  const cancelRaw   = document.getElementById('biz-cancel-hours').value.trim();
+  const cancel_min_hours = cancelRaw === '' ? 0 : Number(cancelRaw);
+  if (!Number.isInteger(cancel_min_hours) || cancel_min_hours < 0 || cancel_min_hours > 720) {
+    showToast('❌ Las horas para cancelar tienen que ser un número entero entre 0 y 720');
+    return;
+  }
 
   try {
     const res = await fetch('/api/business', {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, address, phone, description, schedule })
+      body:    JSON.stringify({ name, address, phone, description, schedule, cancel_min_hours })
     });
     if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
     showToast('✅ Configuración guardada');

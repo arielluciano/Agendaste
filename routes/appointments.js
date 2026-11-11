@@ -6,7 +6,7 @@ const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
-const { sendConfirmationEmail } = require('../services/email');
+const { sendConfirmationEmail, sendOwnerNoticeEmail } = require('../services/email');
 
 const TZ_AR = 'America/Argentina/Buenos_Aires';
 
@@ -95,7 +95,8 @@ router.get('/mine', async (req, res) => {
     const result = await db.query(
       `SELECT a.*, s.name as service_name, s.duration as service_duration, b.name as barber_name,
               biz.name as business_name, biz.slug as business_slug, biz.address as business_address,
-              biz.phone as business_phone, biz.logo_url as business_logo_url
+              biz.phone as business_phone, biz.logo_url as business_logo_url,
+              COALESCE(biz.cancel_min_hours, 2) as cancel_min_hours
        FROM appointments a
        LEFT JOIN services s ON a.service_id = s.id
        LEFT JOIN barbers b ON a.barber_id = b.id
@@ -128,6 +129,139 @@ router.get('/mine', async (req, res) => {
   }
 });
 
+// ── Alta de turnos (compartido por la reserva y la reprogramación) ──
+
+// Valida los datos del formulario. Devuelve { error } o los valores normalizados.
+function validateBookingInput({ clientName, clientPhone, clientEmail, service, date, time }) {
+  if (!clientName || !service || !date || !time) return { error: 'Faltan campos obligatorios' };
+
+  const name = String(clientName).trim();
+  if (name.length < 2 || name.length > 60) return { error: 'El nombre tiene que tener entre 2 y 60 caracteres' };
+
+  // Solo para comparar/validar; se guarda tal cual lo mandó el cliente
+  const phoneDigits = String(clientPhone || '').replace(/\D/g, '');
+  if (phoneDigits.length < 8 || phoneDigits.length > 15) return { error: 'El teléfono tiene que tener entre 8 y 15 dígitos' };
+
+  if (clientEmail && (typeof clientEmail !== 'string' || clientEmail.length > 254 || !EMAIL_RE.test(clientEmail.trim()))) {
+    return { error: 'El email no es válido' };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T12:00:00').getTime())) return { error: 'Fecha inválida' };
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(time)) return { error: 'Hora inválida' };
+  const startMins = toMinutes(time);
+
+  // Tiene que ser en el futuro (hora de Argentina)
+  const today = todayAR();
+  if (date < today || (date === today && startMins <= nowMinutesAR())) return { error: 'Ese horario ya pasó' };
+
+  return { name, phoneDigits, startMins, today };
+}
+
+// Chequea disponibilidad e inserta el turno usando `q` (el pool o el cliente de una transacción).
+// Devuelve { status, error } si no se puede, o { appointment }.
+async function insertAppointment(q, { name, clientPhone, phoneDigits, email, service, barberId, businessId, date, time, startMins, price, isOwner, today }) {
+  // El barbero tiene que ser del negocio del turno
+  const barberCheck = await q.query('SELECT id FROM barbers WHERE id = $1 AND business_id = $2', [barberId, businessId]);
+  if (barberCheck.rows.length === 0) {
+    return isOwner
+      ? { status: 403, error: 'El barbero no pertenece a tu negocio' }
+      : { status: 400, error: 'Profesional inválido' };
+  }
+
+  // Dentro del horario de atención (el mismo que usa /slots para ofrecer turnos)
+  const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+  const sched = (await q.query(
+    'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
+    [barberId, dayOfWeek]
+  )).rows[0];
+  const ranges = [];
+  if (sched && sched.is_open) {
+    ranges.push([toMinutes(sched.open_time), toMinutes(sched.close_time)]);
+    if (sched.has_split && sched.open_time_2 && sched.close_time_2) {
+      ranges.push([toMinutes(sched.open_time_2), toMinutes(sched.close_time_2)]);
+    }
+  }
+  if (!ranges.some(([open, close]) => startMins >= open && startMins < close)) {
+    return { status: 400, error: 'Ese horario está fuera del horario de atención' };
+  }
+
+  // Límite por teléfono: máximo 2 turnos futuros no cancelados en este negocio (el dueño queda exento)
+  if (!isOwner) {
+    const phoneCount = await q.query(
+      `SELECT COUNT(*)::int AS n FROM appointments
+        WHERE business_id = $1
+          AND status != 'cancelled'
+          AND regexp_replace(COALESCE(client_phone, ''), '[^0-9]', '', 'g') = $2
+          AND (date > $3 OR (date = $3 AND time > $4))`,
+      [businessId, phoneDigits, today, toTimeStr(nowMinutesAR())]
+    );
+    if (phoneCount.rows[0].n >= MAX_FUTURE_PER_PHONE) {
+      return { status: 409, error: 'Ya tenés turnos reservados. Si necesitás otro, comunicate con el negocio.' };
+    }
+  }
+
+  // No superponerse con otro turno del mismo profesional (según la duración de cada servicio; 30 min si no se conoce)
+  const svc = await q.query('SELECT duration FROM services WHERE name = $1 AND business_id = $2 LIMIT 1', [service, businessId]);
+  const duration = parseInt(svc.rows[0]?.duration) || 30;
+  const conflict = await q.query(
+    `SELECT a.id FROM appointments a
+       LEFT JOIN services s ON a.service_id = s.id
+      WHERE a.date = $1 AND a.barber_id = $2 AND a.status != 'cancelled'
+        AND a.time < ($3::time + make_interval(mins => $4))
+        AND $3::time < (a.time + make_interval(mins => COALESCE(NULLIF(s.duration, 0), 30)))`,
+    [date, barberId, toTimeStr(startMins), duration]
+  );
+  if (conflict.rows.length > 0) return { status: 409, error: 'Ese horario ya está ocupado' };
+
+  const result = await q.query(
+    `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
+     VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
+     RETURNING *`,
+    [businessId, barberId, name, clientPhone, email, service, businessId, date, time, price, 'confirmed']
+  );
+  return { appointment: result.rows[0] };
+}
+
+// Mail de confirmación al cliente (no bloquea ni hace fallar la reserva)
+async function sendBookingEmail(appt, { name, service, time, isVerified, rescheduled = false }) {
+  if (!appt.client_email) return;
+  try {
+    // Invitados: máximo N confirmaciones por email destino por hora (en todos los negocios),
+    // para que el formulario no sirva para mandarle mails a terceros. Cada confirmación sale de
+    // un turno insertado, así que se cuentan los turnos de la última hora (incluye el recién creado).
+    // Con login de Google el email está verificado y no se limita.
+    if (!isVerified) {
+      const sent = await db.query(
+        `SELECT COUNT(*)::int AS n FROM appointments
+          WHERE lower(client_email) = lower($1) AND created_at > now() - interval '1 hour'`,
+        [appt.client_email]
+      );
+      if (sent.rows[0].n > MAX_GUEST_EMAILS_PER_HOUR) {
+        throw new Error(`límite de ${MAX_GUEST_EMAILS_PER_HOUR} confirmaciones por hora alcanzado para ese email`);
+      }
+    }
+
+    const [businessResult, barberResult] = await Promise.all([
+      db.query('SELECT name, address FROM businesses WHERE id = $1', [appt.business_id]),
+      db.query('SELECT name FROM barbers WHERE id = $1', [appt.barber_id])
+    ]);
+
+    await sendConfirmationEmail({
+      to: appt.client_email,
+      clientName: name,
+      businessName: businessResult.rows[0]?.name,
+      service,
+      barber: barberResult.rows[0]?.name,
+      date: appt.date,
+      time,
+      address: businessResult.rows[0]?.address,
+      rescheduled
+    });
+  } catch (emailErr) {
+    console.log(`⚠️ No se pudo enviar el email de confirmación: ${emailErr.message}`);
+  }
+}
+
 // POST /api/appointments → crear nuevo turno
 router.post('/', bookingLimiter, async (req, res) => {
   const { clientName, clientPhone, clientEmail, service, barberId, date, time, price, businessId, website } = req.body;
@@ -141,39 +275,8 @@ router.post('/', bookingLimiter, async (req, res) => {
     });
   }
 
-  if (!clientName || !service || !date || !time) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-
-  // ── Validaciones de datos ──
-  const name = String(clientName).trim();
-  if (name.length < 2 || name.length > 60) {
-    return res.status(400).json({ error: 'El nombre tiene que tener entre 2 y 60 caracteres' });
-  }
-
-  // Solo para comparar/validar; se guarda tal cual lo mandó el cliente
-  const phoneDigits = String(clientPhone || '').replace(/\D/g, '');
-  if (phoneDigits.length < 8 || phoneDigits.length > 15) {
-    return res.status(400).json({ error: 'El teléfono tiene que tener entre 8 y 15 dígitos' });
-  }
-
-  if (clientEmail && (typeof clientEmail !== 'string' || clientEmail.length > 254 || !EMAIL_RE.test(clientEmail.trim()))) {
-    return res.status(400).json({ error: 'El email no es válido' });
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T12:00:00').getTime())) {
-    return res.status(400).json({ error: 'Fecha inválida' });
-  }
-  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(time)) {
-    return res.status(400).json({ error: 'Hora inválida' });
-  }
-  const startMins = toMinutes(time);
-
-  // Tiene que ser en el futuro (hora de Argentina)
-  const today = todayAR();
-  if (date < today || (date === today && startMins <= nowMinutesAR())) {
-    return res.status(400).json({ error: 'Ese horario ya pasó' });
-  }
+  const v = validateBookingInput(req.body);
+  if (v.error) return res.status(400).json({ error: v.error });
 
   // El email del cliente logueado con Google es la fuente más confiable
   const resolvedClientEmail = req.session?.client?.email || (clientEmail ? clientEmail.trim() : null);
@@ -182,115 +285,16 @@ router.post('/', bookingLimiter, async (req, res) => {
   const resolvedBarberId = parseInt(barberId) || 1;
 
   try {
-    // El barbero tiene que ser del negocio del turno
-    const barberCheck = await db.query(
-      'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
-      [resolvedBarberId, resolvedBusinessId]
-    );
-    if (barberCheck.rows.length === 0) {
-      return isOwner
-        ? res.status(403).json({ error: 'El barbero no pertenece a tu negocio' })
-        : res.status(400).json({ error: 'Profesional inválido' });
-    }
+    const r = await insertAppointment(db, {
+      ...v, clientPhone, email: resolvedClientEmail, service, barberId: resolvedBarberId,
+      businessId: resolvedBusinessId, date, time, price, isOwner
+    });
+    if (r.error) return res.status(r.status).json({ error: r.error });
 
-    // Dentro del horario de atención (el mismo que usa /slots para ofrecer turnos)
-    const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-    const sched = (await db.query(
-      'SELECT * FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2',
-      [resolvedBarberId, dayOfWeek]
-    )).rows[0];
-    const ranges = [];
-    if (sched && sched.is_open) {
-      ranges.push([toMinutes(sched.open_time), toMinutes(sched.close_time)]);
-      if (sched.has_split && sched.open_time_2 && sched.close_time_2) {
-        ranges.push([toMinutes(sched.open_time_2), toMinutes(sched.close_time_2)]);
-      }
-    }
-    if (!ranges.some(([open, close]) => startMins >= open && startMins < close)) {
-      return res.status(400).json({ error: 'Ese horario está fuera del horario de atención' });
-    }
+    const newAppointment = r.appointment;
+    console.log(`📋 Nuevo turno: ${v.name} — ${service} el ${date} a las ${time}`);
 
-    // Límite por teléfono: máximo 2 turnos futuros no cancelados en este negocio (el dueño queda exento)
-    if (!isOwner) {
-      const phoneCount = await db.query(
-        `SELECT COUNT(*)::int AS n FROM appointments
-          WHERE business_id = $1
-            AND status != 'cancelled'
-            AND regexp_replace(COALESCE(client_phone, ''), '[^0-9]', '', 'g') = $2
-            AND (date > $3 OR (date = $3 AND time > $4))`,
-        [resolvedBusinessId, phoneDigits, today, toTimeStr(nowMinutesAR())]
-      );
-      if (phoneCount.rows[0].n >= MAX_FUTURE_PER_PHONE) {
-        return res.status(409).json({ error: 'Ya tenés turnos reservados. Si necesitás otro, comunicate con el negocio.' });
-      }
-    }
-
-    // No superponerse con otro turno del mismo profesional (según la duración de cada servicio; 30 min si no se conoce)
-    const svc = await db.query(
-      'SELECT duration FROM services WHERE name = $1 AND business_id = $2 LIMIT 1',
-      [service, resolvedBusinessId]
-    );
-    const duration = parseInt(svc.rows[0]?.duration) || 30;
-    const conflict = await db.query(
-      `SELECT a.id FROM appointments a
-         LEFT JOIN services s ON a.service_id = s.id
-        WHERE a.date = $1 AND a.barber_id = $2 AND a.status != 'cancelled'
-          AND a.time < ($3::time + make_interval(mins => $4))
-          AND $3::time < (a.time + make_interval(mins => COALESCE(NULLIF(s.duration, 0), 30)))`,
-      [date, resolvedBarberId, toTimeStr(startMins), duration]
-    );
-
-    if (conflict.rows.length > 0) {
-      return res.status(409).json({ error: 'Ese horario ya está ocupado' });
-    }
-
-    const result = await db.query(
-      `INSERT INTO appointments (business_id, barber_id, client_name, client_phone, client_email, service_id, date, time, price, status)
- VALUES ($1, $2, $3, $4, $5, (SELECT id FROM services WHERE name = $6 AND business_id = $7 LIMIT 1), $8, $9, $10, $11)
- RETURNING *`,
-[resolvedBusinessId, resolvedBarberId, name, clientPhone, resolvedClientEmail, service, resolvedBusinessId, date, time, price, 'confirmed']
-    );
-
-    const newAppointment = result.rows[0];
-    console.log(`📋 Nuevo turno: ${name} — ${service} el ${date} a las ${time}`);
-
-    // Enviar email de confirmación al cliente (no debe bloquear la creación del turno)
-    if (newAppointment.client_email) {
-      try {
-        // Invitados: máximo N confirmaciones por email destino por hora (en todos los negocios),
-        // para que el formulario no sirva para mandarle mails a terceros. Cada confirmación sale de
-        // un turno insertado, así que se cuentan los turnos de la última hora (incluye el recién creado).
-        // Con login de Google el email está verificado y no se limita.
-        if (!req.session?.client?.email) {
-          const sent = await db.query(
-            `SELECT COUNT(*)::int AS n FROM appointments
-              WHERE lower(client_email) = lower($1) AND created_at > now() - interval '1 hour'`,
-            [newAppointment.client_email]
-          );
-          if (sent.rows[0].n > MAX_GUEST_EMAILS_PER_HOUR) {
-            throw new Error(`límite de ${MAX_GUEST_EMAILS_PER_HOUR} confirmaciones por hora alcanzado para ese email`);
-          }
-        }
-
-        const [businessResult, barberResult] = await Promise.all([
-          db.query('SELECT name, address FROM businesses WHERE id = $1', [newAppointment.business_id]),
-          db.query('SELECT name FROM barbers WHERE id = $1', [newAppointment.barber_id])
-        ]);
-
-        await sendConfirmationEmail({
-          to: newAppointment.client_email,
-          clientName: name,
-          businessName: businessResult.rows[0]?.name,
-          service,
-          barber: barberResult.rows[0]?.name,
-          date: newAppointment.date,
-          time,
-          address: businessResult.rows[0]?.address
-        });
-      } catch (emailErr) {
-        console.log(`⚠️ No se pudo enviar el email de confirmación: ${emailErr.message}`);
-      }
-    }
+    await sendBookingEmail(newAppointment, { name: v.name, service, time, isVerified: !!req.session?.client?.email });
 
     res.status(201).json({
       id: newAppointment.id,
@@ -307,6 +311,117 @@ router.post('/', bookingLimiter, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Error creando el turno' });
   }
+});
+
+// ── Cambios del cliente (cancelar / reprogramar) ──
+
+// Fecha 'YYYY-MM-DD' de una columna date de pg (el server corre en UTC)
+function dateStr(d) {
+  return d instanceof Date ? d.toISOString().split('T')[0] : String(d).split('T')[0];
+}
+
+// Turno del cliente, bloqueado para la transacción, con la regla de anticipación del negocio.
+// Devuelve { status, error } si no se puede tocar, o { appt }.
+async function lockOwnAppointment(q, id, clientEmail) {
+  const r = await q.query(
+    `SELECT a.*, COALESCE(biz.cancel_min_hours, 2) AS cancel_min_hours
+       FROM appointments a JOIN businesses biz ON biz.id = a.business_id
+      WHERE a.id = $1 AND a.client_email = $2
+      FOR UPDATE OF a`,
+    [id, clientEmail]
+  );
+  const appt = r.rows[0];
+  if (!appt) return { status: 404, error: 'Turno no encontrado' };
+  if (appt.status === 'cancelled') return { status: 409, error: 'Ese turno ya está cancelado' };
+
+  // Argentina es UTC-3 todo el año
+  const start = new Date(`${dateStr(appt.date)}T${String(appt.time).substring(0, 5)}:00-03:00`);
+  const hoursLeft = (start.getTime() - Date.now()) / 3600000;
+  if (hoursLeft <= 0) return { status: 403, error: 'Ese turno ya pasó' };
+
+  const minHours = parseInt(appt.cancel_min_hours, 10) || 0;
+  if (minHours > 0 && hoursLeft < minHours) {
+    return {
+      status: 403,
+      error: `Los cambios se pueden hacer hasta ${minHours} ${minHours === 1 ? 'hora' : 'horas'} antes del turno. Para cambiarlo, escribile al negocio.`
+    };
+  }
+  return { appt };
+}
+
+// Datos para el aviso al dueño
+async function ownerNoticeContext(appt) {
+  const r = await db.query(
+    `SELECT biz.name AS business_name, COALESCE(biz.owner_email, o.email) AS owner_email,
+            s.name AS service_name, b.name AS barber_name
+       FROM businesses biz
+       LEFT JOIN owners o ON o.business_id = biz.id
+       LEFT JOIN services s ON s.id = $2
+       LEFT JOIN barbers b ON b.id = $3
+      WHERE biz.id = $1
+      ORDER BY o.id
+      LIMIT 1`,
+    [appt.business_id, appt.service_id, appt.barber_id]
+  );
+  return r.rows[0] || {};
+}
+
+// PATCH /api/appointments/:id/reschedule → el cliente cambia su turno por otro, en una sola transacción
+router.patch('/:id/reschedule', bookingLimiter, async (req, res) => {
+  const clientEmail = req.session?.client?.email;
+  if (!clientEmail) return res.status(401).json({ error: 'Iniciá sesión para cambiar tu turno' });
+
+  const { clientName, clientPhone, service, barberId, date, time, price } = req.body;
+  const v = validateBookingInput({ clientName, clientPhone, service, date, time });
+  if (v.error) return res.status(400).json({ error: v.error });
+
+  const client = await db.connect();
+  let original, created;
+  try {
+    await client.query('BEGIN');
+
+    const own = await lockOwnAppointment(client, parseInt(req.params.id, 10), clientEmail);
+    if (own.error) { await client.query('ROLLBACK'); return res.status(own.status).json({ error: own.error }); }
+    original = own.appt;
+
+    // Se cancela primero (dentro de la transacción) para que el turno viejo no cuente
+    // como superposición ni para el límite por teléfono. Si algo falla, ROLLBACK lo deja como estaba.
+    await client.query("UPDATE appointments SET status = 'cancelled' WHERE id = $1", [original.id]);
+
+    // El turno nuevo es siempre del mismo negocio que el original
+    const r = await insertAppointment(client, {
+      ...v, clientPhone, email: clientEmail, service, barberId: parseInt(barberId) || 0,
+      businessId: original.business_id, date, time, price, isOwner: false
+    });
+    if (r.error) { await client.query('ROLLBACK'); return res.status(r.status).json({ error: r.error }); }
+    created = r.appointment;
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Error PATCH /api/appointments/:id/reschedule:', err.message);
+    return res.status(500).json({ error: 'Error cambiando el turno' });
+  } finally {
+    client.release();
+  }
+
+  console.log(`🔁 Turno ${original.id} reprogramado → ${created.id} (${date} ${time})`);
+  await sendBookingEmail(created, { name: v.name, service, time, isVerified: true, rescheduled: true });
+
+  try {
+    const ctx = await ownerNoticeContext(original);
+    const newBarber = (await db.query('SELECT name FROM barbers WHERE id = $1', [created.barber_id])).rows[0]?.name;
+    await sendOwnerNoticeEmail({
+      to: ctx.owner_email, kind: 'rescheduled', businessName: ctx.business_name,
+      clientName: original.client_name, clientPhone: original.client_phone,
+      service: ctx.service_name, barber: ctx.barber_name, date: dateStr(original.date), time: String(original.time).substring(0, 5),
+      newService: service, newBarber, newDate: date, newTime: time
+    });
+  } catch (err) {
+    console.log(`⚠️ No se pudo avisar al negocio: ${err.message}`);
+  }
+
+  res.json({ id: created.id, date: created.date, time: created.time, status: created.status, replaced: original.id });
 });
 
 // PATCH /api/appointments/:id/status → confirmar o cancelar
@@ -331,20 +446,39 @@ router.patch('/:id/cancel-mine', async (req, res) => {
     return res.status(401).json({ error: 'No hay sesión de cliente' });
   }
 
+  const client = await db.connect();
+  let appt;
   try {
-    // El WHERE con client_email asegura que solo se cancele un turno propio
-    const result = await db.query(
-      `UPDATE appointments SET status = 'cancelled'
-       WHERE id = $1 AND client_email = $2
-       RETURNING *`,
-      [req.params.id, clientEmail]
+    await client.query('BEGIN');
+    // lockOwnAppointment asegura que sea un turno propio, vigente y dentro de la anticipación mínima
+    const own = await lockOwnAppointment(client, parseInt(req.params.id, 10), clientEmail);
+    if (own.error) { await client.query('ROLLBACK'); return res.status(own.status).json({ error: own.error }); }
+    const result = await client.query(
+      "UPDATE appointments SET status = 'cancelled' WHERE id = $1 RETURNING *",
+      [own.appt.id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
-    res.json(result.rows[0]);
+    await client.query('COMMIT');
+    appt = result.rows[0];
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Error PATCH /api/appointments/:id/cancel-mine:', err.message);
-    res.status(500).json({ error: 'Error cancelando el turno' });
+    return res.status(500).json({ error: 'Error cancelando el turno' });
+  } finally {
+    client.release();
   }
+
+  try {
+    const ctx = await ownerNoticeContext(appt);
+    await sendOwnerNoticeEmail({
+      to: ctx.owner_email, kind: 'cancelled', businessName: ctx.business_name,
+      clientName: appt.client_name, clientPhone: appt.client_phone,
+      service: ctx.service_name, barber: ctx.barber_name, date: dateStr(appt.date), time: String(appt.time).substring(0, 5)
+    });
+  } catch (err) {
+    console.log(`⚠️ No se pudo avisar al negocio: ${err.message}`);
+  }
+
+  res.json(appt);
 });
 
 // DELETE /api/appointments/:id → borrar turno

@@ -34,13 +34,24 @@ router.get('/', async (req, res) => {
 router.patch('/', requireAuth, async (req, res) => {
   const { name, address, phone, description, schedule } = req.body;
   const bizId = req.businessId;
+
+  // Anticipación mínima para cancelar/reprogramar (horas, 0 = sin límite). Si no viene, no se toca.
+  let cancelMinHours = null;
+  if (req.body.cancel_min_hours !== undefined && req.body.cancel_min_hours !== null && req.body.cancel_min_hours !== '') {
+    cancelMinHours = Number(req.body.cancel_min_hours);
+    if (!Number.isInteger(cancelMinHours) || cancelMinHours < 0 || cancelMinHours > 720) {
+      return res.status(400).json({ error: 'Las horas para cancelar tienen que ser un número entero entre 0 y 720' });
+    }
+  }
+
   try {
     const result = await db.query(
       `UPDATE businesses
-         SET name = $1, address = $2, phone = $3, description = $4, schedule = $5
+         SET name = $1, address = $2, phone = $3, description = $4, schedule = $5,
+             cancel_min_hours = COALESCE($7, cancel_min_hours)
        WHERE id = $6
        RETURNING *`,
-      [name ?? null, address ?? null, phone ?? null, description ?? null, schedule ? JSON.stringify(schedule) : null, bizId]
+      [name ?? null, address ?? null, phone ?? null, description ?? null, schedule ? JSON.stringify(schedule) : null, bizId, cancelMinHours]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
     res.json(result.rows[0]);

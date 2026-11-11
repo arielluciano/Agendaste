@@ -16,6 +16,11 @@ let businessId   = 1;
 const urlParams    = new URLSearchParams(window.location.search);
 const preServiceId = parseInt(urlParams.get('service'), 10) || null;
 const preBarberId  = parseInt(urlParams.get('barber'), 10) || null;
+// ?reschedule=ID: cambiar un turno existente (desde Mis turnos; requiere login, no aplica en embed)
+const rescheduleId = isEmbed ? null : (parseInt(urlParams.get('reschedule'), 10) || null);
+let rescheduleAppt = null;   // el turno original, si es del cliente y sigue vigente
+
+function confirmLabel() { return rescheduleAppt ? 'Confirmar cambio' : 'Confirmar turno'; }
 
 let services = [];
 let barbers  = [];
@@ -141,6 +146,33 @@ function renderClientFields() {
   }
 }
 
+// Modo reprogramar: buscar el turno original entre los próximos del cliente
+async function initReschedule() {
+  if (!rescheduleId || !loggedClient) return;
+  try {
+    const data = await (await fetch('/api/appointments/mine')).json();
+    const a = (data.upcoming || []).find(x => x.id === rescheduleId && x.status !== 'cancelled');
+    if (!a) return;
+    rescheduleAppt = a;
+    const banner = $('resched-banner');
+    banner.innerHTML = `Estás cambiando tu turno del <strong>${esc(longDay(String(a.date).split('T')[0]))} ${esc(String(a.time).substring(0, 5))}</strong>`;
+    banner.style.display = '';
+    $('btn-confirm').textContent = confirmLabel();
+    if (a.client_phone && !$('inp-phone').value) $('inp-phone').value = a.client_phone;
+  } catch {}
+}
+
+function endReschedule() {
+  rescheduleAppt = null;
+  $('resched-banner').style.display = 'none';
+  $('btn-confirm').textContent = confirmLabel();
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('reschedule');
+    history.replaceState(null, '', url.pathname + url.search);
+  } catch {}
+}
+
 // ── Servicios ────────────────────────────────
 async function loadServices() {
   try {
@@ -173,7 +205,7 @@ function selectService(id) {
 // ── Barberos ─────────────────────────────────
 async function loadBarbers() {
   try {
-    const res = await fetch(`/api/barbers?business_id=${businessId}`);
+    const res = await fetch(`/api/barbers?business_id=${businessId}&with_schedule=1`);
     barbers   = await res.json();
     if (!Array.isArray(barbers)) barbers = [];
   } catch {
@@ -425,9 +457,10 @@ async function confirmBooking() {
   btn.textContent = 'Confirmando...';
   showBookingError('');
 
+  const rescheduling = !!rescheduleAppt;
   try {
-    const res = await fetch('/api/appointments', {
-      method:  'POST',
+    const res = await fetch(rescheduling ? `/api/appointments/${rescheduleAppt.id}/reschedule` : '/api/appointments', {
+      method:  rescheduling ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientName:  name,
@@ -447,7 +480,7 @@ async function confirmBooking() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       showBookingError('❌ ' + (err.error || 'No se pudo confirmar el turno. Probá de nuevo.'));
-      btn.textContent = 'Confirmar turno';
+      btn.textContent = confirmLabel();
       validate();
       // Si el horario se ocupó mientras tanto, refrescar la grilla
       if (res.status === 409) { const keep = selSlot; await loadSlots(); if (currentSlots.some(s => s.time === keep && s.available)) selectSlot(keep); }
@@ -470,15 +503,17 @@ async function confirmBooking() {
     $('conf-price').textContent   = money(confPrice);
     $('conf-address').textContent = confAddress || '—';
 
+    $('done-title').textContent = rescheduling ? '¡Turno reprogramado!' : '¡Turno confirmado!';
+    if (rescheduling) endReschedule();
     $('booking').style.display = 'none';
     $('done').style.display    = '';
     document.body.classList.remove('has-bar');
     $('mobile-bar').style.display = 'none';
     window.scrollTo({ top: 0 });
-    btn.textContent = 'Confirmar turno';
+    btn.textContent = confirmLabel();
   } catch {
     showBookingError('❌ Error de conexión');
-    btn.textContent = 'Confirmar turno';
+    btn.textContent = confirmLabel();
     validate();
   }
 }
@@ -546,7 +581,16 @@ async function resetBooking() {
   await initBusiness();
   await checkClientLogin();
   renderClientFields();
-  await Promise.all([loadServices(), loadBarbers()]);
+  await Promise.all([loadServices(), loadBarbers(), initReschedule()]);
+
+  // Sin ningún barbero con horario cargado no hay nada que reservar
+  if (barbers.length === 0) {
+    $('booking').style.display = 'none';
+    $('mobile-bar').style.display = 'none';
+    document.body.classList.remove('has-bar');
+    $('no-hours').style.display = '';
+    return;
+  }
   await loadDays();
 
   const pending = !isEmbed && loggedClient ? takePending() : null;

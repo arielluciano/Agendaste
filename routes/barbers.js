@@ -7,11 +7,15 @@ const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 
 // GET /api/barbers → barberos activos
+// ?with_schedule=1 (página de reservas): solo los que tienen al menos un día de atención cargado
 router.get('/', async (req, res) => {
   const bizId = parseInt(req.query.business_id) || req.session?.business_id || 1;
+  const onlyWithSchedule = req.query.with_schedule === '1';
   try {
     const result = await db.query(
-      'SELECT * FROM barbers WHERE active = true AND business_id = $1 ORDER BY id',
+      `SELECT * FROM barbers b WHERE b.active = true AND b.business_id = $1
+       ${onlyWithSchedule ? 'AND EXISTS (SELECT 1 FROM barber_schedules s WHERE s.barber_id = b.id AND s.is_open)' : ''}
+       ORDER BY b.id`,
       [bizId]
     );
     res.json(result.rows);
