@@ -35,6 +35,7 @@ function toTimeStr(mins) {
 
 // ── Anti-spam de reservas ─────────────────────
 const MAX_FUTURE_PER_PHONE = 2;
+const MAX_GUEST_EMAILS_PER_HOUR = 3;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 // 5 reservas por IP cada 15 min. Solo cuentan las exitosas (un error de tipeo no penaliza)
@@ -253,6 +254,21 @@ router.post('/', bookingLimiter, async (req, res) => {
     // Enviar email de confirmación al cliente (no debe bloquear la creación del turno)
     if (newAppointment.client_email) {
       try {
+        // Invitados: máximo N confirmaciones por email destino por hora (en todos los negocios),
+        // para que el formulario no sirva para mandarle mails a terceros. Cada confirmación sale de
+        // un turno insertado, así que se cuentan los turnos de la última hora (incluye el recién creado).
+        // Con login de Google el email está verificado y no se limita.
+        if (!req.session?.client?.email) {
+          const sent = await db.query(
+            `SELECT COUNT(*)::int AS n FROM appointments
+              WHERE lower(client_email) = lower($1) AND created_at > now() - interval '1 hour'`,
+            [newAppointment.client_email]
+          );
+          if (sent.rows[0].n > MAX_GUEST_EMAILS_PER_HOUR) {
+            throw new Error(`límite de ${MAX_GUEST_EMAILS_PER_HOUR} confirmaciones por hora alcanzado para ese email`);
+          }
+        }
+
         const [businessResult, barberResult] = await Promise.all([
           db.query('SELECT name, address FROM businesses WHERE id = $1', [newAppointment.business_id]),
           db.query('SELECT name FROM barbers WHERE id = $1', [newAppointment.barber_id])
