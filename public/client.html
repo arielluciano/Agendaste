@@ -50,6 +50,14 @@
     .slot:disabled { border-style: dashed; text-decoration: line-through; color: var(--muted-c); background: transparent; cursor: not-allowed; }
     .block-empty { font-size: 13px; color: var(--muted-c); }
 
+    /* Esqueleto de carga: mismas medidas que días y horarios reales, para que no salte el layout */
+    .skel { display: block; border-radius: 4px; background: color-mix(in srgb, var(--border) 55%, transparent); animation: skel-pulse 1.2s ease-in-out infinite; }
+    .skel-slot { min-width: 92px; height: 44px; }
+    .skel-day { aspect-ratio: 1; }
+    @keyframes skel-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .skel { animation: none; opacity: .7; } }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
     .ticket { background: var(--surface-c); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: sticky; top: 1.5rem; }
     .ticket-title { font-family: var(--font, var(--font-display)); font-size: 22px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 1rem; color: var(--text); }
     .ticket-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 14px; padding: 5px 0; }
@@ -120,11 +128,20 @@
       </section>
       <section class="block">
         <p class="block-label" id="lbl-day">3 · Día</p>
-        <div class="days" id="days" role="group" aria-labelledby="lbl-day"></div>
+        <div class="days" id="days" role="group" aria-labelledby="lbl-day" aria-busy="true">
+          <span class="skel skel-day" aria-hidden="true"></span><span class="skel skel-day" aria-hidden="true"></span><span class="skel skel-day" aria-hidden="true"></span>
+          <span class="skel skel-day" aria-hidden="true"></span><span class="skel skel-day" aria-hidden="true"></span><span class="skel skel-day" aria-hidden="true"></span>
+        </div>
       </section>
       <section class="block">
         <p class="block-label" id="lbl-slot">4 · Horario</p>
-        <div class="slots" id="slots" role="group" aria-labelledby="lbl-slot"></div>
+        <div class="slots" id="slots" role="group" aria-labelledby="lbl-slot" aria-busy="true">
+          <span class="sr-only">Cargando horarios…</span>
+          <span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span>
+          <span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span>
+          <span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span>
+          <span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span><span class="skel skel-slot" aria-hidden="true"></span>
+        </div>
       </section>
     </div>
 

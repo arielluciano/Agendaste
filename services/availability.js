@@ -79,64 +79,83 @@ function buildSlots({ ranges, duration, booked, date, today, nowMins }) {
   return slots.sort((a, b) => a.time.localeCompare(b.time));
 }
 
+// ── Carga de datos ───────────────────────────
+// Cuatro consultas independientes que se mandan en paralelo (un solo viaje de ida y vuelta a la base):
+// barbero, servicio, horario semanal completo y turnos no cancelados de un rango de fechas.
+// Con un cliente de transacción, pg las encola en orden; con el pool van por conexiones distintas.
+async function loadContext(q, { barberId, businessId, serviceId, from, to }) {
+  const [barberRes, serviceRes, schedRes, bookedRes] = await Promise.all([
+    q.query('SELECT id FROM barbers WHERE id = $1 AND business_id = $2', [barberId, businessId]),
+    serviceId != null
+      ? q.query('SELECT id, name, price, duration FROM services WHERE id = $1 AND business_id = $2 AND active = true', [serviceId, businessId])
+      : Promise.resolve({ rows: [] }),
+    q.query(
+      `SELECT day_of_week, is_open, open_time, close_time, has_split, open_time_2, close_time_2
+         FROM barber_schedules WHERE barber_id = $1`,
+      [barberId]
+    ),
+    q.query(
+      `SELECT to_char(a.date, 'YYYY-MM-DD') AS date, a.time, COALESCE(NULLIF(s.duration, 0), $4) AS duration
+         FROM appointments a LEFT JOIN services s ON s.id = a.service_id
+        WHERE a.barber_id = $1 AND a.date BETWEEN $2 AND $3 AND a.status != 'cancelled'`,
+      [barberId, from, to, DEFAULT_DURATION_MINUTES]
+    )
+  ]);
+
+  if (!barberRes.rows[0]) return { status: 400, error: 'Profesional inválido' };
+  const service = serviceRes.rows[0] || null;
+  if (serviceId != null && !service) return { status: 400, error: 'Servicio inválido' };
+
+  const scheduleByDow = new Map(schedRes.rows.map(r => [Number(r.day_of_week), r]));
+  const bookedByDate = new Map();
+  for (const r of bookedRes.rows) {
+    if (!bookedByDate.has(r.date)) bookedByDate.set(r.date, []);
+    bookedByDate.get(r.date).push({ start: toMinutes(r.time), duration: parseInt(r.duration, 10) || DEFAULT_DURATION_MINUTES });
+  }
+
+  return {
+    service,
+    duration: parseInt(service?.duration, 10) || DEFAULT_DURATION_MINUTES,
+    scheduleByDow,
+    bookedByDate
+  };
+}
+
+// Grilla de un día a partir del contexto ya cargado (en memoria, sin base)
+function slotsForDate(ctx, date, now) {
+  return buildSlots({
+    ranges:   rangesFromSchedule(ctx.scheduleByDow.get(dayOfWeek(date))),
+    duration: ctx.duration,
+    booked:   ctx.bookedByDate.get(date) || [],
+    date, today: todayAR(now), nowMins: nowMinutesAR(now)
+  });
+}
+
 // Disponibilidad de un barbero para un servicio en una fecha.
 // `q` = pool o cliente de una transacción (la validación del POST la llama dentro de su transacción, con el lock tomado).
 // serviceId null → duración por defecto (compatibilidad con /slots sin servicio).
 // Devuelve { slots, service } o { status, error }.
 async function getAvailableSlots(barberId, businessId, serviceId, date, q = db, now = new Date()) {
-  const barber = (await q.query(
-    'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
-    [barberId, businessId]
-  )).rows[0];
-  if (!barber) return { status: 400, error: 'Profesional inválido' };
-
-  let service = null;
-  if (serviceId != null) {
-    service = (await q.query(
-      'SELECT id, name, price, duration FROM services WHERE id = $1 AND business_id = $2 AND active = true',
-      [serviceId, businessId]
-    )).rows[0];
-    if (!service) return { status: 400, error: 'Servicio inválido' };
-  }
-  const duration = parseInt(service?.duration, 10) || DEFAULT_DURATION_MINUTES;
-
-  const sched = (await q.query(
-    `SELECT is_open, open_time, close_time, has_split, open_time_2, close_time_2
-       FROM barber_schedules WHERE barber_id = $1 AND day_of_week = $2`,
-    [barberId, dayOfWeek(date)]
-  )).rows[0];
-
-  const booked = (await q.query(
-    `SELECT a.time, COALESCE(NULLIF(s.duration, 0), $3) AS duration
-       FROM appointments a LEFT JOIN services s ON s.id = a.service_id
-      WHERE a.barber_id = $1 AND a.date = $2 AND a.status != 'cancelled'`,
-    [barberId, date, DEFAULT_DURATION_MINUTES]
-  )).rows.map(r => ({ start: toMinutes(r.time), duration: parseInt(r.duration, 10) || DEFAULT_DURATION_MINUTES }));
-
-  const slots = buildSlots({
-    ranges: rangesFromSchedule(sched), duration, booked,
-    date, today: todayAR(now), nowMins: nowMinutesAR(now)
-  });
-  return { slots, service };
+  const ctx = await loadContext(q, { barberId, businessId, serviceId, from: date, to: date });
+  if (ctx.error) return ctx;
+  return { slots: slotsForDate(ctx, date, now), service: ctx.service };
 }
 
 // Próximos `days` días (desde `from`) en que el barbero atiende, cada uno con su grilla.
+// Mismo cálculo que getAvailableSlots, con los turnos de todo el rango traídos en una sola consulta.
+// Si atiende al menos un día por semana, `days` días hábiles entran en 7 × days días corridos.
 async function getAvailability(barberId, businessId, serviceId, from, days, q = db, now = new Date()) {
-  const open = new Set((await q.query(
-    'SELECT day_of_week FROM barber_schedules WHERE barber_id = $1 AND is_open',
-    [barberId]
-  )).rows.map(r => Number(r.day_of_week)));
+  const span = Math.min(days * 7, 60);
+  const to   = addDays(from, span - 1);
+  const ctx  = await loadContext(q, { barberId, businessId, serviceId, from, to });
+  if (ctx.error) return ctx;
 
   const dates = [];
-  for (let i = 0; i < 60 && dates.length < days && open.size; i++) {
+  for (let i = 0; i < span && dates.length < days; i++) {
     const d = addDays(from, i);
-    if (open.has(dayOfWeek(d))) dates.push(d);
+    if (ctx.scheduleByDow.get(dayOfWeek(d))?.is_open) dates.push(d);
   }
-
-  const results = await Promise.all(dates.map(d => getAvailableSlots(barberId, businessId, serviceId, d, q, now)));
-  const failed = results.find(r => r.error);
-  if (failed) return failed;
-  return { today: todayAR(now), days: dates.map((date, i) => ({ date, slots: results[i].slots })) };
+  return { today: todayAR(now), days: dates.map(date => ({ date, slots: slotsForDate(ctx, date, now) })) };
 }
 
 module.exports = {

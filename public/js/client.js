@@ -246,7 +246,7 @@ async function loadAvailability(keepDate) {
     renderDays(); renderSlots([]);
     return;
   }
-  $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Cargando horarios...</p>';
+  showSlotsSkeleton();
   try {
     const res  = await fetch(`/api/availability?business_id=${businessId}&barber_id=${selBarber.id}&service_id=${selService.id}&days=${DAYS_SHOWN}`);
     const data = await res.json();
@@ -258,7 +258,7 @@ async function loadAvailability(keepDate) {
     if (req !== slotsReq) return;
     days = []; selDate = null;
     renderDays();
-    $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Error cargando horarios</p>';
+    setSlotsHtml('<p class="block-empty" style="grid-column:1/-1">Error cargando horarios</p>');
     return;
   }
   // Día: el pedido (si sigue en la lista) o el primero con algún horario libre
@@ -272,6 +272,7 @@ async function loadAvailability(keepDate) {
 
 function renderDays() {
   const el = $('days');
+  el.setAttribute('aria-busy', 'false');
   if (days.length === 0) {
     el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">No hay días con atención próximamente</p>';
     return;
@@ -294,14 +295,31 @@ function selectDay(key) {
 }
 
 function showDaySlots() {
-  if (!selDate) { $('slots').innerHTML = '<p class="block-empty" style="grid-column:1/-1">Elegí un día</p>'; currentSlots = []; return; }
+  if (!selDate) { setSlotsHtml('<p class="block-empty" style="grid-column:1/-1">Elegí un día</p>'); currentSlots = []; return; }
   renderSlots(days.find(d => d.key === selDate)?.slots || []);
+}
+
+function setSlotsHtml(html) {
+  const el = $('slots');
+  el.setAttribute('aria-busy', 'false');
+  el.innerHTML = html;
+}
+
+// Mientras carga: casillas grises con el mismo tamaño que los horarios. Se dibujan tantas como
+// había en la grilla anterior (12 si no había), así la altura del bloque no cambia.
+function showSlotsSkeleton() {
+  const el = $('slots');
+  const n  = Math.min(Math.max(currentSlots.length, 12), 48);
+  el.setAttribute('aria-busy', 'true');
+  el.innerHTML = '<span class="sr-only">Cargando horarios…</span>' +
+    '<span class="skel skel-slot" aria-hidden="true"></span>'.repeat(n);
 }
 
 let currentSlots = [];
 function renderSlots(slots) {
   currentSlots = slots || currentSlots;
   const el = $('slots');
+  el.setAttribute('aria-busy', 'false');
   if (currentSlots.length === 0) {
     el.innerHTML = '<p class="block-empty" style="grid-column:1/-1">No hay horarios para este día</p>';
     return;
