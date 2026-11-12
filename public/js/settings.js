@@ -245,6 +245,26 @@ function onBrandInput() {
   head.appendChild(document.createTextNode(brandBizName || 'Tu negocio'));
 }
 
+// La preview muestra el primer servicio activo real del negocio (nombre, precio y duración)
+async function loadPreviewService() {
+  const set = (id, text) => { document.getElementById(id).textContent = text; };
+  let svc = null;
+  try {
+    // Sin business_id usa el negocio de la sesión; devuelve solo los activos, ordenados por id
+    const res = await fetch('/api/services');
+    if (res.ok) svc = (await res.json()).find(s => s.active) || null;
+  } catch {}
+  if (!svc) {
+    set('preview-svc-name', 'Todavía no tenés servicios activos');
+    set('preview-svc-price', '');
+    set('preview-svc-dur', 'Cargalos desde el panel');
+    return;
+  }
+  set('preview-svc-name', svc.name);
+  set('preview-svc-price', '$' + Number(svc.price || 0).toLocaleString('es-AR'));
+  set('preview-svc-dur', `${svc.duration} min`);
+}
+
 async function saveBrand() {
   const brand = readBrandForm();
   for (const key of Object.keys(BRAND_COLOR_IDS)) {
@@ -470,4 +490,5 @@ function showToast(msg) {
 // ── Init ──────────────────────────────────────
 loadUser();
 loadBusiness();
+loadPreviewService();
 loadSubscriptionStatus();

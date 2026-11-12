@@ -52,6 +52,12 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function $(id) { return document.getElementById(id); }
+// Nombre del servicio en la tarjeta: tal como lo cargó el dueño, con mayúscula inicial si vino todo en minúscula
+function ticketName(s) {
+  s = String(s ?? '');
+  return s && s === s.toLocaleLowerCase('es') && s !== s.toLocaleUpperCase('es')
+    ? s.charAt(0).toLocaleUpperCase('es') + s.slice(1) : s;
+}
 function money(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
 function parseKey(key) { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); }
 function longDay(key) {
@@ -358,7 +364,7 @@ function selectSlot(time) {
 
 // ── Tarjeta "Tu turno" ───────────────────────
 function updateSummary() {
-  $('sum-svc').textContent    = selService?.name || '—';
+  $('sum-svc').textContent    = selService ? ticketName(selService.name) : '—';
   $('sum-barber').textContent = selBarber?.name || '—';
   $('sum-day').textContent    = selDate ? longDay(selDate) : '—';
   const t = $('sum-time');
@@ -516,7 +522,7 @@ async function confirmBooking() {
 
     $('conf-day').textContent     = confDay;
     $('conf-time').textContent    = confTime;
-    $('conf-svc').textContent     = confService;
+    $('conf-svc').textContent     = ticketName(confService);
     $('conf-barber').textContent  = confBarber;
     $('conf-name').textContent    = name;
     $('conf-price').textContent   = money(confPrice);

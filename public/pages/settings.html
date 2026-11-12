@@ -155,7 +155,7 @@
             <label for="biz-cancel-hours">Cancelaciones</label>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px">
               <span>Los clientes pueden cancelar o reprogramar hasta</span>
-              <input type="number" id="biz-cancel-hours" min="0" max="720" step="1" value="2" style="width:80px">
+              <input type="number" id="biz-cancel-hours" class="no-spin" inputmode="numeric" min="0" max="720" step="1" value="2" onwheel="this.blur()" style="width:80px">
               <span>horas antes</span>
             </div>
             <p class="text-muted" style="font-size:12px;margin-top:4px">0 = sin límite.</p>
@@ -257,9 +257,10 @@
                 <div class="brand-preview-body">
                   <p class="brand-preview-title">¿Qué servicio querés?</p>
                   <div class="brand-preview-card">
-                    <strong>Corte de pelo</strong>
-                    <div class="brand-preview-price">$8.000</div>
-                    <div class="brand-preview-muted">30 min</div>
+                    <!-- Lo completa settings.js con el primer servicio activo del negocio -->
+                    <strong id="preview-svc-name">&nbsp;</strong>
+                    <div class="brand-preview-price" id="preview-svc-price">&nbsp;</div>
+                    <div class="brand-preview-muted" id="preview-svc-dur">&nbsp;</div>
                   </div>
                   <div class="brand-preview-slots"><span>10:00</span><span class="sel">10:30</span><span>11:00</span></div>
                   <button type="button" class="btn btn-primary" tabindex="-1">Continuar →</button>

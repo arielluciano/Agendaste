@@ -5,6 +5,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { validateService, toInt } = require('../services/validation');
+
+// :id tiene que ser un entero positivo (si no, Postgres tira error y salía un 500)
+router.param('id', (req, res, next, id) => {
+  if (!(toInt(id) > 0)) return res.status(400).json({ error: 'Servicio inválido' });
+  next();
+});
 
 // GET /api/services → servicios activos (para el cliente)
 router.get('/', async (req, res) => {
@@ -37,14 +44,18 @@ router.get('/all', requireAuth, async (req, res) => {
 
 // POST /api/services → agregar servicio nuevo
 router.post('/', async (req, res) => {
-  const { name, price, duration } = req.body;
   const bizId = req.session?.business_id;
   if (!bizId) return res.status(401).json({ error: 'No autenticado' });
-  if (!name || !price) return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
+  // Sin duración se usa 30 min, como antes; si viene, tiene que ser válida
+  const body = { ...req.body };
+  if (body.duration === undefined || body.duration === null || body.duration === '') body.duration = 30;
+  const v = validateService(body);
+  if (v.error) return res.status(400).json({ error: v.error });
+  const { name, price, duration } = v.values;
   try {
     const result = await db.query(
       'INSERT INTO services (business_id, name, price, duration, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
-      [bizId, name, parseInt(price), parseInt(duration) || 30]
+      [bizId, name, price, duration]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -55,7 +66,9 @@ router.post('/', async (req, res) => {
 
 // PATCH /api/services/:id → actualizar servicio
 router.patch('/:id', requireAuth, async (req, res) => {
-  const { name, price, dur, active } = req.body;
+  const v = validateService(req.body, { partial: true });
+  if (v.error) return res.status(400).json({ error: v.error });
+  const { name = null, price = null, duration = null, active = null } = v.values;
   try {
     const result = await db.query(
       `UPDATE services SET
@@ -64,7 +77,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         duration = COALESCE($3, duration),
         active = COALESCE($4, active)
        WHERE id = $5 AND business_id = $6 RETURNING *`,
-      [name, price ? parseInt(price) : null, dur, active, req.params.id, req.businessId]
+      [name, price, duration, active, req.params.id, req.businessId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
     res.json(result.rows[0]);

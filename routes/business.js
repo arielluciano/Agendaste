@@ -5,6 +5,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { validateWeekSchedule } = require('../services/validation');
 const multer  = require('multer');
 const sharp   = require('sharp');
 const storage = require('../services/storage');
@@ -50,6 +51,11 @@ router.patch('/', requireAuth, async (req, res) => {
     if (!Number.isInteger(cancelMinHours) || cancelMinHours < 0 || cancelMinHours > 720) {
       return res.status(400).json({ error: 'Las horas para cancelar tienen que ser un número entero entre 0 y 720' });
     }
+  }
+  // Horario base del negocio: mismas reglas que los horarios de los barberos
+  if (schedule) {
+    const schedError = validateWeekSchedule(schedule);
+    if (schedError) return res.status(400).json({ error: schedError });
   }
 
   try {

@@ -5,6 +5,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { validateWeekSchedule, toInt } = require('../services/validation');
+
+// :id tiene que ser un entero positivo (si no, Postgres tira error y salía un 500)
+router.param('id', (req, res, next, id) => {
+  if (!(toInt(id) > 0)) return res.status(400).json({ error: 'Barbero inválido' });
+  next();
+});
 
 // GET /api/barbers → barberos activos
 // ?with_schedule=1 (página de reservas): solo los que tienen al menos un día de atención cargado
@@ -79,7 +86,8 @@ router.get('/:id/schedule', async (req, res) => {
 router.patch('/:id/schedule', requireAuth, async (req, res) => {
   const { schedule } = req.body;
   const barberId = req.params.id;
-  if (!Array.isArray(schedule)) return res.status(400).json({ error: 'Formato inválido' });
+  const schedError = validateWeekSchedule(schedule);
+  if (schedError) return res.status(400).json({ error: schedError });
   try {
     const ownerCheck = await db.query(
       'SELECT id FROM barbers WHERE id = $1 AND business_id = $2',
@@ -105,7 +113,8 @@ router.patch('/:id/schedule', requireAuth, async (req, res) => {
 router.post('/apply-schedule', requireAuth, async (req, res) => {
   const { schedule } = req.body;
   const bizId = req.businessId;
-  if (!Array.isArray(schedule)) return res.status(400).json({ error: 'Formato inválido' });
+  const schedError = validateWeekSchedule(schedule);
+  if (schedError) return res.status(400).json({ error: schedError });
   try {
     const barbersResult = await db.query('SELECT id FROM barbers WHERE business_id = $1', [bizId]);
     for (const barber of barbersResult.rows) {

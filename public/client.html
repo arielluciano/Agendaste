@@ -34,7 +34,7 @@
     .block { margin-bottom: 1.75rem; }
     .block-label { font-family: var(--font, var(--font-mono)); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--muted-c); margin-bottom: .75rem; }
     .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pill { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 14px; border: 1px solid var(--border); background: var(--pill-bg); color: var(--text); border-radius: 4px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s, border-color .15s; }
+    .pill { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 14px; border: 1px solid var(--border); background: var(--pill-bg); color: var(--text); border-radius: 4px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; text-transform: none; cursor: pointer; transition: background .15s, border-color .15s; }
     .pill:hover:not(:disabled):not(.selected) { border-color: var(--primary); }
     .pill small { font-size: 13px; font-weight: 400; color: var(--muted-c); }
     .pill.selected { background: var(--primary); border-color: var(--primary); color: var(--brand-contrast, var(--cream)); }
@@ -66,7 +66,7 @@
     .ticket-title { font-family: var(--font, var(--font-display)); font-size: 22px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 1rem; color: var(--text); }
     .ticket-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 14px; padding: 5px 0; }
     .ticket-row span:first-child { color: var(--muted-c); }
-    .ticket-row span:last-child { text-align: right; font-weight: 500; }
+    .ticket-row span:last-child { text-align: right; font-weight: 500; text-transform: none; }
     .ticket-row .pending { color: var(--muted-c); font-weight: 400; }
     .ticket-sep { height: 1px; background: var(--border); margin: .75rem 0; }
     .ticket-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem; }

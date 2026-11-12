@@ -352,6 +352,19 @@ async function saveManualAppointment() {
 }
 
 // ── Servicios ────────────────────────────────
+// Mismos límites que services/validation.js (el backend vuelve a validar)
+const SVC_PRICE_MIN = 1, SVC_PRICE_MAX = 10000000;
+const SVC_DUR_MIN = 5, SVC_DUR_MAX = 480;
+const isIntIn = (v, min, max) => /^\d+$/.test(String(v).trim()) && Number(v) >= min && Number(v) <= max;
+function svcPriceError(v) {
+  return isIntIn(v, SVC_PRICE_MIN, SVC_PRICE_MAX) ? null
+    : `El precio tiene que ser un número entero entre $${SVC_PRICE_MIN.toLocaleString('es-AR')} y $${SVC_PRICE_MAX.toLocaleString('es-AR')}`;
+}
+function svcDurationError(v) {
+  return isIntIn(v, SVC_DUR_MIN, SVC_DUR_MAX) ? null
+    : `La duración tiene que ser un número entero de minutos entre ${SVC_DUR_MIN} y ${SVC_DUR_MAX}`;
+}
+
 async function renderServices() {
   const list = document.getElementById('services-list');
   list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Cargando...</p>';
@@ -369,7 +382,7 @@ async function renderServices() {
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span class="text-muted" style="font-size:13px">$</span>
-            <input class="price-input" type="number" value="${s.price}" onchange="updatePrice(${s.id}, this.value)">
+            <input class="price-input no-spin" type="number" inputmode="numeric" min="${SVC_PRICE_MIN}" max="${SVC_PRICE_MAX}" step="1" value="${s.price}" data-prev="${s.price}" onwheel="this.blur()" onchange="updatePrice(${s.id}, this)">
             <button class="toggle ${s.active ? 'on' : ''}" onclick="toggleService(${s.id}, ${s.active})" title="${s.active ? 'Desactivar' : 'Activar'}"></button>
             <button class="btn-sm cancel" onclick="deleteService(${s.id})" title="Eliminar">✕</button>
           </div>
@@ -379,8 +392,8 @@ async function renderServices() {
         <p style="font-size:13px;font-weight:600;margin-bottom:8px">Agregar servicio</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input id="new-svc-name"  placeholder="Nombre"  style="flex:2;min-width:120px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
-          <input id="new-svc-dur"   placeholder="Min" type="number" min="1" style="width:70px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
-          <input id="new-svc-price" placeholder="Precio"  type="number" min="1" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-dur"   placeholder="Min" type="number" inputmode="numeric" min="${SVC_DUR_MIN}" max="${SVC_DUR_MAX}" step="1" class="no-spin" onwheel="this.blur()" style="width:70px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
+          <input id="new-svc-price" placeholder="Precio"  type="number" inputmode="numeric" min="${SVC_PRICE_MIN}" max="${SVC_PRICE_MAX}" step="1" class="no-spin" onwheel="this.blur()" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)">
           <button class="btn btn-primary" style="padding:6px 14px" onclick="addService()">+ Agregar</button>
         </div>
       </div>
@@ -397,10 +410,10 @@ async function addService() {
 
   if (!name || !dur || !price) { showToast('Completá todos los campos'); return; }
 
-  if (Number(price) <= 0 || Number(dur) <= 0) {
-    showToast('El precio y la duración deben ser mayores a 0');
-    return;
-  }
+  const priceErr = svcPriceError(price);
+  if (priceErr) { showToast('❌ ' + priceErr); return; }
+  const durErr = svcDurationError(dur);
+  if (durErr) { showToast('❌ ' + durErr); return; }
 
   try {
     const res = await fetch('/api/services', {
@@ -426,16 +439,28 @@ async function deleteService(id) {
   }
 }
 
-async function updatePrice(id, val) {
+// Si no se puede guardar, el input vuelve al precio anterior
+async function updatePrice(id, input) {
+  const restore = () => { input.value = input.dataset.prev; };
+  const err = svcPriceError(input.value);
+  if (err) { showToast('❌ ' + err); restore(); return; }
   try {
-    await fetch(`/api/services/${id}`, {
+    const res = await fetch(`/api/services/${id}`, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ price: Number(val) })
+      body:    JSON.stringify({ price: Number(input.value) })
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast('❌ ' + (data.error || 'Error al actualizar precio'));
+      restore();
+      return;
+    }
+    input.dataset.prev = input.value;
     showToast('💰 Precio actualizado');
   } catch {
     showToast('❌ Error al actualizar precio');
+    restore();
   }
 }
 
@@ -617,7 +642,11 @@ async function saveSchedule() {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ schedule })
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast('❌ ' + (data.error || 'Error guardando horarios'));
+      return;
+    }
     showToast('✅ Horarios guardados');
     closeSchedule();
   } catch {
