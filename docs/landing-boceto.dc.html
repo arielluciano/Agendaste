@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agendaste — Turnos online para barberías</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;background:#F8F7F4}
+a{color:#9A3412}a:hover{color:#7C2D12}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 100%; background: #F8F7F4; color: #1A1A17; font-family: Inter, system-ui, sans-serif">
+
+  <header style="position: sticky; top: 0; z-index: 5; background: rgba(248,247,244,0.94); border-bottom: 1px solid #E5E4DF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px">
+      <a href="#inicio" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #1A1A17">
+        <span style="width: 34px; height: 34px; border-radius: 9px; background: #1A1A17; color: #F8F7F4; display: flex; align-items: center; justify-content: center; font-family: Anton, sans-serif; font-size: 20px">A</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; letter-spacing: 3px">AGENDASTE</span>
+      </a>
+      <nav style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; font-size: 15px; font-weight: 500">
+        <a href="#como" style="text-decoration: none; color: #1A1A17">Cómo funciona</a>
+        <a href="#funciones" style="text-decoration: none; color: #1A1A17">Funciones</a>
+        <a href="#precios" style="text-decoration: none; color: #1A1A17">Precios</a>
+        <a href="#login" style="text-decoration: none; color: #1A1A17">Iniciar sesión</a>
+        <a href="#empezar" style="text-decoration: none; background: #9A3412; color: #FFFFFF; padding: 12px 18px; border-radius: 0.875rem; font-weight: 600">Probar gratis</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="inicio" style="max-width: 1200px; margin: 0 auto; padding: 72px 24px 88px; display: flex; flex-wrap: wrap; align-items: center; gap: 56px">
+    <div style="flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+      <span style="align-self: flex-start; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #9A3412; border: 1px solid #E8C9BA; background: #FBF1EC; padding: 8px 12px; border-radius: 999px">TURNOS ONLINE PARA BARBERÍAS Y PELUQUERÍAS</span>
+      <h1 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 76px; line-height: 0.98; text-transform: uppercase; letter-spacing: 0.5px">Tus clientes reservan solos.<br><span style="color: #9A3412">Vos dejás de perder turnos.</span></h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.6; color: #4A4943; max-width: 540px">Un link de reservas con tu marca, que también podés sumar a tu web. Recordatorios automáticos, reprogramación sin huecos y tu día ordenado en un panel.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <a href="#empezar" style="text-decoration: none; background: #9A3412; color: #FFFFFF; font-weight: 600; font-size: 17px; padding: 16px 26px; border-radius: 0.875rem">Probar 14 días gratis</a>
+        <a href="#demo" style="text-decoration: none; background: #FFFFFF; color: #1A1A17; border: 1px solid #D6D4CC; font-weight: 600; font-size: 17px; padding: 15px 24px; border-radius: 0.875rem">Probá reservar como cliente</a>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; color: #5E5D57">
+        <span>SIN TARJETA</span><span>·</span><span>LISTO EN 10 MINUTOS</span><span>·</span><span>HECHO EN ARGENTINA</span>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 420px; min-width: 0; display: flex; justify-content: center; position: relative; min-height: 600px">
+      <div style="position: absolute; top: 40px; left: 0; right: 0; bottom: 30px; background: #EFE9E2; border-radius: 32px"></div>
+      <div style="position: relative; width: 290px; height: 590px; background: #1A1A17; border-radius: 44px; padding: 12px; box-shadow: 0 30px 60px rgba(26,26,23,0.22)">
+        <div style="width: 100%; height: 100%; background: #F8F7F4; border-radius: 34px; overflow: hidden; display: flex; flex-direction: column">
+          <div style="padding: 22px 18px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E5E4DF">
+            <span style="width: 34px; height: 34px; border-radius: 50%; background: #1A1A17"></span>
+            <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px">Tu Barbería</span><span style="font-size: 11px; color: #5E5D57">Reservá tu turno</span></div>
+          </div>
+          <div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: #5E5D57">1 · SERVICIO</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <span style="font-size: 12px; padding: 7px 10px; border-radius: 8px; background: #9A3412; color: #FFFFFF; font-weight: 600">Corte</span>
+              <span style="font-size: 12px; padding: 7px 10px; border-radius: 8px; border: 1px solid #D6D4CC">Corte + Barba</span>
+              <span style="font-size: 12px; padding: 7px 10px; border-radius: 8px; border: 1px solid #D6D4CC">Barba</span>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: #5E5D57; margin-top: 4px">2 · DÍA</span>
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+              <span style="text-align: center; padding: 6px 0; border-radius: 8px; background: #1A1A17; color: #F8F7F4; font-size: 10px">HOY<br><b style="font-size: 15px">12</b></span>
+              <span style="text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid #D6D4CC; font-size: 10px">VIE<br><b style="font-size: 15px">13</b></span>
+              <span style="text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid #D6D4CC; font-size: 10px">SÁB<br><b style="font-size: 15px">14</b></span>
+              <span style="text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid #D6D4CC; font-size: 10px">LUN<br><b style="font-size: 15px">16</b></span>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: #5E5D57; margin-top: 4px">3 · HORARIO</span>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 12px; text-align: center">
+              <span style="padding: 8px 0; border-radius: 8px; border: 1px dashed #D6D4CC; color: #A3A29B; text-decoration: line-through">10:00</span>
+              <span style="padding: 8px 0; border-radius: 8px; border: 1px solid #D6D4CC">10:30</span>
+              <span style="padding: 8px 0; border-radius: 8px; background: #9A3412; color: #FFFFFF; font-weight: 600">11:00</span>
+              <span style="padding: 8px 0; border-radius: 8px; border: 1px solid #D6D4CC">11:30</span>
+              <span style="padding: 8px 0; border-radius: 8px; border: 1px dashed #D6D4CC; color: #A3A29B; text-decoration: line-through">12:00</span>
+              <span style="padding: 8px 0; border-radius: 8px; border: 1px solid #D6D4CC">12:30</span>
+            </div>
+          </div>
+          <div style="margin-top: auto; padding: 14px 18px 22px; border-top: 1px solid #E5E4DF; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #5E5D57">Corte · Hoy 11:00</span><b>$22.000</b></div>
+            <span style="text-align: center; background: #9A3412; color: #FFFFFF; border-radius: 10px; padding: 11px 0; font-size: 13px; font-weight: 700">Confirmar turno</span>
+          </div>
+        </div>
+      </div>
+      <div style="position: absolute; right: -6px; bottom: 70px; width: 230px; background: #FFFFFF; border: 1px solid #E5E4DF; border-radius: 16px; padding: 16px; box-shadow: 0 18px 40px rgba(26,26,23,0.14); display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: #5E5D57">TU PANEL · HOY</span>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="width: 36px; height: 36px; border-radius: 10px; background: #FBF1EC; color: #9A3412; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+          </span>
+          <div style="display: flex; flex-direction: column"><b style="font-size: 14px">Nuevo turno</b><span style="font-size: 12px; color: #5E5D57">Corte · 11:00 · Martín</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="width: 36px; height: 36px; border-radius: 10px; background: #F1F0EC; color: #1A1A17; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+          </span>
+          <div style="display: flex; flex-direction: column"><b style="font-size: 14px">Recordatorio enviado</b><span style="font-size: 12px; color: #5E5D57">Turno de mañana 10:30</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="como" style="background: #FFFFFF; border-top: 1px solid #E5E4DF; border-bottom: 1px solid #E5E4DF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 44px">
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 640px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #9A3412">CÓMO FUNCIONA</span>
+        <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 52px; line-height: 1; text-transform: uppercase">En 3 pasos estás recibiendo turnos</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px">
+        <div style="border: 1px solid #E5E4DF; border-radius: 0.875rem; padding: 28px; display: flex; flex-direction: column; gap: 12px; background: #F8F7F4">
+          <span style="font-family: Anton, sans-serif; font-size: 44px; color: #9A3412; line-height: 1">01</span>
+          <b style="font-size: 20px">Cargá tus servicios y tu equipo</b>
+          <span style="font-size: 16px; line-height: 1.6; color: #4A4943">Precios, duración, barberos y el horario de cada uno. Con turno partido si cortás al mediodía.</span>
+        </div>
+        <div style="border: 1px solid #E5E4DF; border-radius: 0.875rem; padding: 28px; display: flex; flex-direction: column; gap: 12px; background: #F8F7F4">
+          <span style="font-family: Anton, sans-serif; font-size: 44px; color: #9A3412; line-height: 1">02</span>
+          <b style="font-size: 20px">Compartí tu link</b>
+          <span style="font-size: 16px; line-height: 1.6; color: #4A4943">En tu Instagram, por WhatsApp o con un QR en el local. Si tenés web, pegás dos líneas y la reserva queda adentro.</span>
+        </div>
+        <div style="border: 1px solid #E5E4DF; border-radius: 0.875rem; padding: 28px; display: flex; flex-direction: column; gap: 12px; background: #F8F7F4">
+          <span style="font-family: Anton, sans-serif; font-size: 44px; color: #9A3412; line-height: 1">03</span>
+          <b style="font-size: 20px">Recibí turnos mientras cortás</b>
+          <span style="font-size: 16px; line-height: 1.6; color: #4A4943">El cliente elige servicio, barbero y horario. Le llega la confirmación y un recordatorio antes del turno.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funciones" style="max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: flex; flex-direction: column; gap: 44px">
+    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 640px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #9A3412">FUNCIONES</span>
+      <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 52px; line-height: 1; text-transform: uppercase">Todo lo que tu barbería necesita, nada que sobre</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+      <sc-for list="{{features}}" as="f" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E5E4DF; border-radius: 0.875rem; padding: 26px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <b style="font-size: 18px">{{f.title}}</b>
+            <sc-if value="{{f.soon}}" hint-placeholder-val="{{ false }}">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #9A3412; background: #FBF1EC; padding: 5px 8px; border-radius: 6px">PRÓXIMAMENTE</span>
+            </sc-if>
+          </div>
+          <span style="font-size: 15px; line-height: 1.6; color: #4A4943">{{f.text}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="calculadora" style="background: #1A1A17; color: #F8F7F4">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #F0A27F">HACÉ LA CUENTA</span>
+        <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 52px; line-height: 1; text-transform: uppercase">¿Cuánto te cuestan los clientes que no vienen?</h2>
+        <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #C9C7BF">Cada silla vacía es plata que no vuelve. Los recordatorios automáticos bajan las ausencias, y con las señas el que no viene igual paga.</p>
+      </div>
+      <div style="flex: 1 1 400px; min-width: 0; background: #262622; border: 1px solid #3A3A35; border-radius: 1.25rem; padding: 32px; display: flex; flex-direction: column; gap: 24px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 14px; color: #C9C7BF">Precio de tu corte</span>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <button type="button" onClick="{{priceDown}}" aria-label="Bajar precio" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A4943; background: transparent; color: #F8F7F4; font-size: 20px">−</button>
+            <span style="flex: 1; text-align: center; font-family: Anton, sans-serif; font-size: 34px">{{priceLabel}}</span>
+            <button type="button" onClick="{{priceUp}}" aria-label="Subir precio" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A4943; background: transparent; color: #F8F7F4; font-size: 20px">+</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 14px; color: #C9C7BF">Clientes que faltan por semana</span>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <button type="button" onClick="{{noShowDown}}" aria-label="Menos ausencias" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A4943; background: transparent; color: #F8F7F4; font-size: 20px">−</button>
+            <span style="flex: 1; text-align: center; font-family: Anton, sans-serif; font-size: 34px">{{noShows}}</span>
+            <button type="button" onClick="{{noShowUp}}" aria-label="Más ausencias" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A4943; background: transparent; color: #F8F7F4; font-size: 20px">+</button>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #3A3A35; padding-top: 20px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1.5px; color: #C9C7BF">PERDÉS POR MES</span>
+          <span style="font-family: Anton, sans-serif; font-size: 56px; line-height: 1; color: #F0A27F">{{lossLabel}}</span>
+          <span style="font-size: 14px; color: #C9C7BF">Agendaste cuesta $5.000 por profesional al mes.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="marca" style="max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+    <div style="flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #9A3412">TU MARCA, TU WEB</span>
+      <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 52px; line-height: 1; text-transform: uppercase">La reserva se ve como tu barbería, no como un sistema</h2>
+      <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #4A4943">Subís tu logo, elegís tus colores y tu tipografía. La página de reservas toma tu identidad, y si tenés web, la sumás adentro con dos líneas de código.</p>
+      <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #4A4943">¿No tenés web? Te la armamos, con la reserva ya integrada.</p>
+    </div>
+    <div style="flex: 1 1 440px; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #0C0A08; border-radius: 1rem; padding: 22px; display: flex; flex-direction: column; gap: 12px; min-height: 220px">
+        <span style="font-family: Anton, sans-serif; font-size: 20px; color: #D9A55C; text-transform: uppercase">Barbería clásica</span>
+        <span style="font-size: 12px; color: #A8987F">1 · SERVICIO</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap"><span style="font-size: 12px; padding: 7px 10px; border-radius: 4px; background: #C8924A; color: #0C0A08; font-weight: 600">Corte</span><span style="font-size: 12px; padding: 7px 10px; border-radius: 4px; border: 1px solid #4A3A26; color: #EFE6D8">Barba</span></div>
+        <span style="margin-top: auto; text-align: center; background: #C8924A; color: #0C0A08; border-radius: 4px; padding: 10px 0; font-size: 13px; font-weight: 700">CONFIRMAR</span>
+      </div>
+      <div style="background: #FFF7F9; border: 1px solid #F1D5DE; border-radius: 1rem; padding: 22px; display: flex; flex-direction: column; gap: 12px; min-height: 220px">
+        <span style="font-family: Anton, sans-serif; font-size: 20px; color: #9D2B57; text-transform: uppercase">Estudio de uñas</span>
+        <span style="font-size: 12px; color: #7A5A66">1 · SERVICIO</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap"><span style="font-size: 12px; padding: 7px 10px; border-radius: 999px; background: #9D2B57; color: #FFFFFF; font-weight: 600">Semi</span><span style="font-size: 12px; padding: 7px 10px; border-radius: 999px; border: 1px solid #E7BFCD; color: #3A2A30">Esculpidas</span></div>
+        <span style="margin-top: auto; text-align: center; background: #9D2B57; color: #FFFFFF; border-radius: 999px; padding: 10px 0; font-size: 13px; font-weight: 700">CONFIRMAR</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="testimonios" style="background: #FFFFFF; border-top: 1px solid #E5E4DF; border-bottom: 1px solid #E5E4DF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 36px">
+      <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 44px; line-height: 1; text-transform: uppercase">Barberías que ya reservan con Agendaste</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px">
+        <div style="border: 1px dashed #D6D4CC; border-radius: 0.875rem; padding: 26px; display: flex; flex-direction: column; gap: 14px; background: #F8F7F4">
+          <span style="font-size: 17px; line-height: 1.6">[TESTIMONIO REAL DE UNA BARBERÍA]</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; color: #5E5D57">[NOMBRE · BARBERÍA · BARRIO]</span>
+        </div>
+        <div style="border: 1px dashed #D6D4CC; border-radius: 0.875rem; padding: 26px; display: flex; flex-direction: column; gap: 14px; background: #F8F7F4">
+          <span style="font-size: 17px; line-height: 1.6">[TESTIMONIO REAL DE UNA BARBERÍA]</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; color: #5E5D57">[NOMBRE · BARBERÍA · BARRIO]</span>
+        </div>
+        <div style="border: 1px dashed #D6D4CC; border-radius: 0.875rem; padding: 26px; display: flex; flex-direction: column; gap: 14px; background: #F8F7F4">
+          <span style="font-size: 17px; line-height: 1.6">[TESTIMONIO REAL DE UNA BARBERÍA]</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; color: #5E5D57">[NOMBRE · BARBERÍA · BARRIO]</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="precios" style="max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #9A3412">PRECIOS</span>
+      <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 52px; line-height: 1; text-transform: uppercase">Pagás por profesional, nada más</h2>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center">
+      <div style="flex: 1 1 340px; max-width: 460px; background: #FFFFFF; border: 2px solid #1A1A17; border-radius: 1.25rem; padding: 34px; display: flex; flex-direction: column; gap: 18px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px">AGENDASTE</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: Anton, sans-serif; font-size: 60px; line-height: 1">$5.000</span><span style="font-size: 15px; color: #5E5D57">ARS / profesional / mes</span></div>
+        <span style="font-size: 15px; color: #5E5D57">14 días gratis, sin tarjeta. Cancelás cuando quieras.</span>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 15px">
+          <sc-for list="{{planItems}}" as="p" hint-placeholder-count="6">
+            <div style="display: flex; gap: 10px; align-items: flex-start"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6L9 17l-5-5"></path></svg><span>{{p}}</span></div>
+          </sc-for>
+        </div>
+        <a href="#empezar" style="margin-top: 6px; text-align: center; text-decoration: none; background: #9A3412; color: #FFFFFF; font-weight: 600; font-size: 17px; padding: 16px; border-radius: 0.875rem">Empezar gratis</a>
+      </div>
+      <div style="flex: 1 1 340px; max-width: 460px; background: #1A1A17; color: #F8F7F4; border-radius: 1.25rem; padding: 34px; display: flex; flex-direction: column; gap: 18px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #F0A27F">WEB + RESERVAS CON TU MARCA</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: Anton, sans-serif; font-size: 44px; line-height: 1">[PRECIO]</span><span style="font-size: 15px; color: #C9C7BF">pago único + Agendaste</span></div>
+        <span style="font-size: 15px; line-height: 1.6; color: #C9C7BF">Te armamos la web de tu barbería, con tu logo, tus fotos, tus precios y la reserva integrada. Con tu dominio.</span>
+        <a href="#whatsapp" style="margin-top: auto; text-align: center; text-decoration: none; background: #F8F7F4; color: #1A1A17; font-weight: 600; font-size: 17px; padding: 16px; border-radius: 0.875rem">Consultar por WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" style="background: #FFFFFF; border-top: 1px solid #E5E4DF">
+    <div style="max-width: 820px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 28px">
+      <h2 style="margin: 0; font-family: Anton, sans-serif; font-weight: 400; font-size: 44px; line-height: 1; text-transform: uppercase">Preguntas frecuentes</h2>
+      <div style="display: flex; flex-direction: column; border-top: 1px solid #E5E4DF">
+        <sc-for list="{{faqs}}" as="q" hint-placeholder-count="5">
+          <div style="border-bottom: 1px solid #E5E4DF">
+            <button type="button" onClick="{{q.toggle}}" style="width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: transparent; border: none; text-align: left; padding: 18px 0; font-size: 17px; font-weight: 600; color: #1A1A17">
+              <span>{{q.q}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #9A3412">{{q.icon}}</span>
+            </button>
+            <sc-if value="{{q.open}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #4A4943">{{q.a}}</p>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="empezar" style="background: #9A3412; color: #FFFFFF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 80px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 28px">
+      <h2 style="margin: 0; flex: 1 1 520px; font-family: Anton, sans-serif; font-weight: 400; font-size: 54px; line-height: 1; text-transform: uppercase">Tu próxima silla vacía puede ser la última</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <a href="#registro" style="text-decoration: none; background: #F8F7F4; color: #1A1A17; font-weight: 600; font-size: 17px; padding: 16px 26px; border-radius: 0.875rem">Probar 14 días gratis</a>
+        <a href="#whatsapp" style="text-decoration: none; border: 1px solid #F3C9B5; color: #FFFFFF; font-weight: 600; font-size: 17px; padding: 15px 24px; border-radius: 0.875rem">Hablar por WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="background: #1A1A17; color: #C9C7BF">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 32px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; font-size: 14px">
+      <span>© 2026 Agendaste · Hecho en Buenos Aires</span>
+      <div style="display: flex; gap: 20px"><a href="#privacidad" style="color: #C9C7BF">Privacidad</a><a href="#terminos" style="color: #C9C7BF">Términos</a><a href="#contacto" style="color: #C9C7BF">hola@agendaste.com.ar</a></div>
+    </div>
+  </footer>
+
+  <a href="#whatsapp" aria-label="Hablar por WhatsApp" style="position: fixed; right: 20px; bottom: 20px; width: 58px; height: 58px; border-radius: 50%; background: #1A1A17; color: #F8F7F4; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(26,26,23,0.3)">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"></path></svg>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":5200}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { price: 22000, noShows: 3, openFaq: 0 };
+  }
+  renderVals() {
+    const st = this.state;
+    const fmt = (n) => '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const loss = st.price * st.noShows * 4.3;
+    const features = [
+      { title: 'Reserva en una sola pantalla', text: 'Servicio, barbero, día y horario a la vista. El cliente reserva en segundos, sin descargar nada.', soon: false },
+      { title: 'Recordatorios automáticos', text: 'Confirmación al reservar y recordatorio antes del turno, para que no se le pase.', soon: false },
+      { title: 'Reprogramar sin perder el turno', text: 'El cliente cambia el horario y el viejo se libera solo. Vos definís hasta cuántas horas antes.', soon: false },
+      { title: 'Tu link, tu web, tu marca', text: 'Logo, colores y tipografía propios. Compartís el link o lo sumás a tu web con dos líneas.', soon: false },
+      { title: 'Panel con tu día ordenado', text: 'Turnos de hoy y de la semana, ingresos estimados y WhatsApp con cada cliente a un toque.', soon: false },
+      { title: 'Señas con Mercado Pago', text: 'El cliente deja una seña al reservar. Si no viene, la seña queda para vos.', soon: true }
+    ];
+    const faqData = [
+      { q: '¿Necesito tarjeta para probar?', a: 'No. Tenés 14 días gratis con todas las funciones, sin cargar ninguna tarjeta.' },
+      { q: '¿Mis clientes tienen que descargar algo?', a: 'No. Reservan desde el navegador del celular con tu link, en menos de un minuto.' },
+      { q: '¿Lo puedo poner en mi web o en Instagram?', a: 'Sí. Compartís el link en tu bio de Instagram o pegás dos líneas en tu web y la reserva queda adentro, con tu marca.' },
+      { q: '¿Cómo se cobra?', a: '$5.000 por profesional activo por mes. Si tenés 3 barberos, pagás 3. Cancelás cuando quieras desde tu panel.' },
+      { q: '¿Qué pasa si un cliente quiere cambiar el turno?', a: 'Lo reprograma solo desde su link, hasta las horas antes que vos definas. Pasado ese límite, te escribe por WhatsApp.' }
+    ];
+    const faqs = faqData.map((f, i) => ({ ...f, open: st.openFaq === i, icon: st.openFaq === i ? '−' : '+', toggle: () => this.setState({ openFaq: st.openFaq === i ? -1 : i }) }));
+    return {
+      features, faqs,
+      planItems: ['Reservas ilimitadas', 'Link y QR de reservas', 'Logo, colores y tipografía propios', 'Reserva dentro de tu web', 'Recordatorios por mail', 'Panel para todo el equipo'],
+      priceLabel: fmt(st.price),
+      noShows: String(st.noShows),
+      lossLabel: fmt(loss),
+      priceUp: () => this.setState({ price: Math.min(st.price + 1000, 60000) }),
+      priceDown: () => this.setState({ price: Math.max(st.price - 1000, 5000) }),
+      noShowUp: () => this.setState({ noShows: Math.min(st.noShows + 1, 30) }),
+      noShowDown: () => this.setState({ noShows: Math.max(st.noShows - 1, 0) })
+    };
+  }
+}
+</script>
+</body>
+</html>
