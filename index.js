@@ -31,6 +31,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check para el hosting/monitoreo: no consulta la base, no usa sesión
+// y queda fuera del rate limit (que solo aplica a /api) y del sitemap ("health" es slug reservado)
+app.get('/health', (req, res) => {
+  res.set('Cache-Control', 'no-store').json({ ok: true });
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // index: false → "/" lo sirve la ruta de la landing (inyecta SALES_WHATSAPP)

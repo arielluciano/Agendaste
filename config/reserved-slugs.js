@@ -4,7 +4,7 @@
 const RESERVED_SLUGS = new Set([
   'panel', 'admin', 'superadmin', 'login', 'ingresar', 'registro', 'mis-turnos',
   'api', 'auth', 'embed', 'sitemap', 'robots', 'demo', 'ayuda', 'precios',
-  'terminos', 'privacidad', 'static', 'assets'
+  'terminos', 'privacidad', 'static', 'assets', 'health'
 ]);
 
 function isReservedSlug(slug) {
