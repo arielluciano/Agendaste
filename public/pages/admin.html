@@ -90,8 +90,9 @@
 
     /* Login limpio: sin sidebar hasta que haya sesión (body.is-authed lo pone admin.js) */
     body:not(.is-authed) .admin-sidebar { display: none; }
-    body:not(.is-authed) .admin-main { margin-left: 0; }
-    .login-screen { min-height: 80vh; min-height: 80dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem 1rem; text-align: center; }
+    /* Sin sesión el contenido ocupa toda la pantalla y el login queda centrado en ambos ejes, en cualquier ancho */
+    body:not(.is-authed) .admin-main { margin: 0; max-width: none; padding: 0; }
+    .login-screen { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem 1rem; text-align: center; box-sizing: border-box; }
     .login-screen .navbar-brand { font-size: 15px; }
     .login-screen h1 { font-family: var(--font-display); font-weight: 400; font-size: 34px; line-height: 1.05; text-transform: uppercase; margin: .5rem 0 .25rem; }
     .login-screen .btn-google { width: 100%; max-width: 320px; }
@@ -162,6 +163,9 @@
     .checklist li.done .check-text { color: var(--text-muted); text-decoration: line-through; }
     .check-text { flex: 1; }
     .checklist li a { font-size: 12px; color: var(--primary); white-space: nowrap; }
+    .checklist-done { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .checklist-done p { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+    .checklist-done .btn { width: auto; padding: 8px 16px; font-size: 11px; box-shadow: none; }
     @media (min-width: 960px) { .home-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
 
     /* Modales (QR, confirmaciones) */
@@ -388,12 +392,19 @@
           </div>
         </div>
 
-        <div class="card checklist" id="setup-checklist" hidden>
-          <div class="checklist-head">
-            <p class="section-label">Configurá tu negocio</p>
-            <span class="checklist-count" id="checklist-count"></span>
+        <div class="card checklist" id="setup-checklist" hidden aria-live="polite">
+          <div id="checklist-steps">
+            <div class="checklist-head">
+              <p class="section-label">Configurá tu negocio</p>
+              <span class="checklist-count" id="checklist-count"></span>
+            </div>
+            <ul id="checklist-items"></ul>
           </div>
-          <ul id="checklist-items"></ul>
+          <!-- Los 5 pasos hechos: mensaje final hasta que toque "Ocultar" -->
+          <div class="checklist-done" id="checklist-done" hidden>
+            <p>¡Listo! Tu negocio está configurado 🎉</p>
+            <button type="button" class="btn btn-outline" id="btn-dismiss-checklist" onclick="dismissChecklist()">Ocultar</button>
+          </div>
         </div>
       </div>
 

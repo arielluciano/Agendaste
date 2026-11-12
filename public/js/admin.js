@@ -207,9 +207,14 @@ async function refreshChecklist(reloadBarbers = false) {
     { done: branded,                    text: 'Subí tu logo o elegí tus colores',    href: '#personalizacion', cta: 'Personalizar' },
     { done: linkShared(),               text: 'Compartí tu link de reservas',        href: null,               cta: null }
   ];
+  // Ya lo ocultó con "Ocultar" (businesses.onboarding_dismissed_at): no se muestra más
+  if (panelBiz.onboarding_dismissed_at) { box.hidden = true; return; }
   const done = items.filter(i => i.done).length;
-  box.hidden = done === items.length;
-  if (box.hidden) return;
+  const complete = done === items.length;
+  box.hidden = false;
+  document.getElementById('checklist-done').hidden = !complete;
+  document.getElementById('checklist-steps').hidden = complete;
+  if (complete) return;
   document.getElementById('checklist-count').textContent = `${done} de ${items.length}`;
   document.getElementById('checklist-items').innerHTML = items.map(i => `
     <li class="${i.done ? 'done' : ''}">
@@ -217,6 +222,21 @@ async function refreshChecklist(reloadBarbers = false) {
       <span class="check-text">${i.text}<span class="visually-hidden">${i.done ? ' (hecho)' : ' (pendiente)'}</span></span>
       ${!i.done && i.href ? `<a href="${i.href}">${i.cta}</a>` : ''}
     </li>`).join('');
+}
+
+async function dismissChecklist() {
+  const btn = document.getElementById('btn-dismiss-checklist');
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/api/business/onboarding-dismissed', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('❌ ' + (data.error || 'No se pudo ocultar')); return; }
+    updatePanelBusiness(data); // con onboarding_dismissed_at el checklist queda oculto
+  } catch {
+    showToast('❌ Error de conexión');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── Modales, confirmaciones y menú "⋯" ────────

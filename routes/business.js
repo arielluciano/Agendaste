@@ -142,6 +142,21 @@ router.post('/link-shared', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/business/onboarding-dismissed → el dueño ocultó el checklist completo (no se muestra más)
+router.post('/onboarding-dismissed', requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      'UPDATE businesses SET onboarding_dismissed_at = COALESCE(onboarding_dismissed_at, NOW()) WHERE id = $1 RETURNING onboarding_dismissed_at',
+      [req.businessId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error POST /api/business/onboarding-dismissed:', err.message);
+    res.status(500).json({ error: 'Error guardando la preferencia' });
+  }
+});
+
 // PATCH /api/business/brand → actualizar solo la marca (no pisa el resto de los datos).
 // logo_url solo se toca si viene en el body; lo normal es manejarlo con /logo.
 router.patch('/brand', requireAuth, async (req, res) => {
