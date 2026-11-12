@@ -71,6 +71,19 @@ npm start
 6. En **Environment** cargá las mismas variables de tu `.env`
 7. Actualizá `REDIRECT_URI` con tu dominio de Render
 
+## Planes y precio fundador
+
+Los planes (Inicial, Pro, Plus) están en la tabla `plans` (ver `migrations/010_plans.sql`). La suscripción de Mercado Pago cobra el `monthly_price` del plan elegido, con 50% de descuento mientras `businesses.founder_until` esté vigente.
+
+**`founder_until` se asigna a mano, y ANTES de que el negocio se suscriba:**
+
+```sql
+UPDATE businesses SET founder_until = now() + interval '12 months' WHERE id = <id del negocio>;
+```
+
+- El descuento se calcula al crear la suscripción (y al cambiar de plan). Si se asigna a un negocio que ya está suscripto, Mercado Pago le sigue cobrando el precio completo hasta su próximo cambio de plan: no se baja solo.
+- Al vencer, el cron (`/api/cron/reminders`) actualiza el PreApproval al precio completo. 7 días antes le manda un mail al dueño avisándole.
+
 ## Tecnologías
 
 - **Backend:** Node.js + Express

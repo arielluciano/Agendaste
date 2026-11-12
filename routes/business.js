@@ -6,7 +6,7 @@ const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { validateWeekSchedule } = require('../services/validation');
-const { loadPlanContext, getPlanFeatures } = require('../services/access');
+const { loadPlanContext, getPlanFeatures, brandForPlan, BRAND_PRO_KEYS } = require('../services/access');
 const multer  = require('multer');
 const sharp   = require('sharp');
 const storage = require('../services/storage');
@@ -17,14 +17,11 @@ const { publicPrefix } = storage;
 // Campos que puede ver cualquiera (página de reservas). Nunca owner_email ni datos internos.
 const PUBLIC_BUSINESS_COLS = `id, name, slug, address, phone, description,
   brand_primary, brand_bg, brand_text, brand_font, logo_url`;
-const BRAND_PRO_KEYS = ['brand_primary', 'brand_bg', 'brand_text', 'brand_font'];
-
 // Página pública: colores y fuente solo si el plan los incluye (el logo va en todos los planes).
 // Si no se puede leer el plan, se muestra como siempre: nunca romper la página de reservas.
 async function publicBusiness(row) {
   try {
-    const features = getPlanFeatures(await loadPlanContext(row.id));
-    if (!features.custom_branding) for (const k of BRAND_PRO_KEYS) row[k] = null;
+    return brandForPlan(row, getPlanFeatures(await loadPlanContext(row.id)));
   } catch (err) {
     console.error('Plan del negocio (página pública):', err.message);
   }

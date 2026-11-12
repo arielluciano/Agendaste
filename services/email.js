@@ -354,5 +354,5 @@ async function sendFounderEndingEmail(data) {
 
 module.exports = {
   sendConfirmationEmail, sendReminderEmail, sendOwnerNoticeEmail,
-  sendPlanUsageEmail, sendFounderEndingEmail, buildPlanUsageHtml, buildFounderEndingHtml
+  sendPlanUsageEmail, sendFounderEndingEmail, buildPlanUsageHtml, buildFounderEndingHtml, buildReminderHtml
 };

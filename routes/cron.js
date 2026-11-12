@@ -7,6 +7,7 @@ const router  = express.Router();
 const db      = require('../config/database');
 const { sendReminderEmail } = require('../services/email');
 const { runFounderJobs } = require('../services/billing');
+const { loadPlanContext, getPlanFeatures, brandForPlan } = require('../services/access');
 const { MercadoPagoConfig, PreApproval } = require('mercadopago');
 
 const preApproval = new PreApproval(new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN }));
@@ -111,6 +112,20 @@ router.post('/reminders', requireCronSecret, async (req, res) => {
       [TZ_AR]
     );
 
+    // Marca del mail según el plan (mismo criterio que la página pública), una consulta por negocio
+    const featuresByBiz = new Map();
+    const businessForMail = async (biz) => {
+      if (!biz) return biz;
+      if (!featuresByBiz.has(biz.id)) {
+        featuresByBiz.set(biz.id, await loadPlanContext(biz.id).then(getPlanFeatures).catch((err) => {
+          console.error(`⚠️ Plan del negocio ${biz.id} (recordatorio):`, err.message);
+          return null; // sin plan legible: el mail sale como siempre
+        }));
+      }
+      const features = featuresByBiz.get(biz.id);
+      return features ? brandForPlan(biz, features) : biz;
+    };
+
     let sent = 0;
     const failed = [];
     for (const [i, appt] of claimed.rows.entries()) {
@@ -119,7 +134,7 @@ router.post('/reminders', requireCronSecret, async (req, res) => {
         await sendReminderEmail({
           to:         appt.client_email,
           clientName: appt.client_name,
-          business:   appt.business,
+          business:   await businessForMail(appt.business),
           service:    appt.service,
           barber:     appt.barber,
           date:       appt.date,

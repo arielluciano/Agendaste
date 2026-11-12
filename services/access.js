@@ -114,6 +114,16 @@ function getPlanFeatures(business, now = Date.now()) {
   return features;
 }
 
+// Colores y fuente propios solo con custom_branding (el logo va en todos los planes).
+// Mismo criterio para la página pública y los mails: devuelve una copia sin esos campos si el plan no los incluye.
+const BRAND_PRO_KEYS = ['brand_primary', 'brand_bg', 'brand_text', 'brand_font'];
+function brandForPlan(business, features) {
+  if (!business || (features && features.custom_branding)) return business;
+  const copy = { ...business };
+  for (const k of BRAND_PRO_KEYS) copy[k] = null;
+  return copy;
+}
+
 function isFounderActive(founderUntil, now = Date.now()) {
   return !!founderUntil && new Date(founderUntil).getTime() > now;
 }
@@ -130,5 +140,6 @@ function planPrice(plan, founderUntil, now = Date.now()) {
 
 module.exports = {
   isCourtesyActive, getAccess, ACTIVE_BUSINESS_SQL,
-  PLAN_FLAGS, loadPlanContext, getPlanFeatures, isFounderActive, founderPrice, planPrice
+  PLAN_FLAGS, loadPlanContext, getPlanFeatures, isFounderActive, founderPrice, planPrice,
+  BRAND_PRO_KEYS, brandForPlan
 };

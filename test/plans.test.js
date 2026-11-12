@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { getPlanFeatures, planPrice, founderPrice, isFounderActive } = require('../services/access');
+const { getPlanFeatures, planPrice, founderPrice, isFounderActive, brandForPlan } = require('../services/access');
 const { monthRangeAR, usageLevel, usageMessage, countMonthlyAppointments, notifyUsageIfNeeded } = require('../services/usage');
 const { runFounderJobs, changePlan } = require('../services/billing');
 
@@ -58,6 +58,21 @@ test('suscripción activa manda sobre la prueba; cancelada conserva su plan hast
   assert.strictEqual(gone.source, 'none');
   // Suscripción vieja (sin plan elegido): Pro
   assert.strictEqual(getPlanFeatures(biz({ owner_plan: 'active' }), NOW).code, 'pro');
+});
+
+test('marca según el plan: sin custom_branding van colores y fuente de Agendaste, el logo queda', () => {
+  const b = { id: 9, name: 'Barbe', brand_primary: '#112233', brand_bg: '#FFFFFF', brand_text: '#000000', brand_font: 'Anton', logo_url: 'https://x/logo.webp' };
+  const ini = brandForPlan(b, getPlanFeatures(biz({ owner_plan: 'active', plan_id: 1 }), NOW));
+  assert.deepStrictEqual([ini.brand_primary, ini.brand_bg, ini.brand_text, ini.brand_font, ini.logo_url], [null, null, null, null, 'https://x/logo.webp']);
+  assert.strictEqual(b.brand_primary, '#112233'); // no modifica el original
+  const pro = brandForPlan(b, getPlanFeatures(biz({ owner_plan: 'active', plan_id: 2 }), NOW));
+  assert.strictEqual(pro.brand_primary, '#112233');
+  // El mail de recordatorio con Inicial sale con el diseño de Agendaste
+  const { buildReminderHtml } = require('../services/email');
+  const mail = (business) => buildReminderHtml({ clientName: 'Ana', business, service: 'Corte', barber: 'Juan', date: '2026-11-20', time: '10:00' });
+  assert.doesNotMatch(mail(ini), /#112233/);
+  assert.match(mail(ini), /logo.webp/);
+  assert.match(mail(pro), /#112233/);
 });
 
 // ── Precio fundador ──
