@@ -3,6 +3,7 @@
 // ==============================
 // Uso:
 //   node scripts/cleanup-test-data.js           → prueba en seco: solo muestra qué se borraría (solo lecturas)
+//   node scripts/cleanup-test-data.js --cancel-mp → cancela en Mercado Pago las suscripciones pending de los negocios a borrar
 //   node scripts/cleanup-test-data.js --apply   → borra todo en UNA transacción (ROLLBACK si algo falla),
 //                                                 después borra los logos de Storage y recuenta
 // Las tablas que dependen de businesses se descubren por sus foreign keys, así una tabla nueva no queda afuera.
@@ -171,8 +172,57 @@ function printSubscriptions(subs) {
   console.log('   Cancelalas en Mercado Pago ANTES de --apply: al borrar la fila se pierde la referencia y MP seguiría cobrando.');
 }
 
+// ── --cancel-mp: cancela en Mercado Pago los preapprovals pending de los negocios a borrar ──
+// No toca la base. Sale con código 1 si alguna cancelación falla.
+async function cancelMercadoPago() {
+  const { MercadoPagoConfig, PreApproval } = require('mercadopago');
+  if (!process.env.MP_ACCESS_TOKEN) throw new Error('Falta MP_ACCESS_TOKEN en .env');
+  const preApproval = new PreApproval(new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN }));
+
+  const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  await client.connect();
+  let subs;
+  try {
+    subs = (await client.query(
+      `SELECT s.id, b.slug, s.mp_preapproval_id
+         FROM public.subscriptions s JOIN public.businesses b ON b.id = s.business_id
+        WHERE b.id IN (${DELETED_BUSINESSES})
+          AND s.status = 'pending' AND s.mp_preapproval_id IS NOT NULL
+        ORDER BY s.id`
+    )).rows;
+  } finally {
+    await client.end();
+  }
+
+  console.log(`Suscripciones pending a cancelar en Mercado Pago (${subs.length}):`);
+  for (const s of subs) console.log(`  sub #${s.id}  ${s.slug.padEnd(24)} ${s.mp_preapproval_id}`);
+
+  console.log('\nResultado:');
+  let failed = 0;
+  for (const s of subs) {
+    const label = `  sub #${String(s.id).padEnd(3)} ${s.mp_preapproval_id}`;
+    try {
+      const before = await preApproval.get({ id: s.mp_preapproval_id });
+      if (before.status === 'cancelled') {
+        console.log(`${label}  ya estaba cancelada en MP ✓`);
+        continue;
+      }
+      const after = await preApproval.update({ id: s.mp_preapproval_id, body: { status: 'cancelled' } });
+      if (after.status !== 'cancelled') throw new Error(`MP respondió status "${after.status}"`);
+      console.log(`${label}  ${before.status} → cancelled ✓`);
+    } catch (err) {
+      failed++;
+      console.log(`${label}  ❌ ${err.message || err}`);
+    }
+  }
+  console.log(failed ? `\n❌ ${failed} de ${subs.length} fallaron.` : `\nOK: ${subs.length} de ${subs.length} canceladas.`);
+  if (failed) process.exitCode = 1;
+}
+
 // ── Main ──────────────────────────────────────
 async function main() {
+  if (process.argv.includes('--cancel-mp')) return cancelMercadoPago();
+
   const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
   await client.connect();
   const sb = storageClient();
