@@ -403,7 +403,10 @@ function renderAppointmentsForSelectedDay() {
     const phone    = a.client_phone || a.clientPhone || '';
     const wa       = clientWaLink(a);
     const canMark  = isActive(a) && apptDateKey(a) <= todayKey;
-    const badge    = a.status === 'confirmed' ? 'Confirmado' : a.status === 'pending' ? 'Pendiente' : 'Cancelado';
+    const att      = isActive(a) && (a.attendance === 'attended' || a.attendance === 'no_show') ? a.attendance : null;
+    const badgeKey = att || a.status;
+    const badge    = att === 'attended' ? 'Asistió' : att === 'no_show' ? 'No vino'
+                   : a.status === 'confirmed' ? 'Confirmado' : a.status === 'pending' ? 'Pendiente' : 'Cancelado';
     const actions  = [];
     if (wa) actions.push(`<a class="btn-sm wa" href="${escHtml(wa)}" target="_blank" rel="noopener">${ICONS.chat} WhatsApp</a>`);
     if (canMark) {
@@ -422,7 +425,7 @@ function renderAppointmentsForSelectedDay() {
           <div>
             <div class="appt-time">${a.time ? escHtml(String(a.time).substring(0, 5)) : '—'}</div>
             <div class="appt-price">${money(a.price)}</div>
-            <div style="text-align:right;margin-top:4px"><span class="badge badge-${escHtml(a.status)}">${badge}</span></div>
+            <div style="text-align:right;margin-top:4px"><span class="badge badge-${escHtml(badgeKey)}">${badge}</span></div>
           </div>
         </div>
         ${actions.length ? `<div class="appt-actions">${actions.join('')}</div>` : ''}

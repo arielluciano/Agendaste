@@ -291,6 +291,8 @@ label {
 .badge-confirmed { background: var(--success-light); color: #0F6E56; }
 .badge-pending   { background: var(--warning-light); color: #854F0B; }
 .badge-cancelled { background: var(--danger-light);  color: #991B1B; }
+.badge-attended  { background: var(--success-light); color: #0F6E56; }
+.badge-no_show   { background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border); }
 
 /* ── Toast ──────────────────────────────────── */
 #toast {
