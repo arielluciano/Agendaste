@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { robotsTxt, sitemapXml, bookingHead } = require('../services/seo');
+const { robotsTxt, sitemapXml, bookingHead, bookingIcons } = require('../services/seo');
 const { isReservedSlug } = require('../config/reserved-slugs');
 
 test('slugs reservados', () => {
@@ -42,4 +42,10 @@ test('head de reserva: title, servicios, canonical, og:image, JSON-LD y noindex'
   assert.match(inactive, /<meta name="robots" content="noindex">/);
   assert.match(inactive, /<title>Reservá turno en Barbería &lt;Don&gt;<\/title>/);
   assert.doesNotMatch(inactive, /og:image/);
+});
+
+test('favicon de reserva: logo https del negocio, si no el de Agendaste', () => {
+  assert.strictEqual(bookingIcons({ logo_url: 'https://x.supabase.co/9/logo.webp?a=1&b="2"' }), '<link rel="icon" href="https://x.supabase.co/9/logo.webp?a=1&amp;b=&quot;2&quot;">');
+  assert.strictEqual(bookingIcons({ logo_url: 'http://inseguro/logo.png' }), null);
+  assert.strictEqual(bookingIcons({ logo_url: null }), null);
 });

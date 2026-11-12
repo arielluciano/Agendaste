@@ -90,6 +90,17 @@ async function initBusiness() {
 }
 
 // ── Marca del negocio ────────────────────────
+// Favicon = logo del negocio (el servidor ya lo pone en /{slug}; esto cubre cuando la página llega sin ese head)
+function setFavicon(url) {
+  const icons = document.querySelectorAll('link[rel="icon"]');
+  if (icons.length === 1 && icons[0].getAttribute('href') === url) return;
+  icons.forEach(l => l.remove());
+  const link = document.createElement('link');
+  link.rel  = 'icon';
+  link.href = url;
+  document.head.appendChild(link);
+}
+
 function applyBusinessBrand(biz) {
   if (window.AgendasteBrand) AgendasteBrand.applyBrand(document.documentElement, biz);
 
@@ -103,6 +114,7 @@ function applyBusinessBrand(biz) {
     img.alt            = '';
     img.referrerPolicy = 'no-referrer';
     parts.push(img);
+    setFavicon(biz.logo_url);
   }
   if (biz.name) {
     const name = document.createElement('span');

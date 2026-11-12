@@ -96,4 +96,10 @@ function bookingHead({ business, services = [], active }) {
   ].filter(Boolean).join('\n  ');
 }
 
-module.exports = { SITE_URL, ACTIVE_BUSINESS_SQL, robotsTxt, sitemapXml, bookingHead };
+// Favicon de /{slug}: el logo del negocio si tiene uno https (si no, null = queda el de Agendaste)
+function bookingIcons(business) {
+  const logo = httpsUrl(business && business.logo_url);
+  return logo ? `<link rel="icon" href="${htmlEscape(logo)}">` : null;
+}
+
+module.exports = { SITE_URL, ACTIVE_BUSINESS_SQL, robotsTxt, sitemapXml, bookingHead, bookingIcons };

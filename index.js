@@ -155,6 +155,11 @@ const clientHtml = fs.readFileSync(path.join(__dirname, 'public', 'client.html')
 if (!clientHtml.includes(CLIENT_TITLE)) {
   throw new Error('client.html: no se encontró el <title> que reemplaza el SEO de /:slug');
 }
+// Favicon de Agendaste en client.html: se cambia por el logo del negocio cuando tiene uno
+const CLIENT_ICONS = /<link rel="icon" href="\/favicon\.ico"[^>]*>\s*<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg">/;
+if (!CLIENT_ICONS.test(clientHtml)) {
+  throw new Error('client.html: no se encontraron los <link rel="icon"> que reemplaza el logo del negocio');
+}
 
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
@@ -173,6 +178,8 @@ app.get('/:slug', async (req, res) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="robots" content="noindex">
           <title>Negocio no encontrado — Agendaste</title>
+          <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg">
           <link rel="stylesheet" href="/css/styles.css">
         </head>
         <body>
@@ -192,7 +199,10 @@ app.get('/:slug', async (req, res) => {
     );
     const head = seo.bookingHead({ business, services: services.rows, active: business.active });
     allowEmbed(req, res);
-    res.type('html').send(clientHtml.replace(CLIENT_TITLE, () => head));
+    const icons = seo.bookingIcons(business);
+    let html = clientHtml.replace(CLIENT_TITLE, () => head);
+    if (icons) html = html.replace(CLIENT_ICONS, () => icons);
+    res.type('html').send(html);
   } catch (err) {
     console.error('Error verificando slug:', err.message);
     allowEmbed(req, res);
