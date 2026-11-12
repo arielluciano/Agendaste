@@ -1,40 +1,16 @@
 // ==============================
-// Agendaste — Configuración del negocio
+// Agendaste — Secciones de configuración del panel
+// (Horarios del local, Mi negocio, Personalización y Suscripción)
 // ==============================
-
-const DAY_NAMES  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Lun→Dom
-
-// ── Navbar / sesión ───────────────────────────
-async function loadUser() {
-  try {
-    const res  = await fetch('/auth/me');
-    const data = await res.json();
-    if (data.loggedIn) {
-      document.getElementById('user-area').innerHTML = `
-        <div class="user-pill">
-          <img src="${data.user.picture}" alt="${data.user.name}">
-          <span>${data.user.name}</span>
-          <a href="/auth/logout" class="btn btn-outline" style="font-size:12px;padding:5px 10px">Salir</a>
-        </div>`;
-    }
-  } catch {
-    // si falla, el navbar simplemente queda sin el pill de usuario
-  }
-}
-
-// ── Menú lateral / secciones ──────────────────
-function showSection(name) {
-  document.querySelectorAll('.settings-menu-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
-  document.querySelector(`.settings-menu-item[data-section="${name}"]`).classList.add('active');
-  document.getElementById('section-' + name).classList.add('active');
-}
+// Se carga en el panel antes de admin.js, que define DAY_NAMES, DAYS_ORDER, showToast,
+// subscribe, los selects de hora (timePickHtml / readTime) y el checklist (refreshChecklist).
 
 // ── Mi negocio ─────────────────────────────────
+// Devuelve los datos del negocio (los usa el inicio: link, QR y checklist) o null si falla
 async function loadBusiness() {
   try {
     const res  = await fetch('/api/business');
+    if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById('biz-name').value        = data.name        || '';
     document.getElementById('biz-address').value     = data.address     || '';
@@ -45,15 +21,14 @@ async function loadBusiness() {
     renderBizSchedule(data.schedule);
 
     if (data.slug) {
-      const link = `${window.location.origin}/${data.slug}`;
-      document.getElementById('business-link').value = link;
-      document.getElementById('business-link-container').style.display = 'block';
       document.getElementById('embed-snippet').value =
         `<div data-agendaste="${data.slug}"></div>\n<script src="${window.location.origin}/embed.js" async></script>`;
     }
     fillBrandForm(data);
+    return data;
   } catch {
     showToast('❌ Error cargando configuración');
+    return null;
   }
 }
 
@@ -63,12 +38,6 @@ function showMapPreview(address) {
     `<iframe src="https://maps.google.com/maps?q=${encoded}&output=embed&hl=es&z=15"
        allowfullscreen loading="lazy"></iframe>`;
   document.getElementById('map-preview').style.display = 'block';
-}
-
-function copyLink() {
-  const link = document.getElementById('business-link').value;
-  navigator.clipboard.writeText(link);
-  showToast('✅ Link copiado!');
 }
 
 async function saveBusiness() {
@@ -93,6 +62,7 @@ async function saveBusiness() {
     if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
     showToast('✅ Configuración guardada');
     if (address) showMapPreview(address);
+    updatePanelBusiness(await res.json().catch(() => null));
   } catch {
     showToast('❌ Error guardando configuración');
   }
@@ -196,6 +166,7 @@ async function uploadLogo(input) {
     if (!res.ok) { setLogoStatus('❌ ' + (data.error || 'No se pudo subir el logo'), true); return; }
     setLogo(data.logo_url);
     setLogoStatus('✅ Logo actualizado');
+    updatePanelBusiness({ logo_url: data.logo_url });
   } catch {
     setLogoStatus('❌ Error de conexión. Probá de nuevo.', true);
   } finally {
@@ -212,6 +183,7 @@ async function removeLogo() {
     if (!res.ok) { setLogoStatus('❌ ' + (data.error || 'No se pudo quitar el logo'), true); return; }
     setLogo(null);
     setLogoStatus('Logo quitado');
+    updatePanelBusiness({ logo_url: null });
   } catch {
     setLogoStatus('❌ Error de conexión. Probá de nuevo.', true);
   } finally {
@@ -245,19 +217,14 @@ function onBrandInput() {
   head.appendChild(document.createTextNode(brandBizName || 'Tu negocio'));
 }
 
-// La preview muestra el primer servicio activo real del negocio (nombre, precio y duración)
-async function loadPreviewService() {
+// La preview muestra el primer servicio activo real del negocio (nombre, precio y duración).
+// La llama renderServices (admin.js) cada vez que carga la lista de servicios.
+function setPreviewService(svc) {
   const set = (id, text) => { document.getElementById(id).textContent = text; };
-  let svc = null;
-  try {
-    // Sin business_id usa el negocio de la sesión; devuelve solo los activos, ordenados por id
-    const res = await fetch('/api/services');
-    if (res.ok) svc = (await res.json()).find(s => s.active) || null;
-  } catch {}
   if (!svc) {
     set('preview-svc-name', 'Todavía no tenés servicios activos');
     set('preview-svc-price', '');
-    set('preview-svc-dur', 'Cargalos desde el panel');
+    set('preview-svc-dur', 'Cargalos en Servicios');
     return;
   }
   set('preview-svc-name', svc.name);
@@ -279,6 +246,7 @@ async function saveBrand() {
     });
     if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
     showToast('✅ Personalización guardada');
+    updatePanelBusiness(brand);
   } catch {
     showToast('❌ Error guardando la personalización');
   }
@@ -294,60 +262,18 @@ function renderBizSchedule(schedule) {
   const byDay = {};
   (schedule || []).forEach(s => byDay[s.day_of_week] = s);
 
-  document.getElementById('biz-schedule-days').innerHTML = DAYS_ORDER.map(dow => {
-    const d      = byDay[dow] || { is_open: false, open_time: '09:00', close_time: '18:00' };
-    const open   = (d.open_time    || '09:00').substring(0, 5);
-    const close  = (d.close_time   || '18:00').substring(0, 5);
-    const open2  = (d.open_time_2  || '16:00').substring(0, 5);
-    const close2 = (d.close_time_2 || '20:00').substring(0, 5);
-    const split  = !!d.has_split;
-    return `
-      <div class="schedule-day ${split ? 'split' : ''}" data-dow="${dow}">
-        <div class="schedule-day-head">
-          <button class="toggle biz-sched-open-day ${d.is_open ? 'on' : ''}" onclick="this.classList.toggle('on')"></button>
-          <span class="schedule-day-name">${DAY_NAMES[dow]}</span>
-          <label class="schedule-split-toggle">
-            <button type="button" class="toggle toggle-sm biz-sched-split ${split ? 'on' : ''}" onclick="toggleBizSplit(this)" title="Horario partido"></button>
-            Partido
-          </label>
-        </div>
-        <div class="schedule-franjas">
-          <div class="schedule-franja-row">
-            <span class="schedule-franja-num">1</span>
-            <input type="time" class="biz-sched-open"  value="${open}">
-            <span class="schedule-sep">a</span>
-            <input type="time" class="biz-sched-close" value="${close}">
-          </div>
-          <div class="schedule-franja-row sched-franja-2">
-            <span class="schedule-franja-num">2</span>
-            <input type="time" class="biz-sched-open-2"  value="${open2}">
-            <span class="schedule-sep">a</span>
-            <input type="time" class="biz-sched-close-2" value="${close2}">
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function toggleBizSplit(btn) {
-  btn.classList.toggle('on');
-  btn.closest('.schedule-day').classList.toggle('split', btn.classList.contains('on'));
+  // Mismo armado que el horario de cada barbero (scheduleDayHtml en admin.js)
+  document.getElementById('biz-schedule-days').innerHTML =
+    DAYS_ORDER.map(dow => scheduleDayHtml(dow, byDay[dow] || { is_open: false })).join('');
 }
 
 function readBizSchedule() {
-  const days = document.querySelectorAll('#biz-schedule-days .schedule-day');
-  return Array.from(days).map(day => {
-    const split = day.querySelector('.biz-sched-split').classList.contains('on');
-    return {
-      day_of_week:  Number(day.dataset.dow),
-      is_open:      day.querySelector('.biz-sched-open-day').classList.contains('on'),
-      open_time:    day.querySelector('.biz-sched-open').value,
-      close_time:   day.querySelector('.biz-sched-close').value,
-      has_split:    split,
-      open_time_2:  split ? day.querySelector('.biz-sched-open-2').value  : null,
-      close_time_2: split ? day.querySelector('.biz-sched-close-2').value : null
-    };
-  });
+  return readScheduleDays('#biz-schedule-days').map(d => ({
+    ...d,
+    // El horario base guarda el segundo tramo solo si es partido
+    open_time_2:  d.has_split ? d.open_time_2  : null,
+    close_time_2: d.has_split ? d.close_time_2 : null
+  }));
 }
 
 async function applyScheduleToBarbers() {
@@ -361,13 +287,15 @@ async function applyScheduleToBarbers() {
     const data = await res.json();
     if (!res.ok) { showToast('❌ ' + (data.error || 'Error aplicando horario')); return; }
     showToast(`✅ Horario aplicado a ${data.barbersUpdated} barbero${data.barbersUpdated === 1 ? '' : 's'}`);
+    refreshChecklist(true);
   } catch {
     showToast('❌ Error aplicando horario a los barberos');
   }
 }
 
 // ── Suscripción ─────────────────────────────────
-async function loadSubscriptionStatus() {
+// Tarjeta de la sección Suscripción (el banner de prueba del inicio lo maneja admin.js)
+async function loadSubscriptionCard() {
   const card = document.getElementById('sub-card');
   try {
     const res = await fetch('/api/subscriptions/status');
@@ -426,25 +354,14 @@ function renderSubscription(data) {
     card.innerHTML = `
       <span class="badge badge-pending">PERÍODO DE PRUEBA</span>
       <p style="margin:.75rem 0 1.25rem;font-size:14px">Te quedan <strong>${data.days_left}</strong> día${data.days_left === 1 ? '' : 's'} de prueba gratuita.</p>
-      <button class="btn btn-primary" onclick="subscribe()">💳 Suscribirme ahora</button>`;
+      <button class="btn btn-primary" onclick="subscribe()">Suscribirme ahora</button>`;
     return;
   }
 
   card.innerHTML = `
     <span class="badge badge-cancelled">PRUEBA VENCIDA</span>
     <p style="margin:.75rem 0 1.25rem;font-size:14px">Tu período de prueba terminó. Suscribite para seguir usando Agendaste.</p>
-    <button class="btn btn-primary" onclick="subscribe()">💳 Suscribirme ahora</button>`;
-}
-
-async function subscribe() {
-  try {
-    const res  = await fetch('/api/subscriptions/create', { method: 'POST' });
-    const data = await res.json();
-    if (!res.ok) { showToast('❌ ' + (data.error || 'Error al crear la suscripción')); return; }
-    window.location.href = data.init_point;
-  } catch {
-    showToast('❌ Error conectando con Mercado Pago');
-  }
+    <button class="btn btn-primary" onclick="subscribe()">Suscribirme ahora</button>`;
 }
 
 function openCancelModal() {
@@ -471,6 +388,7 @@ async function confirmCancelSubscription() {
     }
     closeCancelModal();
     showToast('✅ Suscripción cancelada');
+    loadSubscriptionCard();
     loadSubscriptionStatus();
   } catch {
     showToast('❌ Error de conexión');
@@ -478,17 +396,3 @@ async function confirmCancelSubscription() {
     btn.textContent = 'Sí, cancelar';
   }
 }
-
-// ── Toast ─────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ── Init ──────────────────────────────────────
-loadUser();
-loadBusiness();
-loadPreviewService();
-loadSubscriptionStatus();

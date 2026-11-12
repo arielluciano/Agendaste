@@ -7,90 +7,40 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
-    /* ── Componentes existentes (sin modificar) ─── */
+    /* hidden siempre gana (ej. "Quitar logo" sin logo, aunque .btn tenga display propio) */
+    [hidden] { display: none !important; }
+
+    /* ── Componentes ─── */
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-    .appt-wa { color: inherit; text-decoration: underline; text-decoration-color: #25D366; text-underline-offset: 2px; }
     .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: left; }
     .stat-card-dark { background: var(--ink); border-color: var(--ink); color: var(--cream); }
     .stat-card-dark .stat-lbl { color: rgba(248,247,244,.55); }
     .stat-num { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1; color: var(--text); }
     .stat-card-dark .stat-num { color: var(--cream); }
     .stat-lbl { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 4px; }
-    .appt-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 8px; }
+    .btn-sm { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); transition: all .2s; font-family: var(--font-sans); text-decoration: none; white-space: nowrap; }
+    .btn-sm:hover { background: var(--bg-secondary); }
+    .btn-sm .icon { width: 15px; height: 15px; }
+    .btn-sm[aria-pressed="true"].att-yes { background: var(--success-light); border-color: var(--success); color: #0F6E56; }
+    .btn-sm[aria-pressed="true"].att-no { background: var(--danger-light); border-color: var(--danger); color: #991B1B; }
+    .btn-sm.wa { border-color: #25D366; }
+    .btn-sm.cancel { border-color: var(--danger); color: var(--danger); }
+    .btn-sm.cancel:hover { background: #FEE2E2; }
+    .btn-sm.primary { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+    .btn-sm.primary:hover { background: #000; }
+    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
+    .user-pill { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .user-pill img { width: 28px; height: 28px; border-radius: 50%; }
+
+    /* Turnos */
+    .appt-card { padding: 1rem; margin-bottom: 8px; }
+    .appt-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
     .appt-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
     .appt-detail { font-size: 12px; color: var(--text-muted); }
     .appt-time { font-size: 15px; font-weight: 600; text-align: right; }
-    .appt-price { font-size: 13px; color: var(--green); text-align: right; margin-top: 3px; }
-    .appt-actions { display: flex; gap: 6px; margin-top: 8px; }
-    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); transition: all .2s; }
-    .btn-sm:hover { background: var(--bg-secondary); }
-    .btn-sm.confirm { border-color: var(--green); color: var(--green); }
-    .btn-sm.confirm:hover { background: var(--green-light); }
-    .btn-sm.cancel { border-color: var(--red); color: var(--red); }
-    .btn-sm.cancel:hover { background: #FEE2E2; }
-    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-    .service-row:last-child { border: none; }
-    .price-input { width: 90px; padding: 6px 8px; text-align: right; border-radius: 6px; }
-    /* .toggle / .toggle-sm → definidos en styles.css */
-    .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; text-transform: uppercase; margin-bottom: 1rem; }
-    /* Login limpio: sin sidebar hasta que haya sesión (body.is-authed lo pone admin.js) */
-    body:not(.is-authed) .admin-sidebar { display: none; }
-    body:not(.is-authed) .admin-main { margin-left: 0; }
-    .login-screen { min-height: 80vh; min-height: 80dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem 1rem; text-align: center; }
-    .login-screen .navbar-brand { font-size: 15px; }
-    .login-screen h1 { font-family: var(--font-display); font-weight: 400; font-size: 34px; line-height: 1.05; text-transform: uppercase; margin: .5rem 0 .25rem; }
-    .login-screen .btn-google { width: 100%; max-width: 320px; }
-    .login-signup { font-size: 13px; color: var(--text-muted); margin: 0; }
-    .login-signup a, .login-back { color: var(--primary); }
-    .login-back { font-size: 13px; text-decoration: none; margin-top: .5rem; }
-    .login-back:hover { text-decoration: underline; }
-    .tabs { display: flex; gap: 4px; background: var(--bg-secondary); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
-    .tab { flex: 1; padding: 8px; border: none; background: transparent; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: var(--text-muted); font-family: inherit; }
-    .tab.active { background: var(--bg); color: var(--text); font-weight: 600; border: 1px solid var(--border); }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .user-pill { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
-    .user-pill img { width: 28px; height: 28px; border-radius: 50%; }
-    /* ── Panel de horarios (slide-in) ── */
-    .config-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; opacity: 0; pointer-events: none; transition: opacity .25s; }
-    .config-overlay.open { opacity: 1; pointer-events: auto; }
-    /* Cerrado: visibility hidden (sin sombra asomando en el borde, sin foco por teclado).
-       El visibility cambia al final de la animación de cierre y al principio de la de apertura. */
-    .config-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: var(--bg); border-left: 1px solid var(--border); z-index: 101; transform: translateX(100%); visibility: hidden; transition: transform .3s ease, visibility 0s linear .3s; overflow-y: auto; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,.12); }
-    .config-panel.open { transform: translateX(0); visibility: visible; transition: transform .3s ease, visibility 0s; }
-    .courtesy-note { margin: 0 0 1rem; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
-    .config-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 1; }
-    .config-body { padding: 1.5rem; flex: 1; }
-    .config-close { background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 2px 6px; border-radius: 6px; transition: background .2s; }
-    .config-close:hover { background: var(--bg-secondary); }
-    .gear-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; transition: background .2s; }
-    .gear-btn:hover { background: var(--bg-secondary); }
-    .schedule-day { padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .schedule-day:last-child { border: none; }
-    .schedule-day-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .schedule-day-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
-    .schedule-split-toggle { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); cursor: pointer; user-select: none; }
-    .schedule-franjas { display: flex; flex-direction: column; gap: 8px; padding-left: 48px; }
-    .schedule-franja-row { display: flex; align-items: center; gap: 8px; }
-    .schedule-franja-row.sched-franja-2 { display: none; }
-    .schedule-day.split .schedule-franja-row.sched-franja-2 { display: flex; }
-    .schedule-franja-num { display: none; width: 20px; flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
-    .schedule-day.split .schedule-franja-num { display: inline-block; }
-    .schedule-row input[type=time], .schedule-franja-row input[type=time] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 13px; }
-    .schedule-sep { font-size: 12px; color: var(--text-muted); }
-    @media (max-width: 380px) {
-      .schedule-day-head { flex-wrap: wrap; }
-      .schedule-franjas { padding-left: 0; }
-    }
-    /* Banner de prueba: una línea compacta. .urgent = 3 días o menos (color primary) */
-    .trial-banner { display: none; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem .5rem .5rem 1rem; margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); }
-    .trial-banner p { margin: 0; font-size: 14px; color: var(--text); }
-    .trial-banner .btn { width: auto; flex: none; white-space: nowrap; box-shadow: none; }
-    .trial-banner.urgent { background: var(--primary); border-color: var(--primary); }
-    .trial-banner.urgent p { color: #fff; font-weight: 600; }
-    .trial-banner.urgent .btn { background: var(--cream); color: var(--ink); }
-    .trial-banner.urgent .btn:hover { background: #fff; }
-    @media (max-width: 480px) { .trial-banner { padding-left: .75rem; gap: .5rem; } .trial-banner p { font-size: 13px; } .trial-banner .btn { padding-left: 14px; padding-right: 14px; } }
+    .appt-price { font-size: 13px; color: var(--primary); text-align: right; margin-top: 3px; }
+    .appt-actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .appt-actions .kebab { margin-left: auto; }
     .day-pills { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: .5rem; -webkit-overflow-scrolling: touch; }
     .day-pill { flex: 0 0 auto; min-width: 60px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); text-align: center; cursor: pointer; transition: all .2s; }
     .day-pill:hover { background: var(--bg-secondary); }
@@ -104,222 +54,273 @@
     .slot.selected { background: var(--primary); color: var(--cream); border-color: var(--primary); }
     .slot.taken { opacity: .4; cursor: default; text-decoration: line-through; font-size: 11px; }
 
+    /* Menú "⋯" */
+    .kebab { position: relative; }
+    .kebab-btn { width: 32px; height: 30px; display: inline-grid; place-items: center; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); cursor: pointer; }
+    .kebab-btn:hover { background: var(--bg-secondary); }
+    .kebab-menu { position: absolute; right: 0; top: calc(100% + 4px); min-width: 180px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); padding: 4px; z-index: 40; }
+    .kebab-menu button { display: block; width: 100%; text-align: left; padding: 9px 10px; border: none; background: none; border-radius: 6px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; }
+    .kebab-menu button:hover, .kebab-menu button:focus-visible { background: var(--bg-secondary); outline: none; }
+    .kebab-menu button.danger { color: #B42318; }
+
+    /* Servicios y barberos */
+    .service-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .service-row:last-child { border: none; }
+    .svc-name { font-size: 14px; font-weight: 600; }
+    .svc-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .row-off .svc-name, .row-off .svc-meta { opacity: .55; }
+    .svc-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; width: 100%; }
+    .svc-form .form-group { margin: 0; }
+    .svc-form-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+    .svc-form-actions .btn { width: auto; padding: 9px 16px; font-size: 11px; box-shadow: none; }
+    .unit-input { display: flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+    .unit-input:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(154,52,18,.15); }
+    .unit-input input { border: none !important; box-shadow: none !important; background: transparent; min-width: 0; }
+    .unit-input .unit { padding: 0 10px; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+    .add-block { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .add-block-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+    @media (max-width: 560px) {
+      .svc-form { grid-template-columns: 1fr 1fr; }
+      .svc-form .svc-f-name { grid-column: 1 / -1; }
+      .service-row { flex-wrap: wrap; }
+    }
+
+    /* Login limpio: sin sidebar hasta que haya sesión (body.is-authed lo pone admin.js) */
+    body:not(.is-authed) .admin-sidebar { display: none; }
+    body:not(.is-authed) .admin-main { margin-left: 0; }
+    .login-screen { min-height: 80vh; min-height: 80dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem 1rem; text-align: center; }
+    .login-screen .navbar-brand { font-size: 15px; }
+    .login-screen h1 { font-family: var(--font-display); font-weight: 400; font-size: 34px; line-height: 1.05; text-transform: uppercase; margin: .5rem 0 .25rem; }
+    .login-screen .btn-google { width: 100%; max-width: 320px; }
+    .login-signup { font-size: 13px; color: var(--text-muted); margin: 0; }
+    .login-signup a, .login-back { color: var(--primary); }
+    .login-back { font-size: 13px; text-decoration: none; margin-top: .5rem; }
+    .login-back:hover { text-decoration: underline; }
+
+    /* Panel de horarios por barbero (slide-in). Cerrado: visibility hidden (sin sombra asomando ni foco) */
+    .config-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .config-overlay.open { opacity: 1; pointer-events: auto; }
+    .config-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: var(--bg); border-left: 1px solid var(--border); z-index: 101; transform: translateX(100%); visibility: hidden; transition: transform .3s ease, visibility 0s linear .3s; overflow-y: auto; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,.12); }
+    .config-panel.open { transform: translateX(0); visibility: visible; transition: transform .3s ease, visibility 0s; }
+    .config-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 1; }
+    .config-body { padding: 1.5rem; flex: 1; }
+    .config-close { background: none; border: none; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 6px; display: inline-grid; place-items: center; transition: background .2s; }
+    .config-close:hover { background: var(--bg-secondary); }
+    .courtesy-note { margin: 0 0 1rem; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+
+    /* Horarios (local y barberos): selects de 24 h; día cerrado = deshabilitado y gris */
+    .schedule-day { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .schedule-day:last-child { border: none; }
+    .schedule-day-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .schedule-day-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+    .schedule-split-toggle { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); cursor: pointer; user-select: none; margin: 0; }
+    .schedule-franjas { display: flex; flex-direction: column; gap: 8px; padding-left: 48px; }
+    .schedule-franja-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .schedule-franja-row.sched-franja-2 { display: none; }
+    .schedule-day.split .schedule-franja-row.sched-franja-2 { display: flex; }
+    .schedule-franja-num { display: none; width: 20px; flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .schedule-day.split .schedule-franja-num { display: inline-block; }
+    .schedule-sep { font-size: 12px; color: var(--text-muted); }
+    .time-pick { display: inline-flex; align-items: center; gap: 2px; }
+    .time-pick select { width: auto; padding: 6px 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .time-pick .tp-colon { font-weight: 600; color: var(--text-muted); }
+    .schedule-day.closed .schedule-day-name { color: var(--text-muted); }
+    .schedule-day.closed .schedule-franjas, .schedule-day.closed .schedule-split-toggle { opacity: .45; }
+    .schedule-day.closed select { background: var(--bg-secondary); cursor: not-allowed; }
+    .schedule-day.closed .schedule-split-toggle, .schedule-day.closed .toggle-sm { cursor: not-allowed; }
+    @media (max-width: 400px) {
+      .schedule-day-head { flex-wrap: wrap; }
+      .schedule-franjas { padding-left: 0; }
+    }
+
+    /* Banner de prueba: una línea compacta. .urgent = 3 días o menos (color primary) */
+    .trial-banner { display: none; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem .5rem .5rem 1rem; margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); }
+    .trial-banner p { margin: 0; font-size: 14px; color: var(--text); }
+    .trial-banner .btn { width: auto; flex: none; white-space: nowrap; box-shadow: none; }
+    .trial-banner.urgent { background: var(--primary); border-color: var(--primary); }
+    .trial-banner.urgent p { color: #fff; font-weight: 600; }
+    .trial-banner.urgent .btn { background: var(--cream); color: var(--ink); }
+    .trial-banner.urgent .btn:hover { background: #fff; }
+    @media (max-width: 480px) { .trial-banner { padding-left: .75rem; gap: .5rem; } .trial-banner p { font-size: 13px; } .trial-banner .btn { padding-left: 14px; padding-right: 14px; } }
+
+    /* Inicio: link de reservas y checklist */
+    .home-grid { display: grid; gap: 12px; margin-bottom: 1.5rem; }
+    .link-card .section-label, .checklist .section-label { margin-top: 0; display: flex; align-items: center; gap: 6px; }
+    .link-input { font-family: var(--font-mono); font-size: 13px; background: var(--bg-secondary); cursor: text; }
+    .link-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .link-actions .btn { width: auto; flex: 1 1 auto; justify-content: center; padding: 9px 14px; font-size: 11px; box-shadow: none; display: inline-flex; align-items: center; gap: 6px; }
+    .checklist-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .checklist-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+    .checklist ul { list-style: none; margin: .25rem 0 0; padding: 0; }
+    .checklist li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+    .checklist li:first-child { border-top: none; }
+    .check-dot { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 1.5px solid var(--border); display: grid; place-items: center; color: #fff; }
+    .checklist li.done .check-dot { background: var(--success); border-color: var(--success); }
+    .checklist li.done .check-text { color: var(--text-muted); text-decoration: line-through; }
+    .check-text { flex: 1; }
+    .checklist li a { font-size: 12px; color: var(--primary); white-space: nowrap; }
+    @media (min-width: 960px) { .home-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
+
+    /* Modales (QR, confirmaciones) */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg); border-radius: var(--radius); padding: 1.5rem; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); }
+    .modal p { color: var(--text-muted); font-size: 14px; margin: .5rem 0 1.25rem; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions .btn { flex: 1; width: 100%; box-shadow: none; }
+    .qr-box { display: grid; place-items: center; margin: .5rem 0 1rem; }
+    .qr-box canvas { width: 240px; height: 240px; image-rendering: pixelated; border: 1px solid var(--border); border-radius: 8px; }
+    .btn-danger { background: var(--danger); color: var(--cream); width: auto; }
+    .btn-danger:hover { filter: brightness(0.92); }
+    .btn-outline-danger { background: var(--bg); border: 1px solid var(--danger); color: var(--danger); width: auto; }
+    .btn-outline-danger:hover { background: var(--danger-light); }
+
+    /* Mi negocio / Personalización / Suscripción */
+    .map-preview { border-radius: 10px; overflow: hidden; margin-top: 1rem; }
+    .map-preview iframe { display: block; width: 100%; height: 180px; border: 0; }
+    .sub-status-plan { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; white-space: nowrap; }
+    .brand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    .color-row input[type=color] { width: 44px; height: 40px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); cursor: pointer; flex: none; }
+    .color-row input[type=text] { flex: 1; min-width: 0; font-family: var(--font-mono); text-transform: uppercase; }
+    .color-row .btn { width: auto; padding: 7px 10px; font-size: 11px; flex: none; }
+    .brand-preview { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--brand-bg, var(--bg-secondary)); color: var(--text); position: sticky; top: 90px; }
+    .brand-preview-head { display: flex; align-items: center; gap: 10px; padding: .75rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); font-weight: 600; font-size: 14px; }
+    .brand-preview-head img { height: 28px; width: auto; max-width: 120px; object-fit: contain; }
+    .brand-preview-body { padding: 1rem; }
+    .brand-preview-title { font-family: var(--font, var(--font-display)); font-size: 22px; text-transform: uppercase; margin-bottom: .75rem; color: var(--text); }
+    .brand-preview-card { background: var(--bg); border: 2px solid var(--primary); border-radius: var(--radius-sm); padding: .75rem; margin-bottom: .75rem; }
+    .brand-preview-card strong { color: var(--text); }
+    .brand-preview-price { color: var(--primary); font-weight: 600; font-size: 18px; }
+    .brand-preview-muted { color: var(--text-muted); font-size: 12px; }
+    .brand-preview-slots { display: flex; gap: 6px; margin-bottom: .75rem; }
+    .brand-preview-slots span { flex: 1; text-align: center; padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+    .brand-preview-slots span.sel { background: var(--primary); border-color: var(--primary); color: var(--brand-contrast, var(--cream)); }
+    .brand-preview .btn-primary { background: var(--brand, var(--ink)); color: var(--brand-contrast, var(--cream)); box-shadow: none; }
+    .logo-row { display: flex; gap: 12px; align-items: flex-start; }
+    .logo-thumb { width: 72px; height: 72px; flex: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); display: grid; place-items: center; overflow: hidden; background: var(--bg-secondary);
+                  background-image: linear-gradient(45deg,#eee 25%,transparent 25%,transparent 75%,#eee 75%),linear-gradient(45deg,#eee 25%,transparent 25%,transparent 75%,#eee 75%);
+                  background-size: 12px 12px; background-position: 0 0,6px 6px; } /* damero: se ve la transparencia */
+    .logo-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .logo-thumb span { font-size: 11px; color: var(--text-muted); background: var(--bg); padding: 2px 6px; border-radius: 6px; }
+    .logo-actions { flex: 1; min-width: 0; }
+    .logo-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .logo-buttons .btn { width: auto; padding: 8px 12px; font-size: 11px; cursor: pointer; }
+    .logo-buttons .btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+    .logo-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+    .logo-status { font-size: 12px; margin-top: 4px; min-height: 1em; color: var(--text-muted); }
+    .logo-status.error { color: #991B1B; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .embed-snippet { width: 100%; font-family: var(--font-mono); font-size: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text); resize: none; }
+    @media (max-width: 760px) {
+      .brand-grid { grid-template-columns: 1fr; }
+      .brand-preview { position: static; }
+      #sub-card .flex-between { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    }
+
+    /* Secciones del panel (una visible a la vez, según el #hash) */
+    .panel-section { display: none; }
+    .panel-section.active { display: block; }
+    .panel-section > .card { padding: 1.25rem; }
+
     /* ══════════════════════════════════════════════
-       Layout admin — mobile base
+       Navegación única — celular: barra arriba + menú hamburguesa
        ══════════════════════════════════════════════ */
+    .admin-sidebar { display: flex; flex-direction: column; background: var(--bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 30; }
+    .admin-sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; min-height: 58px; }
+    .nav-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); cursor: pointer; }
+    .nav-toggle .icon-close { display: none; }
+    body.nav-open .nav-toggle .icon-open { display: none; }
+    body.nav-open .nav-toggle .icon-close { display: block; }
+    .admin-drawer { display: none; }
+    body.nav-open { overflow: hidden; }
+    body.nav-open .admin-drawer { display: flex; flex-direction: column; justify-content: space-between; gap: 1.5rem; position: fixed; top: 58px; left: 0; right: 0; bottom: 0; background: var(--ink); padding: 1rem; overflow-y: auto; }
+    body.paywalled .admin-sidebar-nav { display: none; }
 
-    /* Sidebar: en mobile es el navbar horizontal sticky */
-    .admin-sidebar {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: .875rem 1rem;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-    .admin-sidebar-top { display: flex; align-items: center; }
-    .admin-sidebar-nav { display: none; } /* nav de desktop — oculto en mobile */
+    .admin-sidebar-nav { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: var(--radius-sm); color: rgba(248,247,244,.6); text-decoration: none; font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; transition: background .2s, color .2s; }
+    .nav-item .icon { width: 18px; height: 18px; }
+    .nav-item:hover { background: rgba(248,247,244,.08); color: var(--cream); }
+    .nav-item[aria-current="page"] { background: rgba(248,247,244,.14); color: var(--cream); }
+    .nav-item:focus-visible { outline: 2px solid var(--cream); outline-offset: -2px; }
 
-    /* Contenido principal: container angosto en mobile */
-    .admin-main {
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
-    }
+    .admin-sidebar-user { border-top: 1px solid rgba(248,247,244,.1); padding-top: 1rem; width: 100%; }
+    .admin-sidebar-user .user-pill { color: rgba(248,247,244,.6); flex-wrap: wrap; gap: 6px 8px; }
+    .admin-sidebar-user .user-pill > span { color: var(--cream); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-sidebar-user .btn.btn-outline { border-color: rgba(248,247,244,.2); color: rgba(248,247,244,.75); background: transparent; font-size: 11px; padding: 5px 10px; width: auto; }
+    .admin-sidebar-user .btn.btn-outline:hover { background: rgba(248,247,244,.08); color: var(--cream); }
 
-    /* Rail derecho: oculto en mobile */
-    .admin-right-rail { display: none; }
-    .admin-appt-columns { display: block; }
+    .admin-main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 
     /* ══════════════════════════════════════════════
-       Layout admin — desktop ≥ 960px
+       Escritorio ≥ 960px: menú lateral fijo
        ══════════════════════════════════════════════ */
     @media (min-width: 960px) {
+      .admin-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: var(--ink); border-bottom: none; border-right: 1px solid rgba(248,247,244,.08); padding: 1.75rem 1rem 1.5rem; overflow-y: auto; }
+      .admin-sidebar-top { padding: 0 0 2.5rem; min-height: 0; }
+      .admin-sidebar .navbar-brand, .admin-sidebar .navbar-brand span:not(.brand-mark) { color: var(--cream); }
+      .admin-sidebar .brand-mark { background: rgba(248,247,244,.15); color: var(--cream); }
+      .nav-toggle { display: none; }
+      .admin-drawer, body.nav-open .admin-drawer { display: flex; flex-direction: column; justify-content: space-between; flex: 1; position: static; padding: 0; background: none; overflow: visible; }
+      body.nav-open { overflow: auto; }
+      .nav-item { font-size: 11px; padding: 10px 12px; gap: 10px; }
 
-      /* Sidebar → panel fijo vertical */
-      .admin-sidebar {
-        position: fixed;
-        left: 0; top: 0; bottom: 0;
-        width: 240px;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: space-between;
-        background: var(--ink);
-        border-bottom: none;
-        border-right: 1px solid rgba(248,247,244,.08);
-        padding: 1.75rem 1rem 1.5rem;
-        overflow-y: auto;
-      }
-
-      .admin-sidebar-top {
-        display: flex;
-        flex-direction: column;
-        gap: 2.5rem;
-        width: 100%;
-      }
-
-      /* Brand en fondo oscuro */
-      .admin-sidebar .navbar-brand { color: var(--cream); }
-      .admin-sidebar .navbar-brand span:not(.brand-mark) { color: var(--cream); }
-      .admin-sidebar .brand-mark {
-        background: rgba(248,247,244,.15);
-        color: var(--cream);
-      }
-
-      /* Nav de sidebar: visible y vertical */
-      .admin-sidebar-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        width: 100%;
-      }
-
-      /* Tabs reestilizados para sidebar oscuro */
-      .admin-sidebar-nav .tab {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: var(--radius-sm);
-        border: none;
-        background: none;
-        color: rgba(248,247,244,.45);
-        font-family: var(--font-mono);
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .12em;
-        cursor: pointer;
-        transition: background .2s, color .2s;
-        text-align: left;
-      }
-      .admin-sidebar-nav .tab:hover {
-        background: rgba(248,247,244,.08);
-        color: var(--cream);
-      }
-      .admin-sidebar-nav .tab.active {
-        background: rgba(248,247,244,.13);
-        color: var(--cream);
-        border: none;
-      }
-
-      /* User area al pie del sidebar */
-      .admin-sidebar-user {
-        border-top: 1px solid rgba(248,247,244,.1);
-        padding-top: 1rem;
-        width: 100%;
-      }
-      .admin-sidebar-user .user-pill {
-        color: rgba(248,247,244,.6);
-        flex-wrap: wrap;
-        gap: 6px 8px;
-      }
-      .admin-sidebar-user .user-pill > span {
-        color: var(--cream);
-        flex: 1;
-        min-width: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .admin-sidebar-user .gear-btn {
-        border-color: rgba(248,247,244,.2);
-        color: var(--cream);
-      }
-      .admin-sidebar-user .gear-btn:hover { background: rgba(248,247,244,.1); }
-      .admin-sidebar-user .btn.btn-outline {
-        border-color: rgba(248,247,244,.2);
-        color: rgba(248,247,244,.75);
-        background: transparent;
-        font-size: 11px;
-        padding: 5px 10px;
-        width: auto;
-      }
-      .admin-sidebar-user .btn.btn-outline:hover {
-        background: rgba(248,247,244,.08);
-        color: var(--cream);
-      }
-
-      /* Contenido principal: desplazado por el sidebar, sin max-width */
-      .admin-main {
-        margin-left: 240px;
-        max-width: none;
-        padding: 2rem 2.5rem;
-      }
-
-      /* Ocultar los tabs de mobile (el sidebar nav los reemplaza) */
-      .tabs { display: none; }
-
-      /* Stats: franja horizontal con divisores */
-      .stats-grid {
-        display: flex;
-        gap: 0;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-        margin-bottom: 2rem;
-        background: var(--bg);
-      }
-      .stat-card {
-        flex: 1;
-        border: none;
-        border-right: 1px solid var(--border);
-        border-radius: 0;
-        padding: 1.25rem 1.75rem;
-      }
+      .admin-main { margin-left: 240px; max-width: 1100px; padding: 2rem 2.5rem 3rem; }
+      .stats-grid { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 2rem; background: var(--bg); }
+      .stat-card { flex: 1; border: none; border-right: 1px solid var(--border); border-radius: 0; padding: 1.25rem 1.75rem; }
       .stat-card:last-child { border-right: none; }
       .stat-num { font-size: 52px; }
-
-      /* Paywall: centrado con ancho máximo en desktop */
       #paywall-screen { max-width: 560px; margin: 4rem auto; }
-
-      /* Dos columnas: turnos + rail */
-      .admin-appt-columns {
-        display: grid;
-        grid-template-columns: 1fr 260px;
-        gap: 1.5rem;
-        align-items: start;
-      }
-      .admin-right-rail { display: block; }
-      #tab-servicios, #tab-barberos { max-width: 640px; }
-
-      /* Rail card */
-      .admin-rail-card { padding: 1.25rem; }
-      .admin-rail-card + .admin-rail-card { margin-top: .75rem; }
+      #sec-servicios, #sec-barberos, #sec-horarios, #sec-negocio, #sec-suscripcion { max-width: 680px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Sidebar (desktop) / Navbar (mobile) ─── -->
+<!-- ── Navegación única: menú lateral (escritorio) / barra + menú hamburguesa (celular) ── -->
 <aside class="admin-sidebar">
   <div class="admin-sidebar-top">
-    <a href="/" class="navbar-brand">
-      <span class="brand-mark">A</span> Agendaste
-    </a>
-    <!-- Nav de desktop — oculto en mobile, manejado por .tabs en mobile -->
-    <nav class="admin-sidebar-nav" aria-label="Panel de administración">
-      <button class="tab active" onclick="showTab('turnos')">
-        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v2l1 1"/><circle cx="12" cy="15" r="3"/></svg>
-        Turnos
-      </button>
-      <button class="tab" onclick="showTab('servicios')">
-        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-        Servicios
-      </button>
-      <button class="tab" onclick="showTab('barberos')">
-        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Barberos
-      </button>
-    </nav>
+    <a href="/" class="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-controls="admin-drawer" aria-expanded="false" aria-label="Abrir menú" onclick="toggleNav()">
+      <svg class="icon icon-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      <svg class="icon icon-close" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
   </div>
-  <!-- User area: renderizado por JS. Mobile: derecha del navbar. Desktop: pie del sidebar. -->
-  <div id="user-area" class="admin-sidebar-user"></div>
+  <div class="admin-drawer" id="admin-drawer">
+    <nav class="admin-sidebar-nav" aria-label="Panel">
+      <a class="nav-item" href="#inicio" data-section="inicio">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Inicio
+      </a>
+      <a class="nav-item" href="#servicios" data-section="servicios">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>
+        Servicios
+      </a>
+      <a class="nav-item" href="#barberos" data-section="barberos">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Barberos
+      </a>
+      <a class="nav-item" href="#horarios" data-section="horarios">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Horarios
+      </a>
+      <a class="nav-item" href="#negocio" data-section="negocio">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/></svg>
+        Mi negocio
+      </a>
+      <a class="nav-item" href="#personalizacion" data-section="personalizacion">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        Personalización
+      </a>
+      <a class="nav-item" href="#suscripcion" data-section="suscripcion">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        Suscripción
+      </a>
+    </nav>
+    <!-- Usuario: renderizado por JS, al pie del menú -->
+    <div id="user-area" class="admin-sidebar-user"></div>
+  </div>
 </aside>
 
 <!-- ── Contenido principal ────────────────────── -->
@@ -339,69 +340,91 @@
 
   <!-- Paywall -->
   <div id="paywall-screen" style="display:none;text-align:center;padding:4rem 1rem">
-    <div style="font-size:56px;margin-bottom:1rem">🔒</div>
+    <svg class="icon icon-lg" style="margin-bottom:1rem;color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     <h2 style="margin-bottom:.75rem">Tu período de prueba venció</h2>
     <p style="color:var(--text-muted);font-size:15px;margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">
       Suscribite para seguir usando <strong>Agendaste.com.ar</strong> y no perder tus datos
     </p>
-    <button class="btn btn-primary" style="max-width:300px;margin:0 auto" onclick="suscribirse()">
-      💳 Suscribirme ahora
-    </button>
-    <p style="color:var(--text-muted);font-size:12px;margin-top:1rem">
-      🔒 Tus datos están guardados y seguros
-    </p>
+    <button class="btn btn-primary" style="max-width:300px;margin:0 auto" onclick="suscribirse()">Suscribirme ahora</button>
+    <p style="color:var(--text-muted);font-size:12px;margin-top:1rem">Tus datos están guardados y seguros</p>
   </div>
 
   <!-- Estado: logueado -->
   <div id="admin-view" style="display:none">
 
-    <!-- Banner de trial -->
     <div id="trial-banner" class="trial-banner">
       <p id="trial-text">Te quedan — días de prueba</p>
       <button type="button" class="btn btn-primary" onclick="subscribe()">Suscribirme</button>
     </div>
     <p id="courtesy-note" class="courtesy-note" hidden></p>
 
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-lbl">Turnos hoy</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-lbl">Mañana</div></div>
-      <div class="stat-card stat-card-dark"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos estimados hoy</div></div>
-    </div>
+    <!-- ── Inicio: link, checklist, resumen y turnos ── -->
+    <section class="panel-section" id="sec-inicio" aria-labelledby="ttl-inicio">
+      <h1 class="visually-hidden" id="ttl-inicio">Inicio</h1>
 
-    <!-- Tabs de mobile (ocultos en desktop — el sidebar nav los reemplaza) -->
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('turnos')">Turnos</button>
-      <button class="tab" onclick="showTab('servicios')">Servicios</button>
-      <button class="tab" onclick="showTab('barberos')">Barberos</button>
-    </div>
+      <div class="home-grid">
+        <div class="card link-card" id="link-card" hidden>
+          <p class="section-label">
+            <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Tu link de reservas
+          </p>
+          <label for="booking-link" class="visually-hidden">Link de reservas</label>
+          <input type="text" id="booking-link" class="link-input" readonly onclick="this.select()">
+          <div class="link-actions">
+            <button type="button" class="btn btn-primary" onclick="copyBookingLink()">
+              <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              Copiar
+            </button>
+            <button type="button" class="btn btn-whatsapp" onclick="shareBookingLink()">
+              <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+              Compartir por WhatsApp
+            </button>
+            <button type="button" class="btn btn-outline" onclick="openQr()">
+              <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+              Ver QR
+            </button>
+          </div>
+        </div>
 
-    <!-- Tab: Turnos -->
-    <div class="tab-panel active" id="tab-turnos">
-      <div class="flex-between" style="margin-bottom:1rem">
-        <p class="section-title" style="margin:0">Próximos turnos</p>
+        <div class="card checklist" id="setup-checklist" hidden>
+          <div class="checklist-head">
+            <p class="section-label">Configurá tu negocio</p>
+            <span class="checklist-count" id="checklist-count"></span>
+          </div>
+          <ul id="checklist-items"></ul>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-lbl">Turnos hoy</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-lbl">Mañana</div></div>
+        <div class="stat-card stat-card-dark"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Ingresos estimados hoy</div></div>
+      </div>
+
+      <div class="flex-between" style="margin-bottom:1rem;gap:8px;flex-wrap:wrap">
+        <h2 class="section-title" style="margin:0">Próximos turnos</h2>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" id="btn-toggle-add-appt" onclick="toggleAddAppointmentForm()">+ Agregar turno</button>
-          <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="loadAppointments()">↻ Actualizar</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="loadAppointments()">Actualizar</button>
         </div>
       </div>
 
       <div class="card" id="add-appointment-form" style="display:none;margin-bottom:1rem">
         <p class="section-label" style="margin-top:0">Nuevo turno manual</p>
         <div class="form-group">
-          <label>Barbero</label>
+          <label for="new-appt-barber">Barbero</label>
           <select id="new-appt-barber" onchange="loadManualSlots()">
             <option value="">Seleccioná un barbero</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Servicio</label>
+          <label for="new-appt-service">Servicio</label>
           <select id="new-appt-service" onchange="loadManualSlots()">
             <option value="">Seleccioná un servicio</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Fecha</label>
+          <label for="new-appt-date">Fecha</label>
           <input type="date" id="new-appt-date" onchange="loadManualSlots()">
         </div>
         <div class="form-group">
@@ -411,62 +434,198 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Nombre del cliente</label>
+          <label for="new-appt-name">Nombre del cliente</label>
           <input type="text" id="new-appt-name" placeholder="Ej: Martín García" oninput="checkManualForm()">
         </div>
         <div class="form-group">
-          <label>Teléfono</label>
+          <label for="new-appt-phone">Teléfono</label>
           <input type="tel" id="new-appt-phone" placeholder="Ej: +54 9 11 1234-5678" oninput="checkManualForm()">
         </div>
         <button class="btn btn-primary" id="btn-save-manual-appt" disabled onclick="saveManualAppointment()">Guardar turno</button>
       </div>
 
       <div class="day-pills" id="day-pills"></div>
+      <div id="appointments-list">
+        <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
+      </div>
+    </section>
 
-      <!-- Dos columnas en desktop: turnos a la izq, rail a la der -->
-      <div class="admin-appt-columns">
-        <div id="appointments-list">
-          <p class="text-muted" style="text-align:center;padding:2rem">Cargando turnos...</p>
+    <!-- ── Servicios ── -->
+    <section class="panel-section" id="sec-servicios">
+      <h2 class="section-title">Servicios y precios</h2>
+      <div class="card"><div id="services-list"></div></div>
+    </section>
+
+    <!-- ── Barberos ── -->
+    <section class="panel-section" id="sec-barberos">
+      <h2 class="section-title">Equipo de trabajo</h2>
+      <div class="card"><div id="barbers-list"></div></div>
+    </section>
+
+    <!-- ── Horarios: del local y de cada barbero ── -->
+    <section class="panel-section" id="sec-horarios">
+      <h2 class="section-title">Horarios</h2>
+      <div class="card" style="margin-bottom:1rem">
+        <p class="section-label" style="margin-top:0">Horario del local</p>
+        <div id="biz-schedule-days"></div>
+        <button type="button" class="btn btn-outline" style="width:100%;margin-top:1rem" onclick="applyScheduleToBarbers()">Aplicar a todos los barberos</button>
+        <button class="btn btn-primary" style="margin-top:.75rem" onclick="saveBusiness()">Guardar horario</button>
+      </div>
+      <div class="card">
+        <p class="section-label" style="margin-top:0">Horario de cada barbero</p>
+        <div id="schedule-barbers-list"><p class="text-muted">Cargando...</p></div>
+      </div>
+    </section>
+
+    <!-- ── Mi negocio ── -->
+    <section class="panel-section" id="sec-negocio">
+      <h2 class="section-title">Mi negocio</h2>
+      <div class="card">
+        <div class="form-group">
+          <label for="biz-name">Nombre del negocio</label>
+          <input type="text" id="biz-name" placeholder="Ej: Barber House">
+        </div>
+        <div class="form-group">
+          <label for="biz-address">Dirección</label>
+          <input type="text" id="biz-address" placeholder="Ej: Av. Corrientes 1234, CABA">
+        </div>
+        <div class="form-group">
+          <label for="biz-phone">Teléfono</label>
+          <input type="tel" id="biz-phone" placeholder="Ej: +54 9 11 1234-5678">
+        </div>
+        <div class="form-group">
+          <label for="biz-description">Descripción</label>
+          <textarea id="biz-description" rows="3"
+            placeholder="Breve descripción de tu barbería..."
+            style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;resize:vertical;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="biz-cancel-hours">Cancelaciones</label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px">
+            <span>Los clientes pueden cancelar o reprogramar hasta</span>
+            <input type="number" id="biz-cancel-hours" class="no-spin" inputmode="numeric" min="0" max="720" step="1" value="2" onwheel="this.blur()" style="width:80px">
+            <span>horas antes</span>
+          </div>
+          <p class="text-muted" style="font-size:12px;margin-top:4px">0 = sin límite.</p>
+        </div>
+        <button class="btn btn-primary" onclick="saveBusiness()">Guardar cambios</button>
+        <div id="map-preview" style="display:none">
+          <p style="font-size:13px;color:var(--text-muted);margin:1rem 0 6px"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> Ubicación</p>
+          <div class="map-preview" id="map-frame"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Personalización ── -->
+    <section class="panel-section" id="sec-personalizacion">
+      <h2 class="section-title">Personalización</h2>
+      <div class="card">
+        <p class="text-muted" style="font-size:13px;margin-bottom:1.25rem">Así se ve tu página de reservas. Si dejás un campo vacío se usa el diseño de Agendaste.</p>
+        <div class="brand-grid">
+          <div>
+            <div class="form-group">
+              <label for="brand-primary-text">Color principal (botones y selección)</label>
+              <div class="color-row">
+                <input type="color" id="brand-primary-color" data-key="brand_primary" aria-label="Elegir color principal">
+                <input type="text" id="brand-primary-text" data-key="brand_primary" placeholder="#9A3412" maxlength="7">
+                <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_primary')">Por defecto</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="brand-bg-text">Color de fondo</label>
+              <div class="color-row">
+                <input type="color" id="brand-bg-color" data-key="brand_bg" aria-label="Elegir color de fondo">
+                <input type="text" id="brand-bg-text" data-key="brand_bg" placeholder="#F8F7F4" maxlength="7">
+                <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_bg')">Por defecto</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="brand-text-text">Color del texto</label>
+              <div class="color-row">
+                <input type="color" id="brand-text-color" data-key="brand_text" aria-label="Elegir color del texto">
+                <input type="text" id="brand-text-text" data-key="brand_text" placeholder="#1A1A17" maxlength="7">
+                <button type="button" class="btn btn-outline" onclick="resetBrandColor('brand_text')">Por defecto</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="brand-font">Fuente de los títulos</label>
+              <select id="brand-font" onchange="onBrandInput()">
+                <option value="">Por defecto (Agendaste)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Logo</label>
+              <div class="logo-row">
+                <div class="logo-thumb" id="logo-thumb">
+                  <img id="logo-thumb-img" alt="Logo actual" hidden>
+                  <span id="logo-thumb-empty">Sin logo</span>
+                </div>
+                <div class="logo-actions">
+                  <div class="logo-buttons">
+                    <label class="btn btn-outline" for="logo-file" id="btn-upload-logo" role="button" tabindex="0"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Subir logo</label>
+                    <input type="file" id="logo-file" class="visually-hidden" accept="image/png,image/jpeg,image/webp" onchange="uploadLogo(this)">
+                    <button type="button" class="btn btn-outline" id="btn-remove-logo" onclick="removeLogo()" hidden>Quitar logo</button>
+                  </div>
+                  <p class="logo-hint">PNG, JPG o WebP · hasta 5 MB</p>
+                  <p class="logo-status" id="logo-status" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveBrand()">Guardar personalización</button>
+          </div>
+
+          <div>
+            <label style="display:block;margin-bottom:6px">Vista previa</label>
+            <div class="brand-preview" id="brand-preview">
+              <div class="brand-preview-head" id="brand-preview-head"></div>
+              <div class="brand-preview-body">
+                <p class="brand-preview-title">¿Qué servicio querés?</p>
+                <div class="brand-preview-card">
+                  <!-- Lo completa settings.js con el primer servicio activo del negocio -->
+                  <strong id="preview-svc-name">&nbsp;</strong>
+                  <div class="brand-preview-price" id="preview-svc-price">&nbsp;</div>
+                  <div class="brand-preview-muted" id="preview-svc-dur">&nbsp;</div>
+                </div>
+                <div class="brand-preview-slots"><span>10:00</span><span class="sel">10:30</span><span>11:00</span></div>
+                <button type="button" class="btn btn-primary" tabindex="-1">Continuar →</button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <aside class="admin-right-rail">
-          <div class="card admin-rail-card">
-            <p class="section-label" style="margin-top:0;margin-bottom:.75rem">Configuración</p>
-            <a href="/panel/settings" class="btn btn-outline" style="width:100%;margin-bottom:8px;font-size:11px">
-              <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-              Configurar negocio
-            </a>
-          </div>
-        </aside>
+        <div class="divider"></div>
+        <label for="embed-snippet">Insertá las reservas en tu web</label>
+        <p class="text-muted" style="font-size:13px;margin:4px 0 8px">Pegá este código en tu sitio donde quieras que aparezca el turnero.</p>
+        <textarea id="embed-snippet" class="embed-snippet" rows="3" readonly onclick="this.select()"></textarea>
+        <button class="btn btn-outline" style="margin-top:8px;width:auto" onclick="copyEmbedSnippet()">Copiar código</button>
       </div>
-    </div>
+    </section>
 
-    <!-- Tab: Servicios -->
-    <div class="tab-panel" id="tab-servicios">
-      <p class="section-title">Servicios y precios</p>
-      <div id="services-list"></div>
-    </div>
-
-    <!-- Tab: Barberos -->
-    <div class="tab-panel" id="tab-barberos">
-      <p class="section-title">Equipo de trabajo</p>
-      <div id="barbers-list"></div>
-    </div>
+    <!-- ── Suscripción ── -->
+    <section class="panel-section" id="sec-suscripcion">
+      <h2 class="section-title">Suscripción</h2>
+      <div class="card" id="sub-card">
+        <p class="text-muted" style="padding:1rem 0">Cargando estado de la suscripción...</p>
+      </div>
+    </section>
 
   </div><!-- /admin-view -->
 </main>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- Overlay + panel de horarios por barbero -->
 <div id="schedule-overlay" class="config-overlay" onclick="closeSchedule()"></div>
-<div id="schedule-panel" class="config-panel">
+<div id="schedule-panel" class="config-panel" role="dialog" aria-modal="true" aria-labelledby="schedule-title">
   <div class="config-header">
-    <span style="font-size:15px;font-weight:600">
-      <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <span style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px" id="schedule-title">
+      <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
       Horario — <span id="schedule-barber-name"></span>
     </span>
-    <button class="config-close" onclick="closeSchedule()">×</button>
+    <button class="config-close" onclick="closeSchedule()" aria-label="Cerrar">
+      <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
   </div>
   <div class="config-body">
     <div id="schedule-days"></div>
@@ -474,7 +633,47 @@
   </div>
 </div>
 
+<!-- QR del link de reservas -->
+<div class="modal-overlay" id="qr-overlay" onclick="if(event.target===this)closeQr()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <h3 id="qr-title">QR de tus reservas</h3>
+    <p>Imprimilo o compartilo: al escanearlo se abre tu página de reservas.</p>
+    <div class="qr-box" id="qr-box"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeQr()">Cerrar</button>
+      <button type="button" class="btn btn-primary" onclick="downloadQr()">Descargar PNG</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmación genérica (borrar servicio, cancelar turno) -->
+<div class="modal-overlay" id="confirm-overlay" onclick="if(event.target===this)closeConfirm(false)">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <h3 id="confirm-title"></h3>
+    <p id="confirm-text"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" id="confirm-cancel" onclick="closeConfirm(false)">Volver</button>
+      <button type="button" class="btn btn-danger" id="confirm-ok" onclick="closeConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmación: cancelar suscripción -->
+<div class="modal-overlay" id="cancel-sub-overlay">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cancel-sub-title">
+    <h3 id="cancel-sub-title">¿Cancelar tu suscripción?</h3>
+    <p>Vas a dejar de pagar, pero conservás el acceso hasta el final del período ya abonado. Después de esa fecha tu negocio queda bloqueado hasta que te vuelvas a suscribir.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCancelModal()">Volver</button>
+      <button class="btn btn-danger" id="btn-confirm-cancel-sub" onclick="confirmCancelSubscription()">Sí, cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/brand.js"></script>
 <script src="/js/whatsapp.js"></script>
+<script src="/js/qr.js"></script>
+<script src="/js/settings.js"></script>
 <script src="/js/admin.js"></script>
 </body>
 </html>

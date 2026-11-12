@@ -96,6 +96,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
     res.json({ success: true });
   } catch (err) {
+    // Turnos que apuntan a este servicio (FK): no se borra, así esos turnos no se tocan
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Este servicio tiene turnos registrados y no se puede borrar. Desactivalo para que no aparezca en las reservas.' });
+    }
     res.status(500).json({ error: 'Error borrando servicio' });
   }
 });

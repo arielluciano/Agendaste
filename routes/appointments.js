@@ -414,6 +414,33 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/appointments/:id/attendance → el dueño marca si el cliente vino
+// attendance: 'attended' | 'no_show' | null (desmarcar). Solo turnos de hoy o anteriores, no cancelados.
+const ATTENDANCE = new Set(['attended', 'no_show']);
+router.patch('/:id/attendance', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  const { attendance } = req.body || {};
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Turno inválido' });
+  if (attendance !== null && !ATTENDANCE.has(attendance)) {
+    return res.status(400).json({ error: 'La asistencia tiene que ser "attended", "no_show" o null' });
+  }
+  try {
+    const result = await db.query(
+      `UPDATE appointments SET attendance = $1
+        WHERE id = $2 AND business_id = $3 AND status <> 'cancelled' AND date <= $4
+        RETURNING id, attendance`,
+      [attendance, id, req.businessId, todayAR()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(409).json({ error: 'Solo se puede marcar la asistencia de turnos de hoy o anteriores que no estén cancelados' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error PATCH /api/appointments/:id/attendance:', err.message);
+    res.status(500).json({ error: 'Error guardando la asistencia' });
+  }
+});
+
 // PATCH /api/appointments/:id/cancel-mine → el cliente cancela su propio turno
 router.patch('/:id/cancel-mine', async (req, res) => {
   const clientEmail = req.session?.client?.email;

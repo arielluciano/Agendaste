@@ -78,3 +78,8 @@ test('waLink sin texto o sin teléfono', () => {
   assert.equal(waLink('11 2345-6789'), 'https://wa.me/5491123456789');
   assert.equal(waLink('', 'hola'), null);
 });
+
+test('waShareLink: compartir sin destinatario, texto codificado entero', () => {
+  assert.equal(window.waShareLink('Reservá tu turno en Barbería Demo: https://agendaste.com.ar/barberia-demo'),
+    'https://wa.me/?text=Reserv%C3%A1%20tu%20turno%20en%20Barber%C3%ADa%20Demo%3A%20https%3A%2F%2Fagendaste.com.ar%2Fbarberia-demo');
+});

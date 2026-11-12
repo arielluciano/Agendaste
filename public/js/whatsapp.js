@@ -46,6 +46,11 @@
     return `https://wa.me/${n}` + (text ? `?text=${encodeURIComponent(text)}` : '');
   }
 
+  // Compartir un texto sin destinatario fijo (WhatsApp deja elegir el chat): https://wa.me/?text=…
+  function waShareLink(text) {
+    return 'https://wa.me/?text=' + encodeURIComponent(String(text || ''));
+  }
+
   // Mensaje de turno confirmado (cliente → negocio), una línea por dato
   function bookingConfirmedText({ business, day, time, service, barber, address }) {
     return [
@@ -61,5 +66,6 @@
 
   window.normalizeArPhone     = normalizeArPhone;
   window.waLink               = waLink;
+  window.waShareLink          = waShareLink;
   window.bookingConfirmedText = bookingConfirmedText;
 })();

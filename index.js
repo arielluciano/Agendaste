@@ -57,7 +57,7 @@ const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
 const otpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
 
 // ── Rutas ────────────────────────────────────
-const { requireAuth, requireSession } = require('./middleware/auth');
+const { requireAuth } = require('./middleware/auth');
 
 app.use('/api', generalLimiter);
 app.use('/api/otp', otpLimiter);
@@ -96,9 +96,9 @@ app.get('/panel', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html'));
 });
 
-// Configuración del negocio (requiere sesión iniciada)
-app.get('/panel/settings', requireSession, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'pages', 'settings.html'));
+// La configuración ahora es una sección más del panel: la URL vieja lleva a "Mi negocio"
+app.get('/panel/settings', (req, res) => {
+  res.redirect(301, '/panel#negocio');
 });
 
 // /admin → /panel (301, con subruta y query). Temporal: /admin queda para un superadmin más adelante.
