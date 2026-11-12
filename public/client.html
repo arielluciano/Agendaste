@@ -17,7 +17,11 @@
     .btn-primary { background: var(--brand, var(--ink)); color: var(--brand-contrast, var(--cream)); }
     .btn-primary:hover { background: var(--brand-hover, #000); }
     .biz-logo { height: 32px; width: auto; max-width: 160px; object-fit: contain; display: block; }
-    .embed-credit { display: none; }
+    .navbar { background: var(--surface, var(--bg)); }
+    .navbar-brand .biz-name { font-family: var(--font, var(--font-display)); font-size: 20px; font-weight: 400; letter-spacing: .02em; line-height: 1.1; color: var(--text); }
+    /* "Reservas con Agendaste" chiquito al pie (también en embed) */
+    .embed-credit { text-align: center; font-size: 11px; color: var(--muted, var(--text-muted)); margin-top: 1.5rem; padding-bottom: 2px; }
+    .embed-credit a { color: inherit; }
     /* Honeypot anti-bots: fuera de pantalla, no display:none (algunos bots lo detectan) */
     .hp-field { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
     .booking-error { display: none; background: var(--danger-light); color: #991B1B; border: 1px solid var(--danger); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 1rem; }
@@ -97,14 +101,12 @@
     html.embed .navbar, html.embed footer, html.embed .mobile-bar { display: none !important; }
     html.embed body { min-height: 0; background: transparent; padding-bottom: 0; }
     html.embed .container { max-width: none; margin: 0; padding: 24px; }
-    html.embed .embed-credit { display: block; text-align: center; font-size: 11px; color: var(--muted, var(--text-muted)); margin-top: 1rem; padding-bottom: 2px; }
-    html.embed .embed-credit a { color: inherit; }
   </style>
 </head>
 <body>
 
 <nav class="navbar">
-  <a href="/" class="navbar-brand" id="navbar-brand"><span class="brand-mark">A</span> Agendaste</a>
+  <a href="/" class="navbar-brand" id="navbar-brand" style="visibility:hidden"><span class="brand-mark">A</span> Agendaste</a>
   <div class="nav-actions">
     <a href="/mis-turnos" id="link-mis-turnos" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Mis turnos</a>
     <a href="/auth/client/logout" id="btn-logout-client" class="btn btn-outline" style="font-size:13px;padding:7px 14px;display:none">Cerrar sesión</a>
@@ -221,7 +223,7 @@ l-32 32 -108 0 c-91 0 -116 -4 -153 -22z"/>
     <button class="btn btn-primary mt-1" onclick="resetBooking()">Reservar otro</button>
   </div>
 
-  <p class="embed-credit">Turnos con <a href="https://agendaste.com.ar" target="_blank" rel="noopener">Agendaste</a></p>
+  <p class="embed-credit">Reservas con <a href="https://agendaste.com.ar" target="_blank" rel="noopener">Agendaste</a></p>
 </div>
 
 <div class="mobile-bar" id="mobile-bar">

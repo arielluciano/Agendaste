@@ -71,6 +71,16 @@
     return target;
   }
 
+  // Texto secundario: el color de texto lo más suavizado posible hacia la superficie,
+  // sin bajar de 4.5:1 ni sobre la superficie ni sobre el fondo de página
+  function mutedOn(ink, surface, pageBg) {
+    for (let p = 0.55; p < 1; p += 0.05) {
+      const c = mix(ink, surface, p);
+      if (contrastRatio(c, surface) >= 4.5 && contrastRatio(c, pageBg) >= 4.5) return c;
+    }
+    return ink;
+  }
+
   // Carga la fuente de Google Fonts solo si está en la lista blanca
   function loadFont(name) {
     const family = FONTS[name];
@@ -107,7 +117,8 @@
       set('--primary-light', `color-mix(in srgb, ${primary} 12%, ${bg || '#FFFFFF'})`);
     }
 
-    // Fondo y superficie de referencia (sin marca: crema y blanco de Agendaste)
+    // Fondo y superficie de referencia (sin marca: crema y blanco de Agendaste).
+    // Superficie de la tarjeta de reserva: 5% más clara (fondo oscuro) o más oscura (fondo claro)
     const pageBg  = bg || '#F8F7F4';
     const surface = bg ? (isDark(bg) ? mix(bg, '#FFFFFF', 0.95) : mix(bg, '#000000', 0.95)) : '#FFFFFF';
 
@@ -117,20 +128,22 @@
       set('--bg-secondary', `color-mix(in srgb, ${bg} 94%, ${ink})`);
       // Superficie de tarjetas: un poco más clara que el fondo
       set('--bg', isDark(bg) ? `color-mix(in srgb, ${bg} 88%, #FFFFFF)` : `color-mix(in srgb, ${bg} 35%, #FFFFFF)`);
-      set('--border', `color-mix(in srgb, ${ink} 16%, ${bg})`);
-      // Superficie de la tarjeta de reserva: 5% más clara (fondo oscuro) o más oscura (fondo claro)
-      set('--surface', surface);
     }
 
-    if (primary) set('--border', mix(primary, pageBg, 0.35));
+    // Con cualquier dato de marca, superficie, borde y texto secundario salen de la marca
+    // (en vez de los grises fijos de Agendaste)
+    if (primary || bg || text) {
+      const ink = text || '#1A1A17';
+      set('--surface', surface);
+      set('--border', primary ? mix(primary, pageBg, 0.35) : mix(ink, pageBg, 0.16));
+      const muted = mutedOn(ink, surface, pageBg);
+      set('--muted', muted);
+      set('--text-muted', muted);
+    }
     // Texto de acento sobre --surface: siempre 4.5:1 (con el naranja de Agendaste si no hay primario)
     if (primary || bg) set('--accent-text', readableOn(primary || '#9A3412', surface));
 
-    if (text) {
-      set('--text', text);
-      set('--text-muted', `color-mix(in srgb, ${text} 62%, ${bg || '#FFFFFF'})`);
-      set('--muted', mix(text, pageBg, 0.65));
-    }
+    if (text) set('--text', text);
 
     if (biz.brand_font && FONTS[biz.brand_font]) {
       loadFont(biz.brand_font);

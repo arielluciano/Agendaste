@@ -87,15 +87,25 @@ async function initBusiness() {
 function applyBusinessBrand(biz) {
   if (window.AgendasteBrand) AgendasteBrand.applyBrand(document.documentElement, biz);
 
-  // Logo en el header (solo https; el backend ya lo valida al guardar)
+  // Header: logo (solo https; el backend ya lo valida al guardar) y nombre del negocio
+  const brand = $('navbar-brand');
+  const parts = [];
   if (biz.logo_url && /^https:\/\//i.test(biz.logo_url)) {
-    const brand = $('navbar-brand');
-    const img   = document.createElement('img');
+    const img = document.createElement('img');
     img.className      = 'biz-logo';
     img.src            = biz.logo_url;
-    img.alt            = biz.name || '';
+    img.alt            = '';
     img.referrerPolicy = 'no-referrer';
-    brand.replaceChildren(img);
+    parts.push(img);
+  }
+  if (biz.name) {
+    const name = document.createElement('span');
+    name.className   = 'biz-name';
+    name.textContent = biz.name;
+    parts.push(name);
+  }
+  if (parts.length) {
+    brand.replaceChildren(...parts);
     brand.href = `/${encodeURIComponent(slug)}`;
   }
 }
@@ -202,7 +212,9 @@ function renderServices() {
 }
 
 function selectService(id) {
+  if (id === selService?.id) return;
   selService = services.find(s => s.id === id) || null;
+  showBookingError('');
   renderServices();
   // La duración cambia la grilla: recargar manteniendo el día elegido
   loadAvailability(selDate);
@@ -230,7 +242,9 @@ function renderBarbers() {
 }
 
 function selectBarber(id) {
+  if (id === selBarber?.id) return;
   selBarber = barbers.find(b => b.id === id) || null;
+  showBookingError('');
   renderBarbers();
   return loadAvailability(null);
 }
@@ -288,11 +302,15 @@ function renderDays() {
   }).join('');
 }
 
+// El día se filtra en memoria: la disponibilidad de los 6 días ya vino en una sola llamada
 function selectDay(key) {
+  if (key === selDate) return;
   selDate = key;
+  selSlot = null;
+  showBookingError('');
   renderDays();
-  // Recargar para tener la ocupación al día
-  loadAvailability(key);
+  showDaySlots();
+  updateSummary();
 }
 
 function showDaySlots() {
@@ -443,6 +461,12 @@ async function resumePending(p) {
 }
 
 // ── Confirmar turno (llama a la API) ─────────
+// Si el backend no manda mensaje (ej. un proxy), texto según el estado
+const ERROR_BY_STATUS = {
+  409: 'Ese horario se acaba de ocupar. Elegí otro.',
+  429: 'Hiciste muchos intentos seguidos. Probá de nuevo en unos minutos.',
+  403: 'No se puede reservar ese turno.'
+};
 async function confirmBooking() {
   if (!(selService && selBarber && selDate && selSlot && formValid())) return;
   if (!isEmbed && !loggedClient) { savePendingAndLogin(); return; }
@@ -475,7 +499,7 @@ async function confirmBooking() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      showBookingError('❌ ' + (err.error || 'No se pudo confirmar el turno. Probá de nuevo.'));
+      showBookingError('❌ ' + (err.error || ERROR_BY_STATUS[res.status] || 'No se pudo confirmar el turno. Probá de nuevo.'));
       btn.textContent = confirmLabel();
       validate();
       // Si el horario se ocupó mientras tanto, refrescar la grilla
@@ -569,6 +593,7 @@ async function resetBooking() {
   if (!isEmbed) document.body.classList.add('has-bar');
   updateSummary();
   await initBusiness();
+  $('navbar-brand').style.visibility = '';   // recién ahora se sabe qué negocio mostrar
   await checkClientLogin();
   renderClientFields();
   await Promise.all([loadServices(), loadBarbers(), initReschedule()]);
