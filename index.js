@@ -77,6 +77,7 @@ app.use(require('./routes/register'));
 // Si la variable no está, el meta queda vacío y la landing oculta los botones de WhatsApp.
 const fs = require('fs');
 const seo = require('./services/seo');
+const { loadPlanContext, getPlanFeatures } = require('./services/access');
 const { isReservedSlug } = require('./config/reserved-slugs');
 const escapeAttr = (v) => String(v).replace(/[&"<>]/g, (c) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c]));
 const landingHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
@@ -160,6 +161,13 @@ const CLIENT_ICONS = /<link rel="icon" href="\/favicon\.ico"[^>]*>\s*<link rel="
 if (!CLIENT_ICONS.test(clientHtml)) {
   throw new Error('client.html: no se encontraron los <link rel="icon"> que reemplaza el logo del negocio');
 }
+// Funciones por plan (services/access.js): sin "embed" el ?embed=1 muestra la página normal;
+// con "remove_agendaste_footer" no va el "Reservas con Agendaste"
+const CLIENT_EMBED_FLAG = "if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.classList.add('embed');";
+const CLIENT_CREDIT = /\s*<p class="embed-credit">[\s\S]*?<\/p>/;
+if (!clientHtml.includes(CLIENT_EMBED_FLAG) || !CLIENT_CREDIT.test(clientHtml)) {
+  throw new Error('client.html: no se encontró el script de embed o el "Reservas con Agendaste" que se ajustan por plan');
+}
 
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
@@ -202,6 +210,13 @@ app.get('/:slug', async (req, res) => {
     const icons = seo.bookingIcons(business);
     let html = clientHtml.replace(CLIENT_TITLE, () => head);
     if (icons) html = html.replace(CLIENT_ICONS, () => icons);
+    try {
+      const features = getPlanFeatures(await loadPlanContext(business.id));
+      if (!features.embed) html = html.replace(CLIENT_EMBED_FLAG, '');
+      if (features.remove_agendaste_footer) html = html.replace(CLIENT_CREDIT, '');
+    } catch (err) {
+      console.error('Plan del negocio en /:slug:', err.message); // se sirve como siempre
+    }
     res.type('html').send(html);
   } catch (err) {
     console.error('Error verificando slug:', err.message);

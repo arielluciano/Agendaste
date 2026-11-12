@@ -6,6 +6,7 @@ const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { validateWeekSchedule } = require('../services/validation');
+const { loadPlanContext, getPlanFeatures } = require('../services/access');
 const multer  = require('multer');
 const sharp   = require('sharp');
 const storage = require('../services/storage');
@@ -16,6 +17,19 @@ const { publicPrefix } = storage;
 // Campos que puede ver cualquiera (página de reservas). Nunca owner_email ni datos internos.
 const PUBLIC_BUSINESS_COLS = `id, name, slug, address, phone, description,
   brand_primary, brand_bg, brand_text, brand_font, logo_url`;
+const BRAND_PRO_KEYS = ['brand_primary', 'brand_bg', 'brand_text', 'brand_font'];
+
+// Página pública: colores y fuente solo si el plan los incluye (el logo va en todos los planes).
+// Si no se puede leer el plan, se muestra como siempre: nunca romper la página de reservas.
+async function publicBusiness(row) {
+  try {
+    const features = getPlanFeatures(await loadPlanContext(row.id));
+    if (!features.custom_branding) for (const k of BRAND_PRO_KEYS) row[k] = null;
+  } catch (err) {
+    console.error('Plan del negocio (página pública):', err.message);
+  }
+  return row;
+}
 
 router.get('/', async (req, res) => {
   try {
@@ -23,6 +37,7 @@ router.get('/', async (req, res) => {
     if (req.query.slug) {
       result = await db.query(`SELECT ${PUBLIC_BUSINESS_COLS} FROM businesses WHERE slug = $1`, [req.query.slug]);
       if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+      return res.json(await publicBusiness(result.rows[0]));
     } else if (req.session?.business_id) {
       // Dueño logueado (panel / configuración): su propio negocio completo
       result = await db.query('SELECT * FROM businesses WHERE id = $1', [req.session.business_id]);
@@ -31,6 +46,7 @@ router.get('/', async (req, res) => {
       const bizId = parseInt(req.query.business_id) || 1;
       result = await db.query(`SELECT ${PUBLIC_BUSINESS_COLS} FROM businesses WHERE id = $1`, [bizId]);
       if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+      return res.json(await publicBusiness(result.rows[0]));
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -163,6 +179,17 @@ router.patch('/brand', requireAuth, async (req, res) => {
   const body = req.body || {};
   const { values, error } = validateBrand(body, req.businessId);
   if (error) return res.status(400).json({ error });
+
+  // Colores y fuente: solo planes con custom_branding (Pro, Plus, prueba y cortesía). Vaciarlos siempre se puede.
+  try {
+    const features = getPlanFeatures(await loadPlanContext(req.businessId));
+    if (!features.custom_branding && BRAND_PRO_KEYS.some((k) => values[k] !== null)) {
+      return res.status(403).json({ error: 'Los colores y la fuente están disponibles en el plan Pro.' });
+    }
+  } catch (err) {
+    console.error('Error PATCH /api/business/brand (plan):', err.message);
+    return res.status(500).json({ error: 'Error guardando la personalización' });
+  }
 
   const params = [values.brand_primary, values.brand_bg, values.brand_text, values.brand_font, req.businessId];
   let setLogo = '';

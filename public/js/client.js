@@ -448,7 +448,14 @@ function savePendingAndLogin() {
     }));
   } catch {}
   const next = window.location.pathname + window.location.search;
-  window.location.href = `/auth/client/google?next=${encodeURIComponent(next)}`;
+  const url  = `/auth/client/google?next=${encodeURIComponent(next)}`;
+  // Dentro de un iframe sin modo embed (plan sin embed): Google no abre en iframes → página completa
+  if (window.top !== window) {
+    try { window.top.location.href = new URL(url, window.location.origin).href; return; } catch {}
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
+  window.location.href = url;
 }
 
 function takePending() {

@@ -189,6 +189,39 @@
     .map-preview { border-radius: 10px; overflow: hidden; margin-top: 1rem; }
     .map-preview iframe { display: block; width: 100%; height: 180px; border: 0; }
     .sub-status-plan { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; white-space: nowrap; }
+    .sub-price-old { font-family: var(--font-sans); font-size: 13px; color: var(--text-muted); text-decoration: line-through; margin-right: 6px; }
+    .usage { margin-top: 1rem; }
+    .usage-head { display: flex; justify-content: space-between; gap: .5rem; font-size: 13px; margin-bottom: 6px; }
+    .usage-bar { height: 8px; border-radius: 99px; background: var(--bg-secondary); border: 1px solid var(--border); overflow: hidden; }
+    .usage-bar span { display: block; height: 100%; background: var(--success); border-radius: 99px; }
+    .usage-bar.warn span { background: var(--warning); }
+    .usage-bar.full span { background: var(--danger); }
+    .usage-note { margin: 6px 0 0; font-size: 12px; color: var(--text-muted); }
+    .usage-banner { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem .5rem .5rem 1rem; margin-bottom: 1.25rem; background: var(--warning-light); border: 1px solid var(--warning); border-radius: var(--radius); }
+    .usage-banner p { margin: 0; font-size: 14px; color: #854F0B; }
+    .usage-banner .btn { width: auto; flex: none; white-space: nowrap; box-shadow: none; }
+    .plan-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1rem; }
+    .plan-card { position: relative; display: flex; flex-direction: column; gap: .5rem; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .plan-card.featured { border: 2px solid var(--ink); }
+    .plan-card.current { border: 2px solid var(--success); }
+    .plan-card-tag { position: absolute; top: -10px; left: 12px; padding: 2px 8px; border-radius: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; background: var(--ink); color: var(--cream); }
+    .plan-card.current .plan-card-tag { background: var(--success); }
+    .plan-card-name { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .plan-card-price { font-family: var(--font-display); font-size: 26px; line-height: 1; }
+    .plan-card-price small { font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); }
+    .plan-card-price s { display: block; font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+    .plan-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+    .plan-card li { display: flex; gap: 6px; align-items: baseline; }
+    .plan-card li::before { content: "\2713"; color: var(--success); font-weight: 700; }
+    .plan-card li.soon { color: var(--text-muted); }
+    .plan-card li.soon::before { content: "\00B7"; color: var(--text-muted); }
+    .plan-card .btn { margin-top: auto; width: 100%; box-shadow: none; }
+    .plan-cards-note { margin: .75rem 0 0; font-size: 12px; color: var(--text-muted); }
+    .plan-lock { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: .6rem .75rem; margin: 0 0 1rem; font-size: 13px; background: var(--bg-secondary); border: 1px dashed var(--border); border-radius: var(--radius-sm); }
+    .plan-lock a { color: var(--primary); font-weight: 600; }
+    .brand-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .brand-fields:disabled { opacity: .5; }
+    #paywall-plans { max-width: 760px; margin: 0 auto; text-align: left; }
     .brand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
     .color-row { display: flex; gap: 8px; align-items: center; }
     .color-row input[type=color] { width: 44px; height: 40px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); cursor: pointer; flex: none; }
@@ -226,6 +259,7 @@
       .brand-grid { grid-template-columns: 1fr; }
       .brand-preview { position: static; }
       #sub-card .flex-between { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .plan-cards { grid-template-columns: 1fr; gap: 1rem; }
     }
 
     /* Secciones del panel (una visible a la vez, según el #hash) */
@@ -354,7 +388,7 @@
     <p style="color:var(--text-muted);font-size:15px;margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">
       Suscribite para seguir usando <strong>Agendaste.com.ar</strong> y no perder tus datos
     </p>
-    <button class="btn btn-primary" style="max-width:300px;margin:0 auto" onclick="suscribirse()">Suscribirme ahora</button>
+    <div id="paywall-plans" class="plan-cards" aria-label="Planes"></div>
     <p style="color:var(--text-muted);font-size:12px;margin-top:1rem">Tus datos están guardados y seguros</p>
   </div>
 
@@ -363,7 +397,11 @@
 
     <div id="trial-banner" class="trial-banner">
       <p id="trial-text">Te quedan — días de prueba</p>
-      <button type="button" class="btn btn-primary" onclick="subscribe()">Suscribirme</button>
+      <a class="btn btn-primary" href="#suscripcion">Elegir plan</a>
+    </div>
+    <div id="usage-banner" class="usage-banner" hidden>
+      <p id="usage-banner-text"></p>
+      <a class="btn btn-outline" href="#suscripcion">Ver planes</a>
     </div>
     <p id="courtesy-note" class="courtesy-note" hidden></p>
 
@@ -539,6 +577,8 @@
         <p class="text-muted" style="font-size:13px;margin-bottom:1.25rem">Así se ve tu página de reservas. Si dejás un campo vacío se usa el diseño de Agendaste.</p>
         <div class="brand-grid">
           <div>
+            <p class="plan-lock" id="brand-lock" hidden>Colores y fuente: Disponible en Pro · <a href="#suscripcion">Ver planes</a></p>
+            <fieldset class="brand-fields" id="brand-fields">
             <div class="form-group">
               <label for="brand-primary-text">Color principal (botones y selección)</label>
               <div class="color-row">
@@ -569,6 +609,7 @@
                 <option value="">Por defecto (Agendaste)</option>
               </select>
             </div>
+            </fieldset>
             <div class="form-group">
               <label>Logo</label>
               <div class="logo-row">
@@ -588,7 +629,7 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary" onclick="saveBrand()">Guardar personalización</button>
+            <button class="btn btn-primary" id="btn-save-brand" onclick="saveBrand()">Guardar personalización</button>
           </div>
 
           <div>
@@ -613,8 +654,11 @@
         <div class="divider"></div>
         <label for="embed-snippet">Insertá las reservas en tu web</label>
         <p class="text-muted" style="font-size:13px;margin:4px 0 8px">Pegá este código en tu sitio donde quieras que aparezca el turnero.</p>
-        <textarea id="embed-snippet" class="embed-snippet" rows="3" readonly onclick="this.select()"></textarea>
-        <button class="btn btn-outline" style="margin-top:8px;width:auto" onclick="copyEmbedSnippet()">Copiar código</button>
+        <p class="plan-lock" id="embed-lock" hidden>Disponible en Pro · <a href="#suscripcion">Ver planes</a></p>
+        <div id="embed-block">
+          <textarea id="embed-snippet" class="embed-snippet" rows="3" readonly onclick="this.select()"></textarea>
+          <button class="btn btn-outline" style="margin-top:8px;width:auto" onclick="copyEmbedSnippet()">Copiar código</button>
+        </div>
       </div>
     </section>
 
@@ -624,6 +668,8 @@
       <div class="card" id="sub-card">
         <p class="text-muted" style="padding:1rem 0">Cargando estado de la suscripción...</p>
       </div>
+      <div id="plan-cards" class="plan-cards" aria-label="Planes"></div>
+      <p class="plan-cards-note">Profesionales ilimitados en todos los planes. Si pasás el límite de turnos, tus clientes siguen reservando normalmente.</p>
     </section>
 
   </div><!-- /admin-view -->

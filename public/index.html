@@ -26,10 +26,12 @@
     "inLanguage": "es-AR",
     "description": "Turnos online para barberías y peluquerías: link de reservas con tu marca, recordatorios automáticos y panel para todo el equipo.",
     "offers": {
-      "@type": "Offer",
-      "price": "5000",
+      "@type": "AggregateOffer",
+      "lowPrice": "14900",
+      "highPrice": "39900",
+      "offerCount": "3",
       "priceCurrency": "ARS",
-      "description": "Por profesional por mes. 14 días de prueba gratis, sin tarjeta."
+      "description": "Planes mensuales por cantidad de turnos, con profesionales ilimitados. 14 días de prueba gratis, sin tarjeta."
     }
   }
   </script>
@@ -229,7 +231,7 @@
           <div class="calc__result">
             <span id="calc-loss-label" class="calc__result-label">PERDÉS POR MES</span>
             <output class="calc__loss" data-calc-out="loss" aria-labelledby="calc-loss-label" aria-live="polite">$283.800</output>
-            <p class="calc__note">Agendaste cuesta $5.000 por profesional al mes.</p>
+            <p class="calc__note">Agendaste cuesta desde $14.900 al mes, con todo tu equipo.</p>
           </div>
         </div>
       </div>
@@ -285,30 +287,58 @@
     <section id="precios" class="wrap pricing" aria-labelledby="precios-title">
       <div class="section-head section-head--center">
         <span class="eyebrow">PRECIOS</span>
-        <h2 id="precios-title" class="h2">Pagás por profesional, nada más</h2>
+        <h2 id="precios-title" class="h2">Elegí según tus turnos del mes</h2>
+        <p class="lead">Profesionales ilimitados en todos los planes. 14 días gratis con todo lo del Pro, sin tarjeta.</p>
       </div>
-      <div class="plans">
-        <article class="plan plan--main" aria-labelledby="plan-main-name">
-          <h3 id="plan-main-name" class="plan__name">AGENDASTE</h3>
-          <div class="plan__price"><span class="plan__amount">$5.000</span><span class="plan__unit">ARS / profesional / mes</span></div>
-          <p class="plan__note">14 días gratis, sin tarjeta. Cancelás cuando quieras.</p>
+      <p class="founder-band"><strong>PRECIO FUNDADOR</strong><span>50% durante 12 meses para los primeros 10 negocios.</span></p>
+      <div class="plans plans--tiers">
+        <article class="plan plan--tier" aria-labelledby="plan-inicial-name">
+          <h3 id="plan-inicial-name" class="plan__name">INICIAL</h3>
+          <div class="plan__price"><span class="plan__amount">$14.900</span><span class="plan__unit">ARS / mes</span></div>
+          <p class="plan__note">Hasta <strong>80 turnos por mes</strong>. Profesionales ilimitados.</p>
           <ul class="plan__list">
-            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Reservas ilimitadas</span></li>
             <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Link y QR de reservas</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Recordatorios por mail</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Tu logo en la página de reservas</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Panel para todo el equipo</span></li>
+          </ul>
+          <a class="btn btn--outline btn--block" href="/registro">Empezar gratis</a>
+        </article>
+        <article class="plan plan--main plan--featured" aria-labelledby="plan-pro-name">
+          <span class="plan__tag">RECOMENDADO</span>
+          <h3 id="plan-pro-name" class="plan__name">PRO</h3>
+          <div class="plan__price"><span class="plan__amount">$24.900</span><span class="plan__unit">ARS / mes</span></div>
+          <p class="plan__note">Hasta <strong>250 turnos por mes</strong>. Profesionales ilimitados.</p>
+          <ul class="plan__list">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Todo lo del Inicial</span></li>
             <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Logo, colores y tipografía propios</span></li>
             <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Reserva dentro de tu web</span></li>
-            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Recordatorios por mail</span></li>
-            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Panel para todo el equipo</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Recordatorios por WhatsApp <span class="badge-soon">PRÓXIMAMENTE</span></span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Señas con Mercado Pago <span class="badge-soon">PRÓXIMAMENTE</span></span></li>
           </ul>
           <a class="btn btn--primary btn--block" href="/registro">Empezar gratis</a>
         </article>
-        <article class="plan plan--web on-dark" aria-labelledby="plan-web-name">
-          <h3 id="plan-web-name" class="plan__name">WEB + RESERVAS CON TU MARCA</h3>
-          <div class="plan__price"><span class="plan__amount">A medida</span><span class="plan__unit">pago único + Agendaste</span></div>
-          <p class="plan__note">Te armamos la web de tu barbería, con tu logo, tus fotos, tus precios y la reserva integrada. Con tu dominio.</p>
-          <a class="btn btn--light btn--block" href="#" data-wa hidden target="_blank" rel="noopener">Consultar por WhatsApp</a>
+        <article class="plan plan--tier" aria-labelledby="plan-plus-name">
+          <h3 id="plan-plus-name" class="plan__name">PLUS</h3>
+          <div class="plan__price"><span class="plan__amount">$39.900</span><span class="plan__unit">ARS / mes</span></div>
+          <p class="plan__note">Hasta <strong>600 turnos por mes</strong>. Profesionales ilimitados.</p>
+          <ul class="plan__list">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Todo lo del Pro</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Sin el “Reservas con Agendaste”</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Soporte prioritario</span></li>
+          </ul>
+          <a class="btn btn--outline btn--block" href="/registro">Empezar gratis</a>
         </article>
       </div>
+      <p class="pricing__note">Si un mes pasás el límite, tus clientes siguen reservando normalmente: te avisamos para que elijas el plan que te conviene. Cambiás de plan o cancelás cuando quieras.</p>
+      <article class="plan plan--web plan--wide on-dark" aria-labelledby="plan-web-name">
+        <div class="plan--wide__copy">
+          <h3 id="plan-web-name" class="plan__name">WEB A MEDIDA CON TU RESERVA INTEGRADA</h3>
+          <div class="plan__price"><span class="plan__amount">A medida</span><span class="plan__unit">pago único + tu plan de Agendaste</span></div>
+          <p class="plan__note">Te armamos la web de tu barbería, con tu logo, tus fotos, tus precios y la reserva integrada. Con tu dominio.</p>
+        </div>
+        <a class="btn btn--light" href="#" data-wa hidden target="_blank" rel="noopener">Consultar por WhatsApp</a>
+      </article>
     </section>
 
     <!-- FAQ -->
@@ -318,7 +348,7 @@
         <div class="faq__list" data-faq>
           <div class="faq__item">
             <h3><button type="button" class="faq__q" aria-expanded="true" aria-controls="faq-a1"><span>¿Necesito tarjeta para probar?</span><span class="faq__icon" aria-hidden="true">−</span></button></h3>
-            <p id="faq-a1" class="faq__a">No. Tenés 14 días gratis con todas las funciones, sin cargar ninguna tarjeta.</p>
+            <p id="faq-a1" class="faq__a">No. Tenés 14 días gratis con todo lo del plan Pro, sin cargar ninguna tarjeta.</p>
           </div>
           <div class="faq__item">
             <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a2"><span>¿Mis clientes tienen que descargar algo?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
@@ -330,7 +360,7 @@
           </div>
           <div class="faq__item">
             <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a4"><span>¿Cómo se cobra?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
-            <p id="faq-a4" class="faq__a" hidden>$5.000 por profesional activo por mes. Si tenés 3 barberos, pagás 3. Cancelás cuando quieras desde tu panel.</p>
+            <p id="faq-a4" class="faq__a" hidden>Un precio fijo por mes según cuántos turnos recibís: Inicial $14.900 (hasta 80 turnos), Pro $24.900 (hasta 250) y Plus $39.900 (hasta 600). Profesionales ilimitados en todos los planes. Si un mes pasás el límite, tus clientes siguen reservando y te avisamos. Cambiás de plan o cancelás cuando quieras desde tu panel.</p>
           </div>
           <div class="faq__item">
             <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a5"><span>¿Qué pasa si un cliente quiere cambiar el turno?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>

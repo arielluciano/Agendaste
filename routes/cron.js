@@ -6,6 +6,10 @@ const crypto  = require('crypto');
 const router  = express.Router();
 const db      = require('../config/database');
 const { sendReminderEmail } = require('../services/email');
+const { runFounderJobs } = require('../services/billing');
+const { MercadoPagoConfig, PreApproval } = require('mercadopago');
+
+const preApproval = new PreApproval(new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN }));
 
 // Misma zona que todayAR()/nowMinutesAR() en routes/appointments.js (Argentina, -03:00 sin horario de verano)
 const TZ_AR = 'America/Argentina/Buenos_Aires';
@@ -60,7 +64,22 @@ const DUE_SQL = `
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// POST /api/cron/reminders → manda los recordatorios pendientes
+// Precio fundador (ver services/billing.js): aviso 7 días antes y, al vencer, PreApproval al precio completo.
+// Es idempotente y va en el mismo cron que los recordatorios; si falla no frena los recordatorios.
+async function founderJobs() {
+  try {
+    const r = await runFounderJobs({ preApproval });
+    if (r.notified.length || r.updated.length || r.failed.length) {
+      console.log(`💸 Precio fundador: ${r.notified.length} avisos, ${r.updated.length} actualizados, ${r.failed.length} fallidos`);
+    }
+    return r;
+  } catch (err) {
+    console.error('Error en tareas de precio fundador:', err.message);
+    return { error: true };
+  }
+}
+
+// POST /api/cron/reminders → manda los recordatorios pendientes (y corre las tareas de precio fundador)
 // ?dry=1 → solo lista qué turnos se mandarían, sin marcar ni enviar nada
 router.post('/reminders', requireCronSecret, async (req, res) => {
   try {
@@ -117,7 +136,8 @@ router.post('/reminders', requireCronSecret, async (req, res) => {
     }
 
     if (claimed.rows.length) console.log(`⏰ Recordatorios: ${sent} enviados, ${failed.length} fallidos`);
-    res.json({ claimed: claimed.rows.length, sent, failed });
+    const founder = await founderJobs();
+    res.json({ claimed: claimed.rows.length, sent, failed, founder });
   } catch (err) {
     console.error('Error POST /api/cron/reminders:', err.message);
     res.status(500).json({ error: 'Error procesando recordatorios' });

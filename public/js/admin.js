@@ -254,10 +254,11 @@ function closeModal(id) {
 
 let confirmResolve = null;
 // Devuelve una promesa: true si confirma
-function confirmDialog({ title, text, ok = 'Confirmar' }) {
+function confirmDialog({ title, text, ok = 'Confirmar', danger = true }) {
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-text').textContent  = text;
   document.getElementById('confirm-ok').textContent    = ok;
+  document.getElementById('confirm-ok').className      = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
   openModal('confirm-overlay');
   document.getElementById('confirm-cancel').focus();
   return new Promise(resolve => { confirmResolve = resolve; });
@@ -1165,14 +1166,27 @@ async function loadSubscriptionStatus() {
     } else {
       banner.style.display = 'none';
     }
+
+    // Límite blando del plan: aviso desde el 80% (las reservas nunca se cortan)
+    const usage = data.usage || {};
+    document.getElementById('usage-banner').hidden = !usage.level;
+    if (usage.level) {
+      document.getElementById('usage-banner-text').textContent = usage.message +
+        (usage.level >= 100 ? '. Tus clientes siguen reservando: te conviene subir de plan.' : '.');
+    }
   } catch {
     banner.style.display = 'none';
   }
 }
 
-async function subscribe() {
+// Elegir plan (inicial | pro | plus) → checkout de Mercado Pago
+async function subscribe(plan) {
   try {
-    const res  = await fetch('/api/subscriptions/create', { method: 'POST' });
+    const res  = await fetch('/api/subscriptions/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan })
+    });
     const data = await res.json();
     if (!res.ok) { showToast('❌ ' + (data.error || 'Error al crear la suscripción')); return; }
     window.location.href = data.init_point;
@@ -1193,20 +1207,11 @@ function showPaywall() {
   document.body.classList.add('paywalled');
   document.getElementById('admin-view').style.display = 'none';
   document.getElementById('paywall-screen').style.display = 'block';
-}
-
-async function suscribirse() {
-  try {
-    const res = await fetch('/api/subscriptions/create', { method: 'POST' });
-    const data = await res.json();
-    if (data.init_point) {
-      window.location.href = data.init_point;
-    } else {
-      showToast('❌ Error al crear la suscripción');
-    }
-  } catch {
-    showToast('❌ Error de conexión');
-  }
+  // Elegir plan desde el paywall (mismas tarjetas que Suscripción)
+  fetch('/api/subscriptions/status')
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => { if (d) renderPlanCards(d, document.getElementById('paywall-plans')); })
+    .catch(() => {});
 }
 
 // ── Init ──────────────────────────────────────

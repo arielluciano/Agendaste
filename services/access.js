@@ -54,4 +54,81 @@ const ACTIVE_BUSINESS_SQL = (alias) => `EXISTS (
      )
 )`;
 
-module.exports = { isCourtesyActive, getAccess, ACTIVE_BUSINESS_SQL };
+// ==============================
+// Planes: funciones y precio (único lugar donde se decide qué puede usar cada negocio)
+// ==============================
+const PLAN_FLAGS = ['custom_branding', 'embed', 'whatsapp', 'deposits', 'remove_agendaste_footer', 'priority_support'];
+const TRIAL_PLAN_CODE  = 'pro';      // prueba y cortesía = todo lo del Pro
+const FALLBACK_PLAN    = 'inicial';  // sin acceso ni plan: lo mínimo
+const FOUNDER_DISCOUNT = 0.5;
+
+// Todo lo que hace falta para decidir funciones y precio de un negocio, en una consulta.
+// plans = catálogo completo ordenado por precio. null si el negocio no existe.
+async function loadPlanContext(businessId, q = getDb()) {
+  const result = await q.query(
+    `SELECT b.id, b.plan_id, b.founder_until, b.courtesy_until,
+            o.plan AS owner_plan, o.trial_ends_at, o.access_until,
+            COALESCE((SELECT json_agg(p ORDER BY p.monthly_price) FROM plans p), '[]'::json) AS plans
+       FROM businesses b
+       LEFT JOIN owners o ON o.business_id = b.id
+      WHERE b.id = $1
+      LIMIT 1`,
+    [businessId]
+  );
+  return result.rows[0] || null;
+}
+
+// business: lo que devuelve loadPlanContext (owner_plan, trial_ends_at, access_until, courtesy_until, plan_id, plans).
+//   1. Cortesía vigente                       → Pro
+//   2. Suscripción activa                     → su plan (Pro si es una suscripción vieja sin plan)
+//   3. Prueba vigente                         → Pro
+//   4. Cancelada con período pago vigente     → su plan
+//   5. Nada de lo anterior                    → su plan o Inicial (igual el panel queda bloqueado)
+function getPlanFeatures(business, now = Date.now()) {
+  const b      = business || {};
+  const plans  = Array.isArray(b.plans) ? b.plans : [];
+  const byCode = (code) => plans.find((p) => p.code === code) || null;
+  const chosen = plans.find((p) => Number(p.id) === Number(b.plan_id)) || null;
+  const fut    = (d) => !!d && new Date(d).getTime() > now;
+
+  let source, plan;
+  if (b.owner_plan === 'courtesy' && (!b.courtesy_until || fut(b.courtesy_until))) {
+    source = 'courtesy'; plan = byCode(TRIAL_PLAN_CODE);
+  } else if (b.owner_plan === 'active') {
+    source = 'plan';     plan = chosen || byCode(TRIAL_PLAN_CODE);
+  } else if (fut(b.trial_ends_at)) {
+    source = 'trial';    plan = byCode(TRIAL_PLAN_CODE);
+  } else if (b.owner_plan === 'cancelled' && fut(b.access_until) && chosen) {
+    source = 'plan';     plan = chosen;
+  } else {
+    source = 'none';     plan = chosen || byCode(FALLBACK_PLAN);
+  }
+
+  const features = {
+    source,
+    code: plan ? plan.code : null,
+    name: plan ? plan.name : null,
+    monthly_appointment_limit: plan ? Number(plan.monthly_appointment_limit) : null
+  };
+  for (const k of PLAN_FLAGS) features[k] = !!(plan && plan[k]);
+  return features;
+}
+
+function isFounderActive(founderUntil, now = Date.now()) {
+  return !!founderUntil && new Date(founderUntil).getTime() > now;
+}
+
+// Precio fundador: 50% redondeado al peso
+function founderPrice(monthlyPrice) {
+  return Math.round(Number(monthlyPrice) * FOUNDER_DISCOUNT);
+}
+
+// Lo que se cobra por mes por ese plan, con el descuento fundador si está vigente
+function planPrice(plan, founderUntil, now = Date.now()) {
+  return isFounderActive(founderUntil, now) ? founderPrice(plan.monthly_price) : Number(plan.monthly_price);
+}
+
+module.exports = {
+  isCourtesyActive, getAccess, ACTIVE_BUSINESS_SQL,
+  PLAN_FLAGS, loadPlanContext, getPlanFeatures, isFounderActive, founderPrice, planPrice
+};

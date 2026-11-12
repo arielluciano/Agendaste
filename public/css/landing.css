@@ -278,6 +278,19 @@ button { font: inherit; cursor: pointer; }
 .plan__list svg { flex: none; margin-top: 2px; }
 .plan .btn { margin-top: 6px; }
 .plan--web .btn { margin-top: auto; }
+.plans--tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.plans--tiers .plan { max-width: none; position: relative; }
+.plan--tier { background: var(--white); border: 1px solid var(--border); }
+.plan__tag { position: absolute; top: -13px; left: 34px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; background: var(--ink); color: var(--cream); padding: 5px 10px; border-radius: 6px; }
+.plans--tiers .plan .btn { margin-top: auto; }
+.plans--tiers .plan__amount { font-size: 52px; }
+.plan__list .badge-soon { font-size: 10px; padding: 3px 6px; margin-left: 4px; }
+.founder-band { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; padding: 14px 20px; border-radius: var(--radius); background: var(--primary-tint); border: 1px solid var(--primary-tint-border); text-align: center; font-size: 16px; }
+.founder-band strong { font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; color: var(--primary); }
+.pricing__note { margin: 0; text-align: center; font-size: 15px; color: var(--text-muted); }
+.plan--wide { flex: none; max-width: none; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; }
+.plan--wide__copy { display: flex; flex-direction: column; gap: 14px; flex: 1 1 420px; min-width: 0; }
+.plan--wide .btn { margin-top: 0; flex: none; }
 
 /* ── FAQ ──────────────────────────────────── */
 .faq-band { background: var(--white); border-top: 1px solid var(--border); }
@@ -318,6 +331,12 @@ button { font: inherit; cursor: pointer; }
 /* ── Responsive ───────────────────────────── */
 @media (max-width: 1024px) {
   .hero__title { font-size: 64px; }
+  .plans--tiers .plan { padding: 26px; }
+  .plans--tiers .plan__amount { font-size: 44px; }
+}
+@media (max-width: 900px) {
+  .plans--tiers { grid-template-columns: 1fr; gap: 28px; max-width: 520px; margin: 0 auto; width: 100%; }
+  .plan__tag { left: 26px; }
 }
 
 @media (max-width: 760px) {
@@ -355,6 +374,7 @@ button { font: inherit; cursor: pointer; }
   .calc__loss { font-size: 48px; }
   .theme { min-height: 0; }
   .plan { flex: 1 1 100%; max-width: none; padding: 26px; }
+  .plan--wide .btn { width: 100%; }
   .plan__amount { font-size: 52px; }
 
   .cta { padding-top: 56px; padding-bottom: 88px; }

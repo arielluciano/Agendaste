@@ -5,7 +5,9 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuthNoTrialGate } = require('../middleware/auth');
-const { getAccess } = require('../services/access');
+const { getAccess, loadPlanContext, getPlanFeatures, isFounderActive, planPrice, PLAN_FLAGS } = require('../services/access');
+const { getUsage } = require('../services/usage');
+const { changePlan, latestSubscription } = require('../services/billing');
 const {
   MercadoPagoConfig,
   PreApproval,
@@ -13,7 +15,7 @@ const {
   WebhookSignatureValidator
 } = require('mercadopago');
 
-const PRICE_PER_BARBER = 5000; // ARS por barbero por mes
+// El monto sale del plan elegido (tabla plans, ver migrations/010_plans.sql), con 50% si es fundador.
 
 const mpConfig    = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 const preApproval = new PreApproval(mpConfig);
@@ -57,6 +59,15 @@ async function processPreapprovalUpdate(preapprovalId) {
   );
 
   if (businessId) {
+    // Autorizada: el plan de esa suscripción pasa a ser el plan del negocio
+    if (status === 'authorized') {
+      await db.query(
+        `UPDATE businesses b SET plan_id = s.plan_id
+           FROM subscriptions s
+          WHERE s.mp_preapproval_id = $1 AND s.plan_id IS NOT NULL AND b.id = s.business_id AND b.id = $2`,
+        [preapprovalId, businessId]
+      );
+    }
     const newPlan = status === 'authorized' ? 'active' : 'trial';
     // Un preapproval que no se autoriza no baja una cuenta de cortesía a 'trial'
     await db.query(
@@ -66,9 +77,10 @@ async function processPreapprovalUpdate(preapprovalId) {
   }
 }
 
-// POST /api/subscriptions/create → crea la suscripción en MP y devuelve el link de pago
+// POST /api/subscriptions/create { plan: 'inicial' | 'pro' | 'plus' } → crea la suscripción en MP y devuelve el link de pago
 router.post('/create', requireAuthNoTrialGate, async (req, res) => {
   const bizId = req.businessId;
+  const planCode = String(req.body?.plan || '');
 
   try {
     // Cortesía vigente: no se cobra
@@ -81,19 +93,24 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
     const business = bizResult.rows[0];
     if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
 
+    const planResult = await db.query('SELECT * FROM plans WHERE code = $1', [planCode]);
+    const plan = planResult.rows[0];
+    if (!plan) return res.status(400).json({ error: 'Elegí un plan.' });
+
+    // Con una suscripción activa no se crea otra: se cambia de plan (POST /change-plan)
+    const current = await latestSubscription(db, bizId);
+    if (access?.subscriptionActive && current?.status === 'authorized') {
+      return res.status(409).json({ error: 'Ya tenés una suscripción activa. Cambiá de plan desde Suscripción.' });
+    }
+
     const ownerResult = await db.query('SELECT * FROM owners WHERE business_id = $1 LIMIT 1', [bizId]);
     const owner = ownerResult.rows[0];
 
-    const barbersResult = await db.query(
-      'SELECT COUNT(*) FROM barbers WHERE business_id = $1 AND active = true',
-      [bizId]
-    );
-    const barberCount = Math.max(1, parseInt(barbersResult.rows[0].count, 10));
-    const amount = PRICE_PER_BARBER * barberCount;
+    const amount = planPrice(plan, business.founder_until);
 
     const subscription = await preApproval.create({
       body: {
-        reason: `Agendaste — Suscripción ${business.name} (${barberCount} barbero${barberCount > 1 ? 's' : ''})`,
+        reason: `Agendaste — Plan ${plan.name} · ${business.name}`,
         external_reference: String(bizId),
         payer_email: owner?.email,
         // MP exige una URL pública con HTTPS — en local hay que setear BASE_URL (ej. túnel ngrok)
@@ -109,15 +126,28 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
     });
 
     await db.query(
-      `INSERT INTO subscriptions (business_id, mp_preapproval_id, status, amount)
-       VALUES ($1, $2, $3, $4)`,
-      [bizId, subscription.id, subscription.status || 'pending', amount]
+      `INSERT INTO subscriptions (business_id, mp_preapproval_id, status, amount, plan_id)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [bizId, subscription.id, subscription.status || 'pending', amount, plan.id]
     );
 
-    res.json({ init_point: subscription.init_point, amount, barber_count: barberCount });
+    res.json({ init_point: subscription.init_point, amount, plan: plan.code });
   } catch (err) {
     console.error('Error creando suscripción MP:', err.message);
     res.status(500).json({ error: 'Error creando la suscripción' });
+  }
+});
+
+// POST /api/subscriptions/change-plan { plan } → actualiza el monto del PreApproval (desde el próximo cobro).
+// Si Mercado Pago rechaza el cambio, el plan del negocio no se toca.
+router.post('/change-plan', requireAuthNoTrialGate, async (req, res) => {
+  try {
+    const r = await changePlan(req.businessId, req.body?.plan, { preApproval });
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    res.json({ success: true, plan: r.plan.code, plan_name: r.plan.name, amount: r.amount });
+  } catch (err) {
+    console.error('Error POST /api/subscriptions/change-plan:', err.message);
+    res.status(500).json({ error: 'Error cambiando de plan' });
   }
 });
 
@@ -181,6 +211,23 @@ router.get('/status', requireAuthNoTrialGate, async (req, res) => {
     const trialActive = msLeft > 0;
     const daysLeft    = trialActive ? Math.ceil(msLeft / (1000 * 60 * 60 * 24)) : 0;
 
+    // Plan, funciones, precios (con precio fundador si corresponde) y uso del mes
+    const ctx      = await loadPlanContext(req.businessId);
+    const features = getPlanFeatures(ctx);
+    const founderActive = isFounderActive(ctx?.founder_until);
+    const plans = (ctx?.plans || []).map((p) => {
+      const plan = {
+        code: p.code, name: p.name,
+        monthly_price: Number(p.monthly_price),
+        price: planPrice(p, ctx.founder_until),
+        monthly_appointment_limit: Number(p.monthly_appointment_limit)
+      };
+      for (const k of PLAN_FLAGS) plan[k] = !!p[k];
+      return plan;
+    });
+    const current = plans.find((p) => (ctx?.plans || []).some((x) => Number(x.id) === Number(ctx.plan_id) && x.code === p.code)) || null;
+    const usage = await getUsage(req.businessId, features);
+
     res.json({
       plan: owner.plan || 'trial',
       trial_ends_at: trialEndsAt,
@@ -191,7 +238,14 @@ router.get('/status', requireAuthNoTrialGate, async (req, res) => {
       access_until: owner.access_until || null,
       // Cortesía vigente: acceso completo, sin cobro ni banner de prueba. courtesy_until null = sin vencimiento
       courtesy_active: !!owner.courtesyActive,
-      courtesy_until: owner.courtesyActive ? owner.courtesy_until : null
+      courtesy_until: owner.courtesyActive ? owner.courtesy_until : null,
+      plan_code: current?.code || null,
+      plan_name: current?.name || null,
+      features,
+      plans,
+      founder_active: founderActive,
+      founder_until: founderActive ? ctx.founder_until : null,
+      usage
     });
   } catch (err) {
     console.error('Error GET /api/subscriptions/status:', err.message);

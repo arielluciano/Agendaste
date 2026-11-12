@@ -200,7 +200,8 @@ function resetBrandColor(key) {
 
 // Preview en vivo: aplica la marca sobre el contenedor de la preview
 function onBrandInput() {
-  const brand   = { ...readBrandForm(), logo_url: brandLogoUrl };
+  // Plan sin colores ni fuente: la preview muestra el diseño de Agendaste (lo que ve el cliente)
+  const brand   = { ...(brandLocked ? {} : readBrandForm()), logo_url: brandLogoUrl };
   const preview = document.getElementById('brand-preview');
   AgendasteBrand.applyBrand(preview, brand);
 
@@ -295,73 +296,186 @@ async function applyScheduleToBarbers() {
 
 // ── Suscripción ─────────────────────────────────
 // Tarjeta de la sección Suscripción (el banner de prueba del inicio lo maneja admin.js)
+// ── Suscripción y planes ───────────────────────
+// Todo sale de GET /api/subscriptions/status: estado, plan actual, precios (con precio fundador),
+// funciones del plan (features) y uso del mes.
+let subStatus = null;
+const AR_DATE = { timeZone: 'America/Argentina/Buenos_Aires' };
+const fmtDate = d => new Date(d).toLocaleDateString('es-AR', AR_DATE);
+const fmtMoney = n => '$' + Number(n || 0).toLocaleString('es-AR');
+
 async function loadSubscriptionCard() {
   const card = document.getElementById('sub-card');
   try {
     const res = await fetch('/api/subscriptions/status');
     if (!res.ok) {
       card.innerHTML = '<p class="text-muted" style="padding:1rem 0">Error cargando la suscripción</p>';
-      return;
+      return null;
     }
-    renderSubscription(await res.json());
+    subStatus = await res.json();
+    renderSubscription(subStatus);
+    renderPlanCards(subStatus, document.getElementById('plan-cards'));
+    applyPlanLocks(subStatus.features);
+    return subStatus;
   } catch {
     card.innerHTML = '<p class="text-muted" style="padding:1rem 0">Error cargando la suscripción</p>';
+    return null;
   }
 }
 
-function renderSubscription(data) {
+// Suscripción paga y al día (se puede cambiar de plan)
+function hasActiveSubscription(d) {
+  return d.plan === 'active' && d.subscription_status === 'authorized';
+}
+
+function usageHtml(u) {
+  if (!u || !u.limit) return '';
+  const pct = Math.min(100, Math.round(u.count * 100 / u.limit));
+  const cls = u.level >= 100 ? 'full' : u.level >= 80 ? 'warn' : '';
+  return `
+    <div class="usage">
+      <div class="usage-head"><span>Turnos este mes</span><strong>${u.count} de ${u.limit}</strong></div>
+      <div class="usage-bar ${cls}" role="progressbar" aria-label="Turnos usados este mes" aria-valuemin="0" aria-valuemax="${u.limit}" aria-valuenow="${u.count}"><span style="width:${pct}%"></span></div>
+      ${u.level ? `<p class="usage-note">${escHtml(u.message)}. Tus clientes siguen reservando normalmente.</p>` : ''}
+    </div>`;
+}
+
+function renderSubscription(d) {
   const card = document.getElementById('sub-card');
+  const accessUntilDate = d.access_until ? new Date(d.access_until) : null;
+  const hasGraceAccess  = accessUntilDate && accessUntilDate.getTime() > Date.now();
+  const current = (d.plans || []).find(p => p.code === d.plan_code) || null;
+  const founderNote = d.founder_active
+    ? `<p class="usage-note">Precio fundador: 50% hasta el ${fmtDate(d.founder_until)}.</p>` : '';
+  let head;
 
-  const accessUntilDate = data.access_until ? new Date(data.access_until) : null;
-  const hasGraceAccess   = accessUntilDate && accessUntilDate.getTime() > Date.now();
-
-  // Cortesía vigente: acceso completo sin cobro → sin botón de suscribirse
-  if (data.courtesy_active) {
-    const until = data.courtesy_until
-      ? ` hasta el <strong>${new Date(data.courtesy_until).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</strong>`
-      : '';
-    card.innerHTML = `
+  if (d.courtesy_active) {
+    // Cortesía vigente: acceso completo sin cobro → sin botón de suscribirse
+    const until = d.courtesy_until ? ` hasta el <strong>${fmtDate(d.courtesy_until)}</strong>` : '';
+    head = `
       <span class="badge badge-confirmed">CUENTA DE CORTESÍA</span>
-      <p style="margin:.75rem 0 0;font-size:14px">Tenés acceso completo sin cargo${until}.</p>`;
-    return;
-  }
-
-  if (data.plan === 'cancelled' && hasGraceAccess) {
-    card.innerHTML = `
-      <span class="badge badge-cancelled">SUSCRIPCIÓN CANCELADA</span>
-      <p style="margin:.75rem 0 0;font-size:14px">Suscripción cancelada · tenés acceso hasta el <strong>${accessUntilDate.toLocaleDateString('es-AR')}</strong></p>`;
-    return;
-  }
-
-  if (data.plan === 'active') {
-    card.innerHTML = `
+      <p style="margin:.75rem 0 0;font-size:14px">Tenés todo lo del plan Pro sin cargo${until}.</p>`;
+  } else if (hasActiveSubscription(d)) {
+    const amount = d.subscription_amount || 0;
+    const old = current && Number(amount) < current.monthly_price ? `<span class="sub-price-old">${fmtMoney(current.monthly_price)}</span>` : '';
+    head = `
       <div class="flex-between">
         <div>
-          <span class="badge badge-confirmed">PLAN ACTIVO</span>
+          <span class="badge badge-confirmed">PLAN ${escHtml((current?.name || 'activo').toUpperCase())}</span>
           <p class="text-muted" style="margin-top:8px">Tu suscripción está al día.</p>
+          ${founderNote}
         </div>
         <div class="sub-status-plan">
-          $${(data.subscription_amount || 0).toLocaleString('es-AR')}
+          ${old}${fmtMoney(amount)}
           <span style="font-family:var(--font-sans);font-size:12px;font-weight:400;text-transform:none;color:var(--text-muted)"> /mes</span>
         </div>
       </div>
+      ${usageHtml(d.usage)}
       <div class="divider"></div>
       <button class="btn btn-outline-danger" onclick="openCancelModal()">Cancelar suscripción</button>`;
-    return;
-  }
-
-  if (data.trial_active) {
-    card.innerHTML = `
+  } else if (d.plan === 'cancelled' && hasGraceAccess) {
+    head = `
+      <span class="badge badge-cancelled">SUSCRIPCIÓN CANCELADA</span>
+      <p style="margin:.75rem 0 0;font-size:14px">Tenés acceso${current ? ` al plan ${escHtml(current.name)}` : ''} hasta el <strong>${accessUntilDate.toLocaleDateString('es-AR')}</strong>. Para seguir, elegí un plan abajo.</p>
+      ${founderNote}`;
+  } else if (d.trial_active) {
+    head = `
       <span class="badge badge-pending">PERÍODO DE PRUEBA</span>
-      <p style="margin:.75rem 0 1.25rem;font-size:14px">Te quedan <strong>${data.days_left}</strong> día${data.days_left === 1 ? '' : 's'} de prueba gratuita.</p>
-      <button class="btn btn-primary" onclick="subscribe()">Suscribirme ahora</button>`;
-    return;
+      <p style="margin:.75rem 0 0;font-size:14px">Te quedan <strong>${d.days_left}</strong> día${d.days_left === 1 ? '' : 's'} de prueba con todo lo del plan Pro. Elegí tu plan abajo.</p>
+      ${founderNote}`;
+  } else {
+    head = `
+      <span class="badge badge-cancelled">PRUEBA VENCIDA</span>
+      <p style="margin:.75rem 0 0;font-size:14px">Tu período de prueba terminó. Elegí un plan para seguir usando Agendaste.</p>
+      ${founderNote}`;
   }
 
-  card.innerHTML = `
-    <span class="badge badge-cancelled">PRUEBA VENCIDA</span>
-    <p style="margin:.75rem 0 1.25rem;font-size:14px">Tu período de prueba terminó. Suscribite para seguir usando Agendaste.</p>
-    <button class="btn btn-primary" onclick="subscribe()">Suscribirme ahora</button>`;
+  card.innerHTML = head + (hasActiveSubscription(d) ? '' : usageHtml(d.usage));
+}
+
+// Qué incluye cada plan (a partir de sus flags; cada plan muestra "Todo lo del" anterior)
+function planItems(p, prev) {
+  const items = [[`${p.monthly_appointment_limit} turnos por mes`], ['Profesionales ilimitados']];
+  if (!prev) items.push(['Link, QR y recordatorios por mail'], ['Tu logo en la página de reservas']);
+  else items.push([`Todo lo del ${prev.name}`]);
+  if (p.custom_branding && !prev?.custom_branding) items.push(['Colores y fuente propios']);
+  if (p.embed && !prev?.embed) items.push(['Reserva dentro de tu web']);
+  if (p.code === 'pro') {
+    items.push(p.whatsapp ? ['Recordatorios por WhatsApp'] : ['Recordatorios por WhatsApp (próximamente)', 'soon']);
+    items.push(p.deposits ? ['Señas con Mercado Pago'] : ['Señas con Mercado Pago (próximamente)', 'soon']);
+  }
+  if (p.remove_agendaste_footer && !prev?.remove_agendaste_footer) items.push(['Sin "Reservas con Agendaste"']);
+  if (p.priority_support && !prev?.priority_support) items.push(['Soporte prioritario']);
+  return items;
+}
+
+// Tarjetas de los 3 planes. Con suscripción activa: cambiar de plan; si no: elegir (Mercado Pago).
+function renderPlanCards(d, container) {
+  if (!container) return;
+  const plans = d.plans || [];
+  const active = hasActiveSubscription(d);
+  container.innerHTML = plans.map((p, i) => {
+    const isCurrent = active && p.code === d.plan_code;
+    const featured  = !isCurrent && !active && p.code === 'pro';
+    const price = p.price < p.monthly_price
+      ? `<s>${fmtMoney(p.monthly_price)}</s>${fmtMoney(p.price)} <small>/mes · precio fundador</small>`
+      : `${fmtMoney(p.price)} <small>/mes</small>`;
+    let btn = '';
+    if (d.courtesy_active) btn = '';
+    else if (isCurrent) btn = '<button type="button" class="btn btn-outline" disabled>Tu plan actual</button>';
+    else if (active) btn = `<button type="button" class="btn btn-outline" onclick="changePlanFlow('${escHtml(p.code)}')">Cambiar a ${escHtml(p.name)}</button>`;
+    else btn = `<button type="button" class="btn ${featured ? 'btn-primary' : 'btn-outline'}" onclick="subscribe('${escHtml(p.code)}')">Elegir ${escHtml(p.name)}</button>`;
+    const tag = isCurrent ? 'Tu plan' : featured ? 'Recomendado' : '';
+    return `
+      <div class="plan-card${isCurrent ? ' current' : featured ? ' featured' : ''}">
+        ${tag ? `<span class="plan-card-tag">${tag}</span>` : ''}
+        <div class="plan-card-name">${escHtml(p.name)}</div>
+        <div class="plan-card-price">${price}</div>
+        <ul>${planItems(p, plans[i - 1]).map(([t, soon]) => `<li${soon ? ' class="soon"' : ''}>${escHtml(t)}</li>`).join('')}</ul>
+        ${btn}
+      </div>`;
+  }).join('');
+}
+
+// Cambio de plan: confirmación con el monto nuevo → PreApproval actualizado (si falla, no cambia nada)
+async function changePlanFlow(code) {
+  const p = (subStatus?.plans || []).find(x => x.code === code);
+  if (!p) return;
+  const ok = await confirmDialog({
+    title: `¿Cambiar al plan ${p.name}?`,
+    text:  `Desde tu próximo cobro vas a pagar ${fmtMoney(p.price)} (plan ${p.name}).`,
+    ok:    'Cambiar de plan',
+    danger: false
+  });
+  if (!ok) return;
+  try {
+    const res  = await fetch('/api/subscriptions/change-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: code })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('❌ ' + (data.error || 'No se pudo cambiar de plan')); return; }
+    showToast(`✅ Listo: desde tu próximo cobro pasás al plan ${data.plan_name}`);
+    loadSubscriptionCard();
+    loadSubscriptionStatus();
+  } catch {
+    showToast('❌ Error de conexión');
+  }
+}
+
+// Personalización y embed según el plan (el backend también lo valida)
+let brandLocked = false;
+function applyPlanLocks(features) {
+  if (!features) return;
+  brandLocked = !features.custom_branding;
+  document.getElementById('brand-fields').disabled = brandLocked;
+  document.getElementById('brand-lock').hidden     = !brandLocked;
+  document.getElementById('btn-save-brand').hidden = brandLocked;
+  const embedLocked = !features.embed;
+  document.getElementById('embed-lock').hidden  = !embedLocked;
+  document.getElementById('embed-block').hidden = embedLocked;
+  onBrandInput(); // la vista previa muestra lo que se ve de verdad con este plan
 }
 
 function openCancelModal() {

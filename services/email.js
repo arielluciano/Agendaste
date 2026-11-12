@@ -278,4 +278,81 @@ async function sendOwnerNoticeEmail(data) {
   console.log(`📧 Aviso de ${title.toLowerCase()} enviado al negocio`);
 }
 
-module.exports = { sendConfirmationEmail, sendReminderEmail, sendOwnerNoticeEmail };
+// ── Avisos de plan al dueño ──
+const moneyAR = n => '$' + Number(n || 0).toLocaleString('es-AR');
+const PANEL_PLANS_LINK = '<a href="https://agendaste.com.ar/panel#suscripcion" style="color:#9A3412;">Suscripción, en tu panel</a>';
+
+// Uso del mes: threshold 80 | 100. nextPlan = { name, limit, price } o null si ya está en el plan más alto
+function buildPlanUsageHtml(d) {
+  const e = v => (v ? escapeHtml(v) : '');
+  const reached = d.threshold >= 100;
+  const title = reached ? 'Llegaste al límite de turnos del mes' : 'Ya usaste el 80% de tus turnos del mes';
+  const rows = [
+    ['Plan', e(d.planName)],
+    ['Turnos este mes', `${d.count} de ${d.limit}`]
+  ];
+  if (d.nextPlan) rows.push([`Plan ${e(d.nextPlan.name)}`, `${d.nextPlan.limit} turnos · ${moneyAR(d.nextPlan.price)}/mes`]);
+  return buildEmailHtml({
+    title,
+    eyebrow: title,
+    businessName: e(d.businessName),
+    clientName: '',
+    intro: `Usaste ${d.count} de ${d.limit} turnos este mes. Tus clientes pueden seguir reservando normalmente: no se corta ninguna reserva.`,
+    rows,
+    outro: d.nextPlan
+      ? `Si tu negocio crece, te conviene pasar al plan ${e(d.nextPlan.name)}. Lo cambiás en ${PANEL_PLANS_LINK}.`
+      : `Podés ver tu uso del mes en ${PANEL_PLANS_LINK}.`
+  });
+}
+
+async function sendPlanUsageEmail(data) {
+  if (!data.to) return;
+  const { error } = await getClient().emails.send({
+    from: process.env.EMAIL_FROM,
+    to: data.to,
+    subject: `Usaste ${data.count} de ${data.limit} turnos este mes`,
+    html: buildPlanUsageHtml(data)
+  });
+  if (error) throw new Error(error.message || 'Resend devolvió un error');
+  console.log(`📧 Aviso de uso (${data.threshold}%) enviado al negocio`);
+}
+
+// Fin del precio fundador: endsAt = founder_until; amount = precio completo desde ese cobro
+function founderEndDate(endsAt) {
+  return new Date(endsAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' });
+}
+
+function buildFounderEndingHtml(d) {
+  const e = v => (v ? escapeHtml(v) : '');
+  const fecha = founderEndDate(d.endsAt);
+  return buildEmailHtml({
+    title: 'Tu precio fundador termina pronto',
+    eyebrow: 'Precio fundador',
+    businessName: e(d.businessName),
+    clientName: '',
+    intro: `Tu precio fundador termina el ${fecha}. Desde ese cobro vas a pagar ${moneyAR(d.amount)}.`,
+    rows: [
+      ['Plan', e(d.planName)],
+      ['Hasta el ' + fecha, `${moneyAR(d.currentAmount)}/mes`],
+      ['Después', `${moneyAR(d.amount)}/mes`]
+    ],
+    outro: `Gracias por acompañarnos desde el principio. Si querés cambiar de plan o cancelar, lo hacés en ${PANEL_PLANS_LINK}.`
+  });
+}
+
+async function sendFounderEndingEmail(data) {
+  if (!data.to) return;
+  const { error } = await getClient().emails.send({
+    from: process.env.EMAIL_FROM,
+    to: data.to,
+    subject: `Tu precio fundador termina el ${founderEndDate(data.endsAt)}`,
+    html: buildFounderEndingHtml(data)
+  });
+  if (error) throw new Error(error.message || 'Resend devolvió un error');
+  console.log('📧 Aviso de fin de precio fundador enviado al negocio');
+}
+
+module.exports = {
+  sendConfirmationEmail, sendReminderEmail, sendOwnerNoticeEmail,
+  sendPlanUsageEmail, sendFounderEndingEmail, buildPlanUsageHtml, buildFounderEndingHtml
+};

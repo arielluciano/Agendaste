@@ -7,6 +7,7 @@ const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 const { sendConfirmationEmail, sendOwnerNoticeEmail } = require('../services/email');
+const { notifyUsageIfNeeded } = require('../services/usage');
 
 const { todayAR, nowMinutesAR, toMinutes, toTimeStr, getAvailableSlots } = require('../services/availability');
 
@@ -274,6 +275,10 @@ router.post('/', bookingLimiter, async (req, res) => {
   console.log(`📋 Nuevo turno: ${v.name} — ${service} el ${date} a las ${time}`);
 
   await sendBookingEmail(newAppointment, { name: v.name, service, time, isVerified: !!req.session?.client?.email });
+
+  // Límite blando del plan: aviso al dueño al 80% / 100% (después de responder; nunca frena la reserva)
+  setImmediate(() => notifyUsageIfNeeded(newAppointment.business_id)
+    .catch(err => console.error('⚠️ Aviso de uso:', err.message)));
 
   res.status(201).json({
     id: newAppointment.id,
