@@ -367,6 +367,17 @@ function renderSubscription(data) {
   const accessUntilDate = data.access_until ? new Date(data.access_until) : null;
   const hasGraceAccess   = accessUntilDate && accessUntilDate.getTime() > Date.now();
 
+  // Cortesía vigente: acceso completo sin cobro → sin botón de suscribirse
+  if (data.courtesy_active) {
+    const until = data.courtesy_until
+      ? ` hasta el <strong>${new Date(data.courtesy_until).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</strong>`
+      : '';
+    card.innerHTML = `
+      <span class="badge badge-confirmed">CUENTA DE CORTESÍA</span>
+      <p style="margin:.75rem 0 0;font-size:14px">Tenés acceso completo sin cargo${until}.</p>`;
+    return;
+  }
+
   if (data.plan === 'cancelled' && hasGraceAccess) {
     card.innerHTML = `
       <span class="badge badge-cancelled">SUSCRIPCIÓN CANCELADA</span>

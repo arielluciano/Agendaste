@@ -633,7 +633,15 @@ async function loadSubscriptionStatus() {
     if (!res.ok) return;
     const data = await res.json();
 
-    if (data.plan !== 'active' && data.trial_active) {
+    // Cortesía vigente: sin banner de prueba, solo un texto chico
+    const note = document.getElementById('courtesy-note');
+    note.hidden = !data.courtesy_active;
+    if (data.courtesy_active) {
+      note.textContent = 'Cuenta de cortesía' + (data.courtesy_until
+        ? ` hasta ${new Date(data.courtesy_until).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`
+        : '');
+      banner.style.display = 'none';
+    } else if (data.plan !== 'active' && data.trial_active) {
       const days = data.days_left;
       document.getElementById('trial-text').textContent =
         days === 1 ? 'Te queda 1 día de prueba' : `Te quedan ${days} días de prueba`;

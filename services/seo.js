@@ -3,14 +3,8 @@
 // ==============================
 const SITE_URL = 'https://agendaste.com.ar';
 
-// Negocio "activo" (se indexa y va al sitemap): prueba vigente, suscripción activa,
-// período ya pagado de una suscripción cancelada, o plan de cortesía.
-// Uso: ... WHERE ${ACTIVE_BUSINESS_SQL('b')}
-const ACTIVE_BUSINESS_SQL = (alias) => `EXISTS (
-  SELECT 1 FROM owners o
-   WHERE o.business_id = ${alias}.id
-     AND (o.plan IN ('active', 'courtesy') OR o.trial_ends_at > NOW() OR o.access_until > NOW())
-)`;
+// Negocio "activo" (se indexa y va al sitemap) = el mismo criterio que el acceso al panel
+const { ACTIVE_BUSINESS_SQL } = require('./access');
 
 // Las rutas que bloqueamos llevan "$" y "/" para no tapar slugs que empiezan igual (ej. /panaderia-x)
 function robotsTxt() {

@@ -5,6 +5,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 const { requireAuthNoTrialGate } = require('../middleware/auth');
+const { getAccess } = require('../services/access');
 const {
   MercadoPagoConfig,
   PreApproval,
@@ -57,7 +58,11 @@ async function processPreapprovalUpdate(preapprovalId) {
 
   if (businessId) {
     const newPlan = status === 'authorized' ? 'active' : 'trial';
-    await db.query('UPDATE owners SET plan = $1 WHERE business_id = $2', [newPlan, businessId]);
+    // Un preapproval que no se autoriza no baja una cuenta de cortesía a 'trial'
+    await db.query(
+      `UPDATE owners SET plan = $1 WHERE business_id = $2 AND NOT (plan = 'courtesy' AND $1 = 'trial')`,
+      [newPlan, businessId]
+    );
   }
 }
 
@@ -66,6 +71,12 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
   const bizId = req.businessId;
 
   try {
+    // Cortesía vigente: no se cobra
+    const access = await getAccess(bizId);
+    if (access?.courtesyActive) {
+      return res.status(400).json({ error: 'Tu cuenta es de cortesía: no hace falta suscribirse.' });
+    }
+
     const bizResult = await db.query('SELECT * FROM businesses WHERE id = $1', [bizId]);
     const business = bizResult.rows[0];
     if (!business) return res.status(404).json({ error: 'Negocio no encontrado' });
@@ -157,11 +168,7 @@ router.post('/webhook', async (req, res) => {
 // GET /api/subscriptions/status → estado de suscripción del negocio actual
 router.get('/status', requireAuthNoTrialGate, async (req, res) => {
   try {
-    const ownerResult = await db.query(
-      'SELECT plan, trial_ends_at, access_until FROM owners WHERE business_id = $1 LIMIT 1',
-      [req.businessId]
-    );
-    const owner = ownerResult.rows[0] || {};
+    const owner = (await getAccess(req.businessId)) || {};
 
     const subResult = await db.query(
       'SELECT status, amount FROM subscriptions WHERE business_id = $1 ORDER BY created_at DESC LIMIT 1',
@@ -181,7 +188,10 @@ router.get('/status', requireAuthNoTrialGate, async (req, res) => {
       days_left: daysLeft,
       subscription_status: subscription?.status || null,
       subscription_amount: subscription?.amount || null,
-      access_until: owner.access_until || null
+      access_until: owner.access_until || null,
+      // Cortesía vigente: acceso completo, sin cobro ni banner de prueba. courtesy_until null = sin vencimiento
+      courtesy_active: !!owner.courtesyActive,
+      courtesy_until: owner.courtesyActive ? owner.courtesy_until : null
     });
   } catch (err) {
     console.error('Error GET /api/subscriptions/status:', err.message);

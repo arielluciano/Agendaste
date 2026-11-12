@@ -2,7 +2,7 @@
 // Middleware de autenticación JWT
 // ==============================
 const jwt = require('jsonwebtoken');
-const db  = require('../config/database');
+const { getAccess } = require('../services/access');
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET no está configurada. Definila como variable de entorno antes de arrancar el server.');
@@ -55,22 +55,14 @@ function resolveAuth(req, res) {
   return false;
 }
 
-// Verifica si el negocio puede seguir operando (trial vigente, suscripción activa,
-// o todavía dentro del período ya pagado de una suscripción cancelada)
+// Verifica si el negocio puede seguir operando (cortesía vigente, trial vigente, suscripción activa,
+// o todavía dentro del período ya pagado de una suscripción cancelada) — ver services/access.js
 async function checkSubscription(businessId, res) {
   try {
-    const result = await db.query(
-      'SELECT plan, trial_ends_at, access_until FROM owners WHERE business_id = $1 LIMIT 1',
-      [businessId]
-    );
-    const owner = result.rows[0];
-    if (!owner) return true;
+    const access = await getAccess(businessId);
+    if (!access) return true;
 
-    const trialActive        = owner.trial_ends_at && new Date(owner.trial_ends_at) > new Date();
-    const subscriptionActive = owner.plan === 'active';
-    const withinAccessUntil  = owner.access_until && new Date(owner.access_until) > new Date();
-
-    if (!trialActive && !subscriptionActive && !withinAccessUntil) {
+    if (!access.hasAccess) {
       res.status(402).json({ error: 'Trial vencido. Suscribite para continuar.' });
       return false;
     }
