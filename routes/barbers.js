@@ -5,7 +5,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
-const { validateWeekSchedule, toInt } = require('../services/validation');
+const { validateWeekSchedule, validateBarber, toInt } = require('../services/validation');
+const { todayAR } = require('../services/availability');
 
 // :id tiene que ser un entero positivo (si no, Postgres tira error y salía un 500)
 router.param('id', (req, res, next, id) => {
@@ -48,12 +49,13 @@ router.get('/all', requireAuth, async (req, res) => {
 
 // POST /api/barbers → agregar barbero
 router.post('/', requireAuth, async (req, res) => {
-  const { name, role } = req.body;
-  if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
+  const v = validateBarber(req.body);
+  if (v.error) return res.status(400).json({ error: v.error });
+  const { name, role } = v.values;
   try {
     const result = await db.query(
       'INSERT INTO barbers (business_id, name, role, active) VALUES ($1, $2, $3, true) RETURNING *',
-      [req.businessId, name, role || 'Barbero']
+      [req.businessId, name, role]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -140,7 +142,9 @@ router.post('/apply-schedule', requireAuth, async (req, res) => {
 
 // PATCH /api/barbers/:id → actualizar barbero
 router.patch('/:id', requireAuth, async (req, res) => {
-  const { name, role, active } = req.body;
+  const v = validateBarber(req.body, { partial: true });
+  if (v.error) return res.status(400).json({ error: v.error });
+  const { name = null, role = null, active = null } = v.values;
   try {
     const result = await db.query(
       `UPDATE barbers SET
@@ -158,6 +162,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/barbers/:id → eliminar barbero
+// Con turnos futuros (no cancelados) no se borra: hay que desactivarlo. Los horarios se borran en cascada.
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const check = await db.query(
@@ -165,9 +170,26 @@ router.delete('/:id', requireAuth, async (req, res) => {
       [req.params.id, req.businessId]
     );
     if (check.rows.length === 0) return res.status(403).json({ error: 'Barbero no encontrado o no autorizado' });
-    await db.query('DELETE FROM barbers WHERE id = $1', [req.params.id]);
+
+    const future = await db.query(
+      `SELECT COUNT(*)::int AS n FROM appointments
+        WHERE barber_id = $1 AND status <> 'cancelled' AND date >= $2`,
+      [req.params.id, todayAR()]
+    );
+    if (future.rows[0].n > 0) {
+      const n = future.rows[0].n;
+      return res.status(409).json({
+        error: `Tiene ${n} turno${n === 1 ? '' : 's'} por delante, así que no se puede borrar. Desactivalo para que no reciba reservas nuevas.`
+      });
+    }
+
+    await db.query('DELETE FROM barbers WHERE id = $1 AND business_id = $2', [req.params.id, req.businessId]);
     res.json({ success: true });
   } catch (err) {
+    // Turnos pasados o cancelados que apuntan al barbero (FK): se conservan, así que tampoco se borra
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Tiene turnos registrados, así que no se puede borrar. Desactivalo para que no reciba reservas nuevas.' });
+    }
     res.status(500).json({ error: 'Error borrando barbero' });
   }
 });

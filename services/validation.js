@@ -62,6 +62,38 @@ function validateService(body, { partial = false } = {}) {
   return { values };
 }
 
+// Barbero. partial = true (editar): solo valida lo que viene. Al crear, rol vacío = "Barbero".
+// Devuelve { error } o { values: { name?, role?, active? } }
+const BARBER_NAME_MAX = 60;
+const BARBER_ROLE_MAX = 50;
+function validateBarber(body, { partial = false } = {}) {
+  body = body || {};
+  const values = {};
+  const has = k => body[k] !== undefined && body[k] !== null;
+
+  if (has('name') || !partial) {
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name) return { error: 'El nombre del barbero es obligatorio' };
+    if (name.length > BARBER_NAME_MAX) return { error: `El nombre puede tener hasta ${BARBER_NAME_MAX} caracteres` };
+    values.name = name;
+  }
+
+  if (has('role') || !partial) {
+    if (has('role') && typeof body.role !== 'string') return { error: 'El rol no es válido' };
+    const role = (body.role || '').trim() || 'Barbero';
+    if (role.length > BARBER_ROLE_MAX) return { error: `El rol puede tener hasta ${BARBER_ROLE_MAX} caracteres` };
+    values.role = role;
+  }
+
+  if (has('active')) {
+    if (typeof body.active !== 'boolean') return { error: 'El estado del barbero no es válido' };
+    values.active = body.active;
+  }
+
+  if (partial && Object.keys(values).length === 0) return { error: 'No hay datos para actualizar' };
+  return { values };
+}
+
 // ── Horarios semanales (barberos y horario base del negocio) ──
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 const DAY_NAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -104,5 +136,5 @@ function validateWeekSchedule(schedule) {
 
 module.exports = {
   PRICE_MIN, PRICE_MAX, DURATION_MIN, DURATION_MAX,
-  toInt, intInRange, validateService, validateWeekSchedule
+  toInt, intInRange, validateService, validateBarber, validateWeekSchedule
 };

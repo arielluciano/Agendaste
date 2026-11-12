@@ -48,3 +48,16 @@ test('horarios: rechaza datos inválidos', () => {
   assert.ok(validateWeekSchedule([...day({}), ...day({})]));
   assert.ok(validateWeekSchedule([{ day_of_week: 3, is_open: false, open_time: 'abc' }]));
 });
+
+test('barbero: alta con rol por defecto, edición parcial y límites', () => {
+  const { validateBarber } = require('../services/validation');
+  assert.deepStrictEqual(validateBarber({ name: ' Martín ', role: '' }).values, { name: 'Martín', role: 'Barbero' });
+  assert.deepStrictEqual(validateBarber({ name: 'Ana', role: ' Colorista ' }).values, { name: 'Ana', role: 'Colorista' });
+  assert.match(validateBarber({ name: '  ' }).error, /nombre/);
+  assert.match(validateBarber({ name: 'x'.repeat(61) }).error, /hasta 60/);
+  assert.match(validateBarber({ name: 'Ana', role: 'x'.repeat(51) }).error, /hasta 50/);
+  assert.deepStrictEqual(validateBarber({ active: false }, { partial: true }).values, { active: false });
+  assert.deepStrictEqual(validateBarber({ name: 'Leo' }, { partial: true }).values, { name: 'Leo' });
+  assert.match(validateBarber({ active: 'no' }, { partial: true }).error, /estado/);
+  assert.match(validateBarber({}, { partial: true }).error, /No hay datos/);
+});

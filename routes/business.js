@@ -126,6 +126,22 @@ function isOwnLogoUrl(value, businessId) {
   return u.href.startsWith(prefix) && /^logo-\d+\.webp$/.test(u.href.slice(prefix.length));
 }
 
+// POST /api/business/link-shared → el dueño copió o compartió su link (checklist del inicio).
+// Guarda solo la primera vez; devuelve la fecha.
+router.post('/link-shared', requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      'UPDATE businesses SET link_shared_at = COALESCE(link_shared_at, NOW()) WHERE id = $1 RETURNING link_shared_at',
+      [req.businessId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Negocio no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error POST /api/business/link-shared:', err.message);
+    res.status(500).json({ error: 'Error guardando el link compartido' });
+  }
+});
+
 // PATCH /api/business/brand → actualizar solo la marca (no pisa el resto de los datos).
 // logo_url solo se toca si viene en el body; lo normal es manejarlo con /logo.
 router.patch('/brand', requireAuth, async (req, res) => {

@@ -9,6 +9,8 @@
   <style>
     /* hidden siempre gana (ej. "Quitar logo" sin logo, aunque .btn tenga display propio) */
     [hidden] { display: none !important; }
+    /* Mensajes largos (ej. "no se puede borrar, desactivalo") en varias líneas, sin salirse en el celular */
+    #toast { white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; line-height: 1.4; }
 
     /* ── Componentes ─── */
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }

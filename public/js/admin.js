@@ -116,14 +116,18 @@ function renderLinkCard() {
   document.getElementById('booking-link').value = link;
 }
 
-// "Link compartido" del checklist: se marca al copiar o compartir (en este navegador)
-const sharedKey = () => `agendaste:link-shared:${panelBiz?.id}`;
+// "Link compartido" del checklist: businesses.link_shared_at, se marca al copiar o compartir
+// (queda en la base, así vale en todos los dispositivos)
 function linkShared() {
-  try { return localStorage.getItem(sharedKey()) === '1'; } catch { return false; }
+  return !!panelBiz?.link_shared_at;
 }
-function markLinkShared() {
-  try { localStorage.setItem(sharedKey(), '1'); } catch {}
-  refreshChecklist();
+async function markLinkShared() {
+  if (linkShared()) return;
+  try {
+    const res = await fetch('/api/business/link-shared', { method: 'POST' });
+    if (!res.ok) return;
+    updatePanelBusiness(await res.json());
+  } catch {}
 }
 
 async function copyBookingLink() {
@@ -808,8 +812,21 @@ async function toggleService(id, currentActive) {
   }
 }
 
-// ── Barberos ─────────────────────────────────
+// ── Barberos (mismo patrón que Servicios) ────
 let barberList = [];
+let editingBarberId = null;
+
+function barberFieldsHtml(prefix, b = {}) {
+  return `
+    <div class="form-group svc-f-name">
+      <label for="${prefix}-name">Nombre</label>
+      <input type="text" id="${prefix}-name" maxlength="60" placeholder="Ej: Martín" value="${escHtml(b.name || '')}">
+    </div>
+    <div class="form-group" style="grid-column:span 2">
+      <label for="${prefix}-role">Rol</label>
+      <input type="text" id="${prefix}-role" maxlength="50" placeholder="Barbero" value="${escHtml(b.role || '')}">
+    </div>`;
+}
 
 async function renderBarbers() {
   const list = document.getElementById('barbers-list');
@@ -818,36 +835,14 @@ async function renderBarbers() {
   try {
     const res  = await fetch('/api/barbers/all');
     barberList = await res.json();
-    if (!Array.isArray(barberList)) throw new Error();
+    if (!res.ok || !Array.isArray(barberList)) throw new Error();
   } catch {
+    barberList = [];
     list.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem">Error cargando barberos</p>';
     return;
   }
-
-  list.innerHTML = `
-    ${barberList.map(b => `
-      <div class="service-row ${b.active ? '' : 'row-off'}">
-        <div>
-          <div class="svc-name">${escHtml(b.name)}</div>
-          <div class="svc-meta">${escHtml(b.role || '')}</div>
-        </div>
-        <div class="row-actions">
-          <button class="btn-sm" onclick="openSchedule(${Number(b.id)})">${ICONS.clock} Horario</button>
-          <button class="toggle ${b.active ? 'on' : ''}" role="switch" aria-checked="${!!b.active}" aria-label="${escHtml(b.name)} activo"
-                  onclick="toggleBarber(${Number(b.id)}, ${!!b.active})"></button>
-          <button class="btn-sm cancel" onclick="deleteBarber(${Number(b.id)})" title="Eliminar" aria-label="Eliminar a ${escHtml(b.name)}">✕</button>
-        </div>
-      </div>
-    `).join('')}
-    <div class="add-block">
-      <p class="add-block-title">Agregar barbero</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input id="new-barber-name" placeholder="Nombre" aria-label="Nombre" style="flex:2;min-width:120px">
-        <input id="new-barber-role" placeholder="Rol (ej: Barbero)" aria-label="Rol" style="flex:2;min-width:120px">
-        <button class="btn btn-primary" style="width:auto;padding:9px 16px" onclick="addBarber()">+ Agregar</button>
-      </div>
-    </div>
-  `;
+  editingBarberId = null;
+  drawBarbers();
 
   // Sección Horarios: un acceso por barbero
   document.getElementById('schedule-barbers-list').innerHTML = barberList.length
@@ -859,11 +854,84 @@ async function renderBarbers() {
     : '<p class="text-muted">Todavía no cargaste barberos. <a href="#barberos">Agregá uno</a>.</p>';
 }
 
+function drawBarbers() {
+  const rows = barberList.map(b => {
+    const id = Number(b.id);
+    if (id === editingBarberId) {
+      return `
+        <div class="service-row">
+          <form class="svc-form" onsubmit="event.preventDefault(); saveBarber(${id})">
+            ${barberFieldsHtml('edit-barber', b)}
+            <div class="svc-form-actions">
+              <button type="submit" class="btn btn-primary">Guardar</button>
+              <button type="button" class="btn btn-outline" onclick="cancelEditBarber()">Cancelar</button>
+            </div>
+          </form>
+        </div>`;
+    }
+    return `
+      <div class="service-row ${b.active ? '' : 'row-off'}">
+        <div>
+          <div class="svc-name">${escHtml(b.name)}</div>
+          <div class="svc-meta">${escHtml(b.role || 'Barbero')}${b.active ? '' : ' · Desactivado'}</div>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="toggle ${b.active ? 'on' : ''}" role="switch" aria-checked="${!!b.active}"
+                  aria-label="${escHtml(b.name)} activo" onclick="toggleBarber(${id}, ${!!b.active})"></button>
+          <button type="button" class="btn-sm" onclick="editBarber(${id})">${ICONS.pencil} Editar</button>
+          ${kebabHtml(`Más opciones de ${b.name}`, [
+            { label: 'Horario', action: `openSchedule(${id})` },
+            { label: 'Borrar barbero', action: `deleteBarber(${id})`, danger: true }
+          ])}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('barbers-list').innerHTML = `
+    ${rows || '<p class="text-muted">Todavía no cargaste barberos.</p>'}
+    <div class="add-block">
+      <p class="add-block-title">Agregar barbero</p>
+      <form class="svc-form" onsubmit="event.preventDefault(); addBarber()">
+        ${barberFieldsHtml('new-barber')}
+        <div class="svc-form-actions"><button type="submit" class="btn btn-primary">+ Agregar barbero</button></div>
+      </form>
+    </div>`;
+}
+
+function editBarber(id) {
+  editingBarberId = id;
+  drawBarbers();
+  document.getElementById('edit-barber-name')?.focus();
+}
+
+function cancelEditBarber() {
+  editingBarberId = null;
+  drawBarbers();
+}
+
+async function saveBarber(id) {
+  const name = document.getElementById('edit-barber-name').value.trim();
+  const role = document.getElementById('edit-barber-role').value.trim();
+  if (!name) { showToast('❌ El nombre es obligatorio'); return; }
+  try {
+    const res = await fetch(`/api/barbers/${id}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, role: role || 'Barbero' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('❌ ' + (data.error || 'No se pudo guardar el barbero')); return; }
+    showToast('✅ Barbero actualizado');
+    renderBarbers();
+  } catch {
+    showToast('❌ Error de conexión');
+  }
+}
+
 async function addBarber() {
   const name = document.getElementById('new-barber-name').value.trim();
   const role = document.getElementById('new-barber-role').value.trim();
-
-  if (!name) { showToast('El nombre es obligatorio'); return; }
+  if (!name) { showToast('❌ El nombre es obligatorio'); return; }
 
   try {
     const res = await fetch('/api/barbers', {
@@ -871,7 +939,7 @@ async function addBarber() {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ name, role: role || 'Barbero' })
     });
-    if (!res.ok) { const err = await res.json(); showToast('❌ ' + err.error); return; }
+    if (!res.ok) { const err = await res.json().catch(() => ({})); showToast('❌ ' + (err.error || 'No se pudo agregar')); return; }
     showToast('✅ Barbero agregado');
     renderBarbers();
   } catch {
@@ -880,23 +948,34 @@ async function addBarber() {
 }
 
 async function deleteBarber(id) {
+  const b = barberList.find(x => Number(x.id) === id);
+  if (!b) return;
+  const ok = await confirmDialog({
+    title: `¿Borrar a ${b.name}?`,
+    text:  'También se borra su horario. Si tiene turnos por delante no se va a poder borrar: en ese caso desactivalo.',
+    ok:    'Borrar'
+  });
+  if (!ok) return;
   try {
-    await fetch(`/api/barbers/${id}`, { method: 'DELETE' });
-    showToast('Barbero eliminado');
+    const res  = await fetch(`/api/barbers/${id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('❌ ' + (data.error || 'No se pudo borrar el barbero')); return; }
+    showToast('Barbero borrado');
     renderBarbers();
     refreshChecklist(true);
   } catch {
-    showToast('❌ Error al eliminar barbero');
+    showToast('❌ Error al borrar el barbero');
   }
 }
 
 async function toggleBarber(id, currentActive) {
   try {
-    await fetch(`/api/barbers/${id}`, {
+    const res = await fetch(`/api/barbers/${id}`, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ active: !currentActive })
     });
+    if (!res.ok) { showToast('❌ No se pudo cambiar el estado'); return; }
     renderBarbers();
     refreshChecklist(true);
     showToast(currentActive ? '⏸ Barbero desactivado' : '✅ Barbero activado');
