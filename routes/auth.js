@@ -54,7 +54,7 @@ router.get('/google/callback', async (req, res) => {
     req.session.save((err) => {
       if (err) console.error('Error guardando sesión:', err);
       console.log(`✅ Usuario conectado: ${data.email} → negocio ${req.session.business_id}`);
-      res.redirect('/admin');
+      res.redirect('/panel');
     });
 
   } catch (error) {

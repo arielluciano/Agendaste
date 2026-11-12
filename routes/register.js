@@ -5,6 +5,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/database');
 const path    = require('path');
+const { isReservedSlug } = require('../config/reserved-slugs');
 
 // GET /registro → página de registro
 router.get('/registro', (req, res) => {
@@ -24,6 +25,10 @@ router.post('/api/register', async (req, res) => {
     .replace(/[^a-z0-9\s]/g, '')
     .trim()
     .replace(/\s+/g, '-');
+
+  if (isReservedSlug(baseSlug)) {
+    return res.status(400).json({ error: 'Ese nombre de negocio no está disponible como dirección de reservas. Probá agregándole algo (por ejemplo, el barrio).' });
+  }
 
   try {
     const existingOwner = await db.query('SELECT id FROM owners WHERE email = $1', [email]);

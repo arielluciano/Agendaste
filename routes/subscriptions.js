@@ -86,7 +86,7 @@ router.post('/create', requireAuthNoTrialGate, async (req, res) => {
         external_reference: String(bizId),
         payer_email: owner?.email,
         // MP exige una URL pública con HTTPS — en local hay que setear BASE_URL (ej. túnel ngrok)
-        back_url: `${process.env.BASE_URL || `${req.protocol}://${req.get('host')}`}/admin`,
+        back_url: `${process.env.BASE_URL || `${req.protocol}://${req.get('host')}`}/panel`,
         auto_recurring: {
           frequency: 1,
           frequency_type: 'months',

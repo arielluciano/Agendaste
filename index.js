@@ -70,6 +70,8 @@ app.use(require('./routes/register'));
 // Ruta raíz → landing de Agendaste, con el WhatsApp de ventas (SALES_WHATSAPP) en un <meta>.
 // Si la variable no está, el meta queda vacío y la landing oculta los botones de WhatsApp.
 const fs = require('fs');
+const seo = require('./services/seo');
+const { isReservedSlug } = require('./config/reserved-slugs');
 const escapeAttr = (v) => String(v).replace(/[&"<>]/g, (c) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c]));
 const landingHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
   .replace('<meta name="sales-whatsapp" content="">',
@@ -84,13 +86,40 @@ app.get('/ayuda', (req, res) => {
 });
 
 // Panel del dueño
-app.get('/admin', (req, res) => {
+app.get('/panel', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html'));
 });
 
 // Configuración del negocio (requiere sesión iniciada)
-app.get('/admin/settings', requireSession, (req, res) => {
+app.get('/panel/settings', requireSession, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'settings.html'));
+});
+
+// /admin → /panel (301, con subruta y query). Temporal: /admin queda para un superadmin más adelante.
+app.get(['/admin', '/admin/*'], (req, res) => {
+  res.redirect(301, req.originalUrl.replace(/^\/admin/, '/panel'));
+});
+
+// ── SEO ──
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(seo.robotsTxt());
+});
+
+// Home + /{slug} de cada negocio activo (prueba vigente, suscripción o cortesía)
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT b.slug, b.created_at AS lastmod
+         FROM businesses b
+        WHERE b.slug IS NOT NULL AND b.slug <> '' AND ${seo.ACTIVE_BUSINESS_SQL('b')}
+        ORDER BY b.id`
+    );
+    const businesses = result.rows.filter((b) => !isReservedSlug(b.slug));
+    res.type('application/xml').set('Cache-Control', 'public, max-age=3600').send(seo.sitemapXml(businesses));
+  } catch (err) {
+    console.error('Error generando sitemap:', err.message);
+    res.status(500).type('text/plain').send('Error generando el sitemap');
+  }
 });
 
 // "Mis turnos" del cliente (login con Google del lado del cliente)
@@ -114,10 +143,21 @@ function allowEmbed(req, res) {
   res.setHeader('Content-Security-Policy', 'frame-ancestors *');
 }
 
+// Página de reservas: el <title> genérico de client.html se reemplaza por el <head> SEO de cada negocio
+const CLIENT_TITLE = '<title>Agendaste — Reservá tu turno</title>';
+const clientHtml = fs.readFileSync(path.join(__dirname, 'public', 'client.html'), 'utf8');
+if (!clientHtml.includes(CLIENT_TITLE)) {
+  throw new Error('client.html: no se encontró el <title> que reemplaza el SEO de /:slug');
+}
+
 // Ruta dinámica por slug → página del cliente del negocio
 app.get('/:slug', async (req, res) => {
   try {
-    const result = await db.query('SELECT id FROM businesses WHERE slug = $1', [req.params.slug]);
+    const result = await db.query(
+      `SELECT b.id, b.name, b.slug, b.address, b.phone, b.logo_url, ${seo.ACTIVE_BUSINESS_SQL('b')} AS active
+         FROM businesses b WHERE b.slug = $1`,
+      [req.params.slug]
+    );
     if (result.rows.length === 0) {
       return res.status(404).send(`
         <!DOCTYPE html>
@@ -125,6 +165,7 @@ app.get('/:slug', async (req, res) => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="robots" content="noindex">
           <title>Negocio no encontrado — Agendaste</title>
           <link rel="stylesheet" href="/css/styles.css">
         </head>
@@ -138,8 +179,14 @@ app.get('/:slug', async (req, res) => {
         </html>
       `);
     }
+    const business = result.rows[0];
+    const services = await db.query(
+      'SELECT name FROM services WHERE business_id = $1 AND active IS NOT FALSE ORDER BY id',
+      [business.id]
+    );
+    const head = seo.bookingHead({ business, services: services.rows, active: business.active });
     allowEmbed(req, res);
-    res.sendFile(path.join(__dirname, 'public', 'client.html'));
+    res.type('html').send(clientHtml.replace(CLIENT_TITLE, () => head));
   } catch (err) {
     console.error('Error verificando slug:', err.message);
     allowEmbed(req, res);
@@ -151,5 +198,5 @@ app.get('/:slug', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Agendaste corriendo en http://localhost:${PORT}`);
   console.log(`   Cliente:  http://localhost:${PORT}/`);
-  console.log(`   Admin:    http://localhost:${PORT}/admin`);
+  console.log(`   Panel:    http://localhost:${PORT}/panel`);
 });

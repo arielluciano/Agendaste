@@ -100,7 +100,7 @@ function requireSession(req, res, next) {
   if (req.session && req.session.user) {
     return next();
   }
-  res.redirect('/admin?error=not_authenticated');
+  res.redirect('/panel?error=not_authenticated');
 }
 
 module.exports = { generateToken, requireAuth, requireAuthNoTrialGate, requireSession };

@@ -11,6 +11,7 @@ async function checkAuth() {
     const data = await res.json();
 
     if (data.loggedIn) {
+      document.body.classList.add('is-authed'); // muestra el sidebar (sin sesión, login limpio)
       // Verificar si el trial venció
       const statusRes = await fetch('/api/subscriptions/status');
       if (statusRes.status === 402) {
@@ -29,7 +30,7 @@ async function checkAuth() {
         <div class="user-pill">
           <img src="${data.user.picture}" alt="${data.user.name}">
           <span>${data.user.name}</span>
-          <button class="gear-btn" onclick="location.href='/admin/settings'" title="Configuración del negocio"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 10.27 7 3.34"/><path d="m11 13.73-4 6.93"/><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M14 12h8"/><path d="m17 20.66-1-1.73"/><path d="m17 3.34-1 1.73"/><path d="M2 12h2"/><path d="m20.66 17-1.73-1"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m3.34 7 1.73 1"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="8"/></svg></button>
+          <button class="gear-btn" onclick="location.href='/panel/settings'" title="Configuración del negocio"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 10.27 7 3.34"/><path d="m11 13.73-4 6.93"/><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M14 12h8"/><path d="m17 20.66-1-1.73"/><path d="m17 3.34-1 1.73"/><path d="M2 12h2"/><path d="m20.66 17-1.73-1"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m3.34 7 1.73 1"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="8"/></svg></button>
           <a href="/auth/logout" class="btn btn-outline" style="font-size:12px;padding:5px 10px">Salir</a>
         </div>`;
       document.getElementById('admin-view').style.display = 'block';
@@ -38,10 +39,10 @@ async function checkAuth() {
       renderBarbers();
       loadSubscriptionStatus();
     } else {
-      document.getElementById('login-view').style.display = 'block';
+      document.getElementById('login-view').style.display = 'flex';
     }
   } catch {
-    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('login-view').style.display = 'flex';
   }
 }
 
@@ -633,7 +634,10 @@ async function loadSubscriptionStatus() {
     const data = await res.json();
 
     if (data.plan !== 'active' && data.trial_active) {
-      document.getElementById('trial-days').textContent = data.days_left;
+      const days = data.days_left;
+      document.getElementById('trial-text').textContent =
+        days === 1 ? 'Te queda 1 día de prueba' : `Te quedan ${days} días de prueba`;
+      banner.classList.toggle('urgent', days <= 3); // 3 días o menos → color de alerta
       banner.style.display = 'flex';
     } else {
       banner.style.display = 'none';

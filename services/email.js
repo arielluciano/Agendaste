@@ -261,7 +261,7 @@ function buildOwnerNoticeHtml(d) {
       ? `${e(d.clientName) || 'Un cliente'} cambió su turno desde Agendaste. El horario anterior quedó libre.`
       : `${e(d.clientName) || 'Un cliente'} canceló su turno desde Agendaste. El horario quedó libre.`,
     rows,
-    outro: 'Podés ver tu agenda actualizada en el panel de Agendaste.'
+    outro: 'Podés ver tu agenda actualizada en <a href="https://agendaste.com.ar/panel" style="color:#9A3412;">tu panel de Agendaste</a>.'
   });
 }
 

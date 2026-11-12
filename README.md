@@ -59,7 +59,7 @@ npm start
 
 ### 5. Abrí en el navegador
 - **Clientes:** http://localhost:3000
-- **Panel dueño:** http://localhost:3000/admin
+- **Panel dueño:** http://localhost:3000/panel
 
 ## Deploy en Render (gratis)
 
