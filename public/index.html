@@ -3,292 +3,347 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agendaste — Software de turnos online</title>
+  <title>Agendaste — Turnos online para barberías y peluquerías</title>
+  <meta name="description" content="Turnos online para barberías y peluquerías: link de reservas con tu marca, recordatorios automáticos y tu agenda ordenada en un panel. 14 días gratis, sin tarjeta.">
+  <link rel="canonical" href="https://agendaste.com.ar/">
+  <meta name="theme-color" content="#F8F7F4">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:site_name" content="Agendaste">
+  <meta property="og:url" content="https://agendaste.com.ar/">
+  <meta property="og:title" content="Agendaste — Turnos online para barberías y peluquerías">
+  <meta property="og:description" content="Tus clientes reservan solos. Vos dejás de perder turnos. Link de reservas con tu marca, recordatorios automáticos y panel. 14 días gratis.">
+  <meta name="twitter:card" content="summary">
+
+  <!-- Número de WhatsApp de ventas: lo completa el servidor con SALES_WHATSAPP (vacío = sin botones de WhatsApp) -->
+  <meta name="sales-whatsapp" content="">
+
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/css/styles.css">
-  <style>
-    .landing-container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
-    .navbar { padding: 0; }
-
-    section { padding: 4.5rem 0; }
-    .hero { padding: 5.5rem 0 5rem; text-align: center; }
-    .hero .eyebrow { display: block; margin-bottom: 1rem; }
-    .hero h1 { max-width: 760px; margin: 0 auto 1.25rem; }
-    .hero p.lead { font-size: 17px; color: var(--text-muted); max-width: 560px; margin: 0 auto 2rem; line-height: 1.55; }
-    .hero .btn { width: auto; padding: 16px 28px; font-size: 13px; }
-
-    .section-head { text-align: center; margin-bottom: 2.5rem; }
-    .section-head .eyebrow { display: block; margin-bottom: .75rem; }
-    .section-head h2 { margin: 0; }
-
-    .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    @media (max-width: 760px) { .grid-6 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 480px) { .grid-6 { grid-template-columns: 1fr; } }
-    .audience-card { text-align: center; padding: 1.75rem 1rem; }
-    .audience-card .icon-wrap { font-size: 32px; margin-bottom: .75rem; }
-    .audience-card .label { font-size: 14px; font-weight: 600; }
-
-    .features { background: var(--bg-secondary); }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-    @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } }
-    .feature-card { padding: 1.75rem 1.25rem; }
-    .feature-card .icon-wrap { font-size: 28px; margin-bottom: .9rem; }
-    .feature-card .label { font-size: 14px; font-weight: 600; line-height: 1.4; }
-
-    .pricing-card { max-width: 420px; margin: 0 auto; text-align: center; padding: 2.5rem 2rem; }
-    .pricing-amount { font-family: var(--font-display); font-size: clamp(2.6rem, 6vw, 3.4rem); color: var(--text); line-height: 1; }
-    .pricing-amount span { font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: var(--text-muted); }
-    .pricing-sub { font-size: 13px; color: var(--text-muted); margin: .5rem 0 1.75rem; }
-    .pricing-perks { list-style: none; margin: 0 0 1.75rem; padding: 0; text-align: left; display: inline-block; }
-    .pricing-perks li { font-size: 14px; margin-bottom: .6rem; display: flex; align-items: center; gap: 8px; }
-    .pricing-card .btn { width: 100%; padding: 14px 20px; }
-
-    .cta-final { background: var(--ink); color: var(--cream); text-align: center; }
-    .cta-final h2 { color: var(--cream); margin-bottom: 1.75rem; }
-    .cta-final .btn { width: auto; padding: 16px 28px; font-size: 13px; }
-
-    footer { background: var(--ink); color: rgba(248,247,244,.55); text-align: center; padding: 1.75rem 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .05em; }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/landing.css">
+  <script src="/js/whatsapp.js" defer></script>
+  <script src="/js/landing.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
-<nav class="navbar">
-  <div class="landing-container">
-    <a href="/" class="navbar-brand"><span class="brand-mark">A</span> AGENDASTE</a>
-    <div class="nav-links">
-      <a href="#features">Características</a>
-      <a href="#precios">Precios</a>
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="#inicio" class="brand" aria-label="Agendaste, ir al inicio">
+        <span class="brand__mark" aria-hidden="true">A</span>
+        <span class="brand__word" aria-hidden="true">AGENDASTE</span>
+      </a>
+      <nav class="nav" aria-label="Principal">
+        <a class="nav__link" href="#como">Cómo funciona</a>
+        <a class="nav__link" href="#funciones">Funciones</a>
+        <a class="nav__link" href="#precios">Precios</a>
+        <a class="nav__link" href="/admin">Iniciar sesión</a>
+        <a class="nav__cta" href="/registro">Probar gratis</a>
+      </nav>
     </div>
-    <div class="nav-actions">
-      <a href="/admin" class="btn btn-outline">Iniciar sesión</a>
-      <a href="/registro" class="btn btn-accent">Empezar gratis</a>
-    </div>
-  </div>
-</nav>
+  </header>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="landing-container">
-    <span class="eyebrow">SOFTWARE DE TURNOS ONLINE</span>
-    <h1>GESTIONÁ TU NEGOCIO SIN COMPLICACIONES</h1>
-    <p class="lead">La plataforma más simple para barberías, peluquerías, estéticas y más. Probá gratis 14 días sin tarjeta.</p>
-    <a href="/registro" class="btn btn-accent">EMPEZAR GRATIS →</a>
-  </div>
-</section>
+  <main id="contenido">
 
-<!-- PARA QUIÉN ES -->
-<section id="audiencia">
-  <div class="landing-container">
-    <div class="section-head">
-      <span class="eyebrow">PARA QUIÉN ES</span>
-    </div>
-    <div class="grid-6">
-      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor" stroke="none">
-<path d="M925 4706 c-154 -39 -274 -156 -319 -310 -10 -34 -18 -42 -46 -50
--48 -14 -133 -101 -148 -152 -15 -53 -16 -225 0 -276 16 -54 79 -122 133 -144
-l45 -19 0 -1197 0 -1196 -32 -7 c-44 -10 -130 -99 -146 -151 -16 -53 -16 -225
-0 -278 15 -51 100 -138 148 -152 28 -8 36 -16 46 -50 45 -154 179 -281 332
--313 71 -15 574 -15 644 0 151 32 272 139 324 287 21 62 26 68 62 80 45 15
-103 67 129 115 22 41 31 241 13 307 -14 55 -101 144 -149 155 l-31 7 0 146 0
-147 214 214 c182 182 216 212 232 204 11 -6 131 -27 268 -49 l249 -38 196
--224 c108 -124 198 -229 199 -233 2 -5 -10 -42 -26 -82 -42 -102 -56 -176 -55
--297 3 -398 311 -722 711 -747 360 -22 680 212 778 568 25 91 25 291 0 379
--78 270 -276 467 -543 542 -99 27 -265 29 -367 4 -49 -12 -72 -13 -81 -6 -19
-16 -509 589 -513 600 -2 5 340 483 759 1062 551 760 764 1062 767 1085 5 42
--33 83 -77 83 -32 0 -7 21 -1533 -1313 -219 -191 -401 -347 -405 -346 -5 0
--100 108 -213 240 -278 326 -271 319 -307 319 -52 0 -98 -65 -77 -110 17 -35
-1527 -1785 1552 -1799 22 -12 35 -10 116 15 225 69 442 17 607 -146 128 -126
-188 -283 176 -459 -10 -153 -65 -271 -176 -382 -111 -111 -229 -166 -382 -176
--176 -12 -333 48 -459 176 -121 122 -175 254 -174 426 0 104 20 180 70 275 58
-109 67 91 -211 409 -156 178 -254 283 -269 287 -14 3 -132 23 -263 43 l-238
-37 -262 375 -262 374 0 397 -1 396 31 7 c48 11 135 100 149 155 18 66 9 266
--13 307 -26 48 -84 100 -129 115 -36 12 -41 18 -62 80 -43 122 -116 201 -243
-261 l-68 32 -310 2 c-224 1 -324 -2 -360 -11z m651 -161 c27 -8 67 -29 88 -47
-36 -29 96 -111 96 -130 0 -4 -225 -8 -499 -8 l-500 0 11 33 c18 51 107 133
-164 151 71 21 568 23 640 1z m359 -370 c23 -22 25 -32 25 -120 0 -89 -2 -98
--25 -121 l-25 -24 -656 2 -656 3 -19 24 c-16 19 -19 40 -19 118 0 86 2 96 25
-118 l24 25 651 0 651 0 24 -25z m2137 -182 c-43 -60 -284 -393 -536 -741 -370
--511 -461 -631 -471 -620 -6 7 -67 78 -135 157 l-123 144 53 46 c30 25 331
-288 669 584 338 295 617 537 618 537 2 0 -32 -48 -75 -107z m-2712 -247 c0 -3
--118 -96 -262 -207 -145 -111 -282 -218 -305 -237 l-43 -34 0 241 0 241 305 0
-c168 0 305 -2 305 -4z m410 -188 l-1 -193 -217 -166 c-119 -92 -349 -269 -509
--393 l-293 -226 0 244 0 243 442 342 441 341 69 0 68 0 0 -192z m-1 -640 l0
--243 -432 -333 c-238 -182 -467 -359 -509 -393 l-78 -60 0 245 0 244 506 391
-c279 215 508 391 510 391 2 0 4 -109 3 -242z m230 -328 c34 -50 60 -94 57 -99
--3 -5 -33 -32 -66 -61 l-60 -52 0 151 c0 83 2 151 4 151 2 0 32 -41 65 -90z
-m-230 -362 l0 -243 -399 -307 -400 -308 -110 0 -110 0 0 159 0 158 506 392
-c279 215 508 391 510 391 2 0 4 -109 3 -242z m433 70 c25 -35 47 -68 51 -74 3
--6 -68 -84 -159 -175 l-164 -164 0 141 0 140 112 97 c61 53 113 97 114 97 1 0
-22 -28 46 -62z m-435 -925 c-2 -2 -122 -2 -267 -1 l-262 3 263 203 264 204 3
--203 c1 -111 1 -204 -1 -206z m168 -188 c23 -22 25 -32 25 -120 0 -88 -2 -98
--25 -120 l-24 -25 -651 0 -651 0 -24 25 c-23 22 -25 32 -25 120 0 88 2 98 25
-120 l24 25 651 0 651 0 24 -25z m-175 -433 c0 -19 -60 -101 -96 -130 -67 -56
--107 -62 -404 -62 -321 0 -346 5 -425 83 -28 29 -56 67 -63 85 l-11 32 500 0
-c274 0 499 -4 499 -8z"/>
-<path d="M2479 2641 c-36 -36 -39 -43 -39 -96 0 -53 3 -60 39 -96 36 -36 43
--39 96 -39 53 0 60 3 96 39 36 36 39 43 39 96 0 53 -3 60 -39 96 -36 36 -43
-39 -96 39 -53 0 -60 -3 -96 -39z"/>
-<path d="M3865 1556 c-203 -49 -341 -255 -308 -459 16 -94 57 -169 129 -237
-88 -81 149 -104 279 -105 93 0 105 3 168 33 86 42 157 113 199 199 30 63 33
-75 33 168 -1 130 -24 191 -105 279 -107 114 -248 158 -395 122z m169 -160
-c211 -64 238 -355 42 -459 -31 -16 -59 -22 -116 -22 -64 0 -82 4 -123 28 -186
-110 -157 379 50 453 49 17 89 17 147 0z"/>
-</g></svg></div><div class="label">Barberías</div></div>
-      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor" stroke="none">
-<path d="M25 5095 c-14 -13 -25 -36 -25 -50 0 -14 11 -37 25 -50 l24 -25 723
-0 c789 0 784 0 892 -58 73 -39 147 -116 184 -192 36 -74 57 -167 47 -217 -11
--61 -21 -63 -418 -63 -427 0 -401 -8 -409 123 -6 98 -29 149 -88 199 -22 19
--57 40 -79 46 -26 8 -165 12 -445 12 l-407 0 -24 -25 c-32 -31 -32 -69 0 -100
-l24 -25 405 0 405 0 27 -23 c25 -22 28 -32 34 -113 4 -51 13 -102 23 -120 24
--47 92 -100 142 -113 67 -17 759 -14 808 3 54 20 104 61 130 109 18 35 22 57
-21 127 -2 211 -135 419 -329 515 -132 65 -130 65 -938 65 l-728 0 -24 -25z"/>
-<path d="M1090 4120 c-20 -20 -20 -33 -20 -590 0 -557 0 -570 20 -590 27 -27
-81 -26 106 1 18 20 19 45 19 591 l0 570 -24 19 c-30 25 -76 24 -101 -1z"/>
-<path d="M1431 4114 c-20 -26 -21 -37 -21 -411 l0 -384 25 -24 c13 -14 36 -25
-50 -25 14 0 37 11 50 25 l25 24 0 384 c0 374 -1 385 -21 411 -15 19 -30 26
--54 26 -24 0 -39 -7 -54 -26z"/>
-<path d="M1779 4121 l-24 -19 -3 -284 c-3 -277 -2 -285 18 -311 27 -34 80 -37
-110 -7 19 19 20 33 20 310 0 277 -1 291 -20 310 -25 25 -71 26 -101 1z"/>
-<path d="M3264 3505 c-28 -8 -107 -39 -175 -69 -69 -30 -152 -62 -185 -71 -91
--23 -121 -79 -69 -130 42 -43 103 -30 325 67 69 31 139 59 157 62 29 7 34 4
-53 -26 25 -41 47 -113 61 -198 5 -36 16 -74 23 -85 8 -11 60 -40 117 -64 57
--24 107 -47 111 -50 15 -13 -44 -115 -102 -175 -67 -70 -77 -109 -40 -146 30
--30 71 -25 123 15 46 35 129 149 148 204 6 17 14 31 18 31 4 0 53 -27 109 -60
-110 -65 198 -144 225 -202 45 -96 -6 -318 -138 -603 l-43 -93 -138 -1 c-156 0
--243 -10 -391 -46 -237 -57 -456 -168 -648 -329 l-90 -75 -170 0 c-144 -1
--176 2 -210 18 -103 48 -142 149 -94 249 27 55 79 90 155 102 66 11 94 34 94
-79 0 38 -10 48 -141 134 -294 193 -420 399 -444 726 -8 107 -23 131 -78 131
--56 0 -72 -28 -72 -124 0 -81 -1 -83 -38 -126 -77 -89 -158 -295 -173 -435 -8
--73 13 -108 64 -108 45 0 69 27 82 92 17 85 49 190 77 250 l26 53 27 -69 c69
--178 193 -334 372 -467 l37 -28 -52 -51 c-70 -68 -99 -130 -105 -221 -4 -69 0
--86 43 -188 7 -17 -7 -18 -219 -18 l-226 0 0 210 c0 222 -5 250 -47 269 -34
-16 -47 14 -77 -10 l-26 -20 0 -225 0 -224 -150 0 -150 0 0 288 c0 158 5 326
-10 372 45 372 172 654 388 862 149 143 293 224 490 274 103 26 317 43 340 26
-11 -7 9 -21 -7 -70 -33 -97 -54 -238 -48 -317 5 -59 10 -74 32 -92 30 -26 43
--28 79 -11 33 15 38 31 41 152 4 118 39 255 86 327 42 66 38 108 -11 134 -16
-8 -83 20 -149 27 -388 38 -787 -125 -1037 -424 -190 -226 -304 -503 -349 -841
--10 -83 -15 -205 -15 -413 l0 -294 -200 0 c-200 0 -201 0 -225 -25 -32 -31
--32 -69 0 -100 l24 -25 1458 0 c1611 0 1496 5 1508 -63 10 -52 -21 -175 -70
--272 -141 -284 -485 -596 -857 -780 -145 -71 -165 -91 -146 -147 22 -62 60
--62 191 0 280 133 550 339 758 578 50 58 114 121 143 140 111 75 285 104 421
-69 131 -35 154 -53 561 -457 412 -409 407 -406 459 -353 53 52 56 48 -342 448
--397 397 -454 445 -589 491 -122 42 -323 46 -420 9 -11 -4 -9 7 5 50 26 74 44
-201 36 245 -14 76 -67 145 -134 175 -17 8 -141 14 -363 17 l-337 5 77 51 c376
-250 829 312 1276 177 80 -24 91 -26 114 -12 37 20 51 63 31 97 -17 31 -68 52
--208 88 -52 13 -96 26 -98 28 -2 1 15 42 37 90 22 48 58 139 80 202 148 428
-72 595 -371 822 -63 32 -157 77 -209 100 l-95 41 -21 89 c-36 159 -96 248
--181 271 -47 13 -56 13 -119 -4z"/>
-<path d="M2877 3040 c-15 -12 -28 -35 -32 -58 -3 -20 -21 -64 -40 -97 -69
--123 -69 -123 -59 -153 12 -35 56 -56 92 -44 56 18 153 199 156 290 1 35 -4
-48 -23 63 -30 24 -62 24 -94 -1z"/>
-<path d="M4596 1679 c-29 -23 -36 -73 -13 -101 6 -8 54 -44 105 -78 52 -35
-147 -114 213 -177 129 -123 150 -133 194 -88 47 46 36 68 -87 191 -142 140
--323 274 -370 274 -8 0 -27 -9 -42 -21z"/>
-<path d="M25 1435 l-25 -24 0 -681 0 -681 25 -24 c31 -32 69 -32 100 0 l25 24
-0 631 0 630 135 0 c131 0 137 1 160 25 34 33 33 77 -1 104 -25 20 -40 21 -211
-21 -182 0 -184 0 -208 -25z"/>
-</g></svg></div><div class="label">Estéticas y manicura</div></div>
-      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></svg></div><div class="label">Odontólogos</div></div>
-      <div class="card audience-card"><div class="icon-wrap">🐾</div><div class="label">Veterinarias</div></div>
-      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor" stroke="none">
-<path d="M3546 4575 c-42 -15 -206 -168 -232 -217 -16 -31 -18 -106 -4 -128 7
--12 -65 -90 -343 -368 l-352 -352 -45 6 c-64 8 -108 -13 -191 -93 l-70 -67
--91 91 -91 91 37 43 c44 52 61 103 51 155 -5 31 -27 59 -108 142 -165 168
--195 165 -390 -27 -71 -69 -135 -138 -143 -153 -16 -31 -18 -95 -4 -132 12
--32 137 -164 190 -201 71 -49 161 -34 230 40 l24 26 93 -93 93 -93 -66 -66
--66 -66 -36 13 c-46 17 -93 17 -146 2 -35 -10 -121 -91 -604 -572 -310 -309
--572 -577 -582 -596 -43 -84 -31 -175 36 -256 l37 -46 -211 -211 c-181 -183
--212 -218 -222 -256 -13 -48 -7 -103 16 -146 l15 -28 -186 -187 c-188 -191
--198 -204 -179 -255 10 -26 63 -45 94 -33 14 5 105 88 202 186 l177 176 36
--17 c44 -21 124 -22 168 -3 31 14 122 98 339 313 l106 106 34 -28 c76 -64 175
--82 253 -46 26 12 128 107 284 264 238 240 244 246 237 279 -8 41 -23 56 -64
-64 -32 6 -38 1 -175 -134 l-142 -142 -265 265 -265 265 450 450 c389 389 454
-450 480 450 25 0 64 -35 264 -234 207 -207 234 -238 234 -266 0 -28 -24 -56
--206 -238 -184 -184 -207 -211 -207 -240 0 -42 30 -72 73 -72 29 0 55 23 244
-213 116 116 219 227 228 246 21 41 23 126 6 169 -8 18 -12 35 -9 37 2 2 76
--67 163 -155 l159 -160 -32 -33 c-39 -40 -43 -86 -10 -117 32 -29 71 -25 113
-12 l37 31 265 -266 266 -265 -31 -37 c-81 -91 12 -184 103 -103 l36 31 87 -86
-c90 -89 120 -107 178 -107 58 0 95 23 185 116 100 104 117 140 99 212 l-11 46
-278 277 278 278 40 -11 c74 -20 108 -6 207 90 169 162 171 218 15 371 l-86 85
-34 38 c42 45 45 79 10 113 -34 35 -68 32 -113 -10 l-38 -34 -74 74 c-65 66
--79 75 -111 75 -45 0 -69 -25 -69 -71 0 -31 19 -52 207 -241 l208 -208 -73
--72 -72 -73 -650 650 -650 650 72 72 73 73 335 -334 c184 -184 345 -337 356
--340 48 -14 105 44 90 91 -3 10 -44 56 -90 102 l-85 85 34 38 c42 45 45 79 10
-113 -34 35 -68 32 -113 -9 l-38 -35 -152 152 c-84 84 -152 157 -152 162 0 6
-34 44 76 85 41 41 82 87 90 102 19 36 18 91 -2 131 -19 38 -315 340 -359 366
--43 26 -84 31 -129 16z m202 -298 l152 -152 -73 -73 -72 -72 -155 155 -155
-155 70 70 c38 38 72 70 75 70 3 0 74 -69 158 -153z m-250 -250 l72 -72 -348
--348 -347 -347 -75 75 -75 75 345 345 c190 190 347 345 350 345 3 0 38 -33 78
--73z m-1538 -432 l-110 -110 -72 73 -73 72 110 110 110 110 72 -72 73 -73
--110 -110z m1403 -487 l-278 -278 -69 69 -69 69 17 37 c12 25 17 54 14 91 l-3
-54 225 225 225 225 107 -107 108 -108 -277 -277z m-671 125 c76 -75 138 -144
-138 -152 0 -17 -338 -361 -355 -361 -5 0 -74 64 -152 142 l-143 143 182 182
-c101 101 185 183 187 183 2 0 67 -62 143 -137z m1183 -83 l120 -120 -113 -112
--112 -113 -125 125 -125 125 107 107 c59 60 112 108 118 108 6 0 64 -54 130
--120z m-330 -330 l120 -120 -113 -112 -112 -113 -125 125 -125 125 107 107
-c59 60 112 108 118 108 6 0 64 -54 130 -120z m458 -352 l-278 -278 -87 87 -88
-88 277 277 278 278 87 -87 88 -88 -277 -277z m-553 -220 l610 -612 -67 -68
-c-37 -38 -72 -68 -78 -68 -5 0 -283 273 -617 607 l-608 608 72 72 c40 40 74
-73 75 73 2 0 277 -276 613 -612z m1063 264 c64 -64 117 -122 117 -127 0 -5
--48 -58 -107 -117 l-108 -108 -127 127 -128 128 107 107 c59 60 112 108 118
-108 6 0 63 -53 128 -118z m-330 -330 c64 -64 117 -122 117 -127 0 -5 -48 -58
--107 -117 l-108 -108 -127 127 -128 128 107 107 c59 60 112 108 118 108 6 0
-63 -53 128 -118z m-2995 -465 l263 -263 -50 -47 c-82 -77 -71 -82 -344 191
--130 131 -237 244 -237 251 0 7 5 22 11 34 12 23 79 97 89 97 3 0 123 -118
-268 -263z m-236 -234 l68 -68 -197 -197 c-157 -157 -203 -198 -224 -198 -30 0
--119 87 -119 117 0 14 385 413 399 413 3 0 36 -30 73 -67z"/>
-</g></svg></div><div class="label">Tatuajes</div></div>
-      <div class="card audience-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"/><path d="m9.6 14.4 4.8-4.8"/></svg></div><div class="label">Personal trainers</div></div>
-    </div>
-  </div>
-</section>
+    <!-- Hero -->
+    <section id="inicio" class="wrap hero" aria-labelledby="hero-title">
+      <div class="hero__copy">
+        <span class="hero__badge">TURNOS ONLINE PARA BARBERÍAS Y PELUQUERÍAS</span>
+        <h1 id="hero-title" class="hero__title">Tus clientes reservan solos.<br><span>Vos dejás de perder turnos.</span></h1>
+        <p class="hero__text">Un link de reservas con tu marca, que también podés sumar a tu web. Recordatorios automáticos, reprogramación sin huecos y tu día ordenado en un panel.</p>
+        <div class="hero__ctas">
+          <a class="btn btn--primary" href="/registro">Probar 14 días gratis</a>
+          <a class="btn btn--outline" href="/barberia-demo">Probá reservar como cliente</a>
+        </div>
+        <ul class="hero__trust">
+          <li>SIN TARJETA</li><li aria-hidden="true">·</li><li>LISTO EN 10 MINUTOS</li><li aria-hidden="true">·</li><li>HECHO EN ARGENTINA</li>
+        </ul>
+      </div>
 
-<!-- FEATURES -->
-<section class="features" id="features">
-  <div class="landing-container">
-    <div class="section-head">
-      <span class="eyebrow">QUÉ INCLUYE</span>
-    </div>
-    <div class="grid-4">
-      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><div class="label">Agenda online 24/7</div></div>
-      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div class="label">Confirmaciones por email</div></div>
-      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="label">Multi-profesional</div></div>
-      <div class="card card-dark feature-card"><div class="icon-wrap"><svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div><div class="label">Link de reservas para compartir</div></div>
-    </div>
-  </div>
-</section>
+      <div class="hero__visual" role="img" aria-label="Página de reservas en un celular: el cliente elige servicio, día y horario. Al lado, el panel del negocio muestra el nuevo turno y el recordatorio enviado.">
+        <div class="hero__backdrop"></div>
+        <div class="phone" aria-hidden="true">
+          <div class="phone__screen">
+            <div class="phone__top">
+              <span class="phone__avatar"></span>
+              <div class="phone__biz"><b>Tu Barbería</b><span>Reservá tu turno</span></div>
+            </div>
+            <div class="phone__body">
+              <span class="phone__step">1 · SERVICIO</span>
+              <div class="chips">
+                <span class="chip chip--on">Corte</span>
+                <span class="chip">Corte + Barba</span>
+                <span class="chip">Barba</span>
+              </div>
+              <span class="phone__step">2 · DÍA</span>
+              <div class="days">
+                <span class="day day--on">HOY<br><b>12</b></span>
+                <span class="day">VIE<br><b>13</b></span>
+                <span class="day">SÁB<br><b>14</b></span>
+                <span class="day">LUN<br><b>16</b></span>
+              </div>
+              <span class="phone__step">3 · HORARIO</span>
+              <div class="slots">
+                <span class="slot slot--off">10:00</span>
+                <span class="slot">10:30</span>
+                <span class="slot slot--on">11:00</span>
+                <span class="slot">11:30</span>
+                <span class="slot slot--off">12:00</span>
+                <span class="slot">12:30</span>
+              </div>
+            </div>
+            <div class="phone__foot">
+              <div class="phone__summary"><span>Corte · Hoy 11:00</span><b>$22.000</b></div>
+              <span class="phone__confirm">Confirmar turno</span>
+            </div>
+          </div>
+        </div>
+        <div class="panel-card" aria-hidden="true">
+          <span class="panel-card__label">TU PANEL · HOY</span>
+          <div class="panel-card__row">
+            <span class="panel-card__icon panel-card__icon--ok">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+            <div><b>Nuevo turno</b><span>Corte · 11:00 · Martín</span></div>
+          </div>
+          <div class="panel-card__row">
+            <span class="panel-card__icon panel-card__icon--bell">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            </span>
+            <div><b>Recordatorio enviado</b><span>Turno de mañana 10:30</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-<!-- PRECIOS -->
-<section id="precios">
-  <div class="landing-container">
-    <div class="section-head">
-      <span class="eyebrow">PRECIOS</span>
-    </div>
-    <div class="card pricing-card">
-      <div class="pricing-amount">$5.000 <span>ARS / profesional / mes</span></div>
-      <p class="pricing-sub">14 días gratis · sin tarjeta requerida</p>
-      <ul class="pricing-perks">
-        <li>✓ Agenda online ilimitada</li>
-        <li>✓ Panel admin completo</li>
-        <li>✓ Multi-profesional</li>
+    <!-- Cómo funciona -->
+    <section id="como" class="band" aria-labelledby="como-title">
+      <div class="wrap steps">
+        <div class="section-head">
+          <span class="eyebrow">CÓMO FUNCIONA</span>
+          <h2 id="como-title" class="h2">En 3 pasos estás recibiendo turnos</h2>
+        </div>
+        <ol class="grid-3">
+          <li class="step">
+            <span class="step__num" aria-hidden="true">01</span>
+            <h3 class="step__title">Cargá tus servicios y tu equipo</h3>
+            <p class="step__text">Precios, duración, barberos y el horario de cada uno. Con turno partido si cortás al mediodía.</p>
+          </li>
+          <li class="step">
+            <span class="step__num" aria-hidden="true">02</span>
+            <h3 class="step__title">Compartí tu link</h3>
+            <p class="step__text">En tu Instagram, por WhatsApp o con un QR en el local. Si tenés web, pegás dos líneas y la reserva queda adentro.</p>
+          </li>
+          <li class="step">
+            <span class="step__num" aria-hidden="true">03</span>
+            <h3 class="step__title">Recibí turnos mientras cortás</h3>
+            <p class="step__text">El cliente elige servicio, barbero y horario. Le llega la confirmación y un recordatorio antes del turno.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Funciones -->
+    <section id="funciones" class="wrap section" aria-labelledby="funciones-title">
+      <div class="section-head">
+        <span class="eyebrow">FUNCIONES</span>
+        <h2 id="funciones-title" class="h2">Todo lo que tu barbería necesita, nada que sobre</h2>
+      </div>
+      <ul class="features">
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Reserva en una sola pantalla</h3></div>
+          <p class="feature__text">Servicio, barbero, día y horario a la vista. El cliente reserva en segundos, sin descargar nada.</p>
+        </li>
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Recordatorios automáticos</h3></div>
+          <p class="feature__text">Confirmación al reservar y recordatorio antes del turno, para que no se le pase.</p>
+        </li>
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Reprogramar sin perder el turno</h3></div>
+          <p class="feature__text">El cliente cambia el horario y el viejo se libera solo. Vos definís hasta cuántas horas antes.</p>
+        </li>
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Tu link, tu web, tu marca</h3></div>
+          <p class="feature__text">Logo, colores y tipografía propios. Compartís el link o lo sumás a tu web con dos líneas.</p>
+        </li>
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Panel con tu día ordenado</h3></div>
+          <p class="feature__text">Turnos de hoy y de la semana, ingresos estimados y WhatsApp con cada cliente a un toque.</p>
+        </li>
+        <li class="feature">
+          <div class="feature__head"><h3 class="feature__title">Señas con Mercado Pago</h3><span class="badge-soon">PRÓXIMAMENTE</span></div>
+          <p class="feature__text">El cliente deja una seña al reservar. Si no viene, la seña queda para vos.</p>
+        </li>
       </ul>
-      <a href="/registro" class="btn btn-accent">EMPEZAR GRATIS</a>
+    </section>
+
+    <!-- Calculadora de ausencias -->
+    <section id="calculadora" class="dark on-dark" aria-labelledby="calc-title">
+      <div class="wrap calc-section">
+        <div class="calc-section__copy">
+          <span class="eyebrow">HACÉ LA CUENTA</span>
+          <h2 id="calc-title" class="h2">¿Cuánto te cuestan los clientes que no vienen?</h2>
+          <p class="lead">Cada silla vacía es plata que no vuelve. Los recordatorios automáticos bajan las ausencias, y con las señas el que no viene igual paga.</p>
+        </div>
+        <div class="calc" data-calc>
+          <div class="calc__field" role="group" aria-labelledby="calc-price-label">
+            <span id="calc-price-label" class="calc__label">Precio de tu corte</span>
+            <div class="stepper">
+              <button type="button" class="stepper__btn" data-calc-step="price" data-dir="-1" aria-label="Bajar precio">−</button>
+              <output class="stepper__value" data-calc-out="price" aria-live="polite">$22.000</output>
+              <button type="button" class="stepper__btn" data-calc-step="price" data-dir="1" aria-label="Subir precio">+</button>
+            </div>
+          </div>
+          <div class="calc__field" role="group" aria-labelledby="calc-noshows-label">
+            <span id="calc-noshows-label" class="calc__label">Clientes que faltan por semana</span>
+            <div class="stepper">
+              <button type="button" class="stepper__btn" data-calc-step="noShows" data-dir="-1" aria-label="Menos ausencias">−</button>
+              <output class="stepper__value" data-calc-out="noShows" aria-live="polite">3</output>
+              <button type="button" class="stepper__btn" data-calc-step="noShows" data-dir="1" aria-label="Más ausencias">+</button>
+            </div>
+          </div>
+          <div class="calc__result">
+            <span id="calc-loss-label" class="calc__result-label">PERDÉS POR MES</span>
+            <output class="calc__loss" data-calc-out="loss" aria-labelledby="calc-loss-label" aria-live="polite">$283.800</output>
+            <p class="calc__note">Agendaste cuesta $5.000 por profesional al mes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tu marca, tu web -->
+    <section id="marca" class="wrap brand-section" aria-labelledby="marca-title">
+      <div class="brand-section__copy">
+        <span class="eyebrow">TU MARCA, TU WEB</span>
+        <h2 id="marca-title" class="h2">La reserva se ve como tu barbería, no como un sistema</h2>
+        <p class="lead">Subís tu logo, elegís tus colores y tu tipografía. La página de reservas toma tu identidad, y si tenés web, la sumás adentro con dos líneas de código.</p>
+        <p class="lead">¿No tenés web? Te la armamos, con la reserva ya integrada.</p>
+      </div>
+      <div class="themes" role="img" aria-label="Dos ejemplos de página de reservas con marcas distintas: una barbería clásica en negro y dorado, y un estudio de uñas en rosa.">
+        <div class="theme theme--classic" aria-hidden="true">
+          <span class="theme__name">Barbería clásica</span>
+          <span class="theme__step">1 · SERVICIO</span>
+          <div class="theme__chips"><span class="theme__chip theme__chip--on">Corte</span><span class="theme__chip">Barba</span></div>
+          <span class="theme__confirm">CONFIRMAR</span>
+        </div>
+        <div class="theme theme--nails" aria-hidden="true">
+          <span class="theme__name">Estudio de uñas</span>
+          <span class="theme__step">1 · SERVICIO</span>
+          <div class="theme__chips"><span class="theme__chip theme__chip--on">Semi</span><span class="theme__chip">Esculpidas</span></div>
+          <span class="theme__confirm">CONFIRMAR</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TODO testimonios: sección oculta hasta tener testimonios reales. Completar los 3 y descomentar.
+    <section id="testimonios" class="band" aria-labelledby="testimonios-title">
+      <div class="wrap testimonials">
+        <h2 id="testimonios-title" class="h2 h2--sm">Barberías que ya reservan con Agendaste</h2>
+        <div class="grid-3">
+          <figure class="testimonial">
+            <blockquote>TEXTO DEL TESTIMONIO</blockquote>
+            <figcaption>NOMBRE · BARBERÍA · BARRIO</figcaption>
+          </figure>
+          <figure class="testimonial">
+            <blockquote>TEXTO DEL TESTIMONIO</blockquote>
+            <figcaption>NOMBRE · BARBERÍA · BARRIO</figcaption>
+          </figure>
+          <figure class="testimonial">
+            <blockquote>TEXTO DEL TESTIMONIO</blockquote>
+            <figcaption>NOMBRE · BARBERÍA · BARRIO</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+    -->
+
+    <!-- Precios -->
+    <section id="precios" class="wrap pricing" aria-labelledby="precios-title">
+      <div class="section-head section-head--center">
+        <span class="eyebrow">PRECIOS</span>
+        <h2 id="precios-title" class="h2">Pagás por profesional, nada más</h2>
+      </div>
+      <div class="plans">
+        <article class="plan plan--main" aria-labelledby="plan-main-name">
+          <h3 id="plan-main-name" class="plan__name">AGENDASTE</h3>
+          <div class="plan__price"><span class="plan__amount">$5.000</span><span class="plan__unit">ARS / profesional / mes</span></div>
+          <p class="plan__note">14 días gratis, sin tarjeta. Cancelás cuando quieras.</p>
+          <ul class="plan__list">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Reservas ilimitadas</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Link y QR de reservas</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Logo, colores y tipografía propios</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Reserva dentro de tu web</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Recordatorios por mail</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Panel para todo el equipo</span></li>
+          </ul>
+          <a class="btn btn--primary btn--block" href="/registro">Empezar gratis</a>
+        </article>
+        <article class="plan plan--web on-dark" aria-labelledby="plan-web-name">
+          <h3 id="plan-web-name" class="plan__name">WEB + RESERVAS CON TU MARCA</h3>
+          <div class="plan__price"><span class="plan__amount">A medida</span><span class="plan__unit">pago único + Agendaste</span></div>
+          <p class="plan__note">Te armamos la web de tu barbería, con tu logo, tus fotos, tus precios y la reserva integrada. Con tu dominio.</p>
+          <a class="btn btn--light btn--block" href="#" data-wa hidden target="_blank" rel="noopener">Consultar por WhatsApp</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq-band" aria-labelledby="faq-title">
+      <div class="faq">
+        <h2 id="faq-title" class="h2 h2--sm">Preguntas frecuentes</h2>
+        <div class="faq__list" data-faq>
+          <div class="faq__item">
+            <h3><button type="button" class="faq__q" aria-expanded="true" aria-controls="faq-a1"><span>¿Necesito tarjeta para probar?</span><span class="faq__icon" aria-hidden="true">−</span></button></h3>
+            <p id="faq-a1" class="faq__a">No. Tenés 14 días gratis con todas las funciones, sin cargar ninguna tarjeta.</p>
+          </div>
+          <div class="faq__item">
+            <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a2"><span>¿Mis clientes tienen que descargar algo?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
+            <p id="faq-a2" class="faq__a" hidden>No. Reservan desde el navegador del celular con tu link, en menos de un minuto.</p>
+          </div>
+          <div class="faq__item">
+            <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a3"><span>¿Lo puedo poner en mi web o en Instagram?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
+            <p id="faq-a3" class="faq__a" hidden>Sí. Compartís el link en tu bio de Instagram o pegás dos líneas en tu web y la reserva queda adentro, con tu marca.</p>
+          </div>
+          <div class="faq__item">
+            <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a4"><span>¿Cómo se cobra?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
+            <p id="faq-a4" class="faq__a" hidden>$5.000 por profesional activo por mes. Si tenés 3 barberos, pagás 3. Cancelás cuando quieras desde tu panel.</p>
+          </div>
+          <div class="faq__item">
+            <h3><button type="button" class="faq__q" aria-expanded="false" aria-controls="faq-a5"><span>¿Qué pasa si un cliente quiere cambiar el turno?</span><span class="faq__icon" aria-hidden="true">+</span></button></h3>
+            <p id="faq-a5" class="faq__a" hidden>Lo reprograma solo desde su link, hasta las horas antes que vos definas. Pasado ese límite, te escribe por WhatsApp.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA final -->
+    <section id="empezar" class="cta-band" aria-labelledby="cta-title">
+      <div class="wrap cta">
+        <h2 id="cta-title" class="cta__title">Tu próxima silla vacía puede ser la última</h2>
+        <div class="cta__actions">
+          <a class="btn btn--light" href="/registro">Probar 14 días gratis</a>
+          <a class="btn btn--ghost-light" href="#" data-wa hidden target="_blank" rel="noopener">Hablar por WhatsApp</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer on-dark">
+    <div class="wrap site-footer__inner">
+      <span>© 2026 Agendaste · Hecho en Buenos Aires</span>
+      <div class="site-footer__links">
+        <a href="/privacidad">Privacidad</a>
+        <a href="/terminos">Términos</a>
+        <a href="mailto:hola@agendaste.com.ar">hola@agendaste.com.ar</a>
+      </div>
     </div>
-  </div>
-</section>
+  </footer>
 
-<!-- CTA FINAL -->
-<section class="cta-final">
-  <div class="landing-container">
-    <h2>¿LISTO PARA SIMPLIFICAR TU NEGOCIO?</h2>
-    <a href="/registro" class="btn btn-accent">REGISTRÁ TU NEGOCIO GRATIS</a>
-  </div>
-</section>
-
-<footer>
-  © 2026 Agendaste · <a href="/privacidad" style="color:inherit">Privacidad</a> · <a href="/terminos" style="color:inherit">Términos</a>
-</footer>
-
+  <a class="wa-float" href="#" data-wa hidden target="_blank" rel="noopener" aria-label="Hablar por WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>
+  </a>
 </body>
 </html>

@@ -33,7 +33,8 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// index: false → "/" lo sirve la ruta de la landing (inyecta SALES_WHATSAPP)
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -66,9 +67,15 @@ app.use('/api/otp', require('./routes/otp'));
 app.use('/api/cron', require('./routes/cron'));
 app.use(require('./routes/register'));
 
-// Ruta raíz → landing de Agendaste
+// Ruta raíz → landing de Agendaste, con el WhatsApp de ventas (SALES_WHATSAPP) en un <meta>.
+// Si la variable no está, el meta queda vacío y la landing oculta los botones de WhatsApp.
+const fs = require('fs');
+const escapeAttr = (v) => String(v).replace(/[&"<>]/g, (c) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c]));
+const landingHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+  .replace('<meta name="sales-whatsapp" content="">',
+    `<meta name="sales-whatsapp" content="${escapeAttr(process.env.SALES_WHATSAPP || '')}">`);
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.type('html').send(landingHtml);
 });
 
 // Centro de ayuda
